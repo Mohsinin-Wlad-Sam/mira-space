@@ -1,7 +1,8 @@
 # 14 · Deployment and data updates
 
 MIRA is a static site plus one optional 40-line process. The browser talks to NASA's archive (SPHEREx Level-2 images
-on the public `nasa-irsa-spherex` bucket) and to public catalogue services (CDS VizieR mirrors, SIMBAD). What we host
+on the public `nasa-irsa-spherex` bucket; the 2MASS and WISE pictures of the same field from IRSA's HiPS tiles) and to
+public catalogue services (CDS VizieR mirrors, SIMBAD). What we host
 is the app, a small exposure index and the pre-computed, verified survey. The only server-side code is the
 assistant's proxy, which holds the model key; without it everything else works and the assistant says it is offline.
 
@@ -53,7 +54,12 @@ sudo systemd-run --unit mira-assistant --property EnvironmentFile=/etc/mira.env 
 
 Caddy / nginx forward `/api/*` to `127.0.0.1:8787`. The proxy owns the instructions and the list of tools, accepts
 only the conversation and a snapshot of the page, limits each address to 40 calls per 10 minutes and the whole site
-to 4,000 a day (`MIRA_LLM_PER10MIN`, `MIRA_LLM_DAILY`), and uses about 40 MB of memory. Any OpenAI-compatible endpoint
+to 4,000 a day (`MIRA_LLM_PER10MIN`, `MIRA_LLM_DAILY`), and uses about 40 MB of memory. It answers browsers only
+from its own site: the request's `Origin` must match the `Host` the reverse proxy passes on (Caddy does this by
+itself; the nginx file sets `Host`), and other origins can be allowed with `MIRA_ALLOWED_ORIGINS` (comma-separated).
+The client address used for the limit is taken from `X-Forwarded-For` only when the request comes from the local
+reverse proxy. `MIRA_LLM_MAX_TOKENS` (4,000) covers the model's reasoning as well as its answer. Tested standalone
+the way a reverse proxy calls it (site host, same-site origin, forwarded address); not yet tested on a public host. Any OpenAI-compatible endpoint
 with tool calling works. During development the same handler runs inside the Vite dev server and reads
 `web/.env.local` (ignored by git).
 
@@ -80,6 +86,8 @@ browser requests; the static index answers in one small file read and keeps the 
 - Release and week folders come from the index (`roots`), so a new data release needs no code change.
 - Catalogue queries go to three VizieR mirrors in turn, are retried once, and a failure is reported in the panel
   ("Gaia not reachable: positions are uncalibrated") instead of breaking the page.
+- The 1999 and 2010 pictures are optional: if IRSA's tiles cannot be read, the time bar keeps its markers and says
+  that no picture exists for those dates.
 - The assistant's endpoint, model and limits are environment variables.
 
 ## Re-verifying the survey (cluster, optional)
@@ -103,5 +111,10 @@ up to 60 objects per second; it is limited by the network, not by computing.
 cd web && npm run dev &                      # or point the scripts at the deployed site
 npx tsx scripts/validate_blink.mts           # the five challenge targets through the engine -> public/validation.json
 npx tsx scripts/test_detect.mts              # the field detector on reference fields (prints what it finds)
+npx tsx scripts/test_hips.mts                # the 2010 WISE picture against catalogue star positions (tile reading)
+# the control run of the detector, Gaia known and blind (cluster or any machine; about 10 minutes on 6 processes
+# once the catalogue answers are kept with --cats):
+npx tsx scripts/validate_detector.mts fields.jsonl out.jsonl --data public/ --par 3 --cats cats/
+python ../census/validate_summary.py out.jsonl --out public/data/verified/detector_validation.json
 npm run build                                # type-check + production build
 ```
