@@ -15,11 +15,11 @@ export type Settings = {
 };
 export const DEFAULTS: Settings = {
   survey: "spherex", colormap: "grayscale", stretch: "asinh", brightness: -0.18, contrast: 1.2, gamma: 1.6,
-  projection: "SIN", grid: false, galactic: false,
+  projection: "AIT", grid: false, galactic: true,       // the whole sky at once, Milky Way horizontal: the standard all-sky map
   markerSize: 8, trails: true, labels: true, density: 1, maxMarkers: LOW_POWER ? 400 : 900,
   zoomSpeed: 1, zoomToCursor: true, blinkMs: 900, blinkFade: false, saver: LOW_POWER,
 };
-const KEY = "mira.settings.v3";
+const KEY = "mira.settings.v4";
 export function loadSettings(): Settings {
   try { const s = JSON.parse(localStorage.getItem(KEY) || "{}"); const o = { ...DEFAULTS, ...s }; if (!(o.survey in SURVEYS) || o.survey === "sxrgb") o.survey = DEFAULTS.survey; return o; } catch { return { ...DEFAULTS }; }
 }
@@ -49,4 +49,4 @@ export const SURVEYS: Record<SurveyKey, { label: string; short: string; band: st
 };
 export const LADDER: SurveyKey[] = ["galex", "dss", "2mass", "spherex", "wise", "wisergb", "iris", "planck"];   // "sxrgb" kept off: Aladin 3.8 blends same-cube layers incorrectly
 export const COLORMAPS = ["magma", "inferno", "viridis", "cividis", "cubehelix", "grayscale", "redtemperature", "rdylbu", "spectral", "native"];
-export const PROJECTIONS: [Settings["projection"], string][] = [["SIN", "Globe"], ["AIT", "Aitoff (all-sky)"], ["MOL", "Mollweide"], ["TAN", "Gnomonic (flat)"], ["MER", "Mercator"]];
+export const PROJECTIONS: [Settings["projection"], string][] = [["AIT", "Whole sky (Aitoff)"], ["MOL", "Whole sky (Mollweide)"], ["SIN", "Celestial sphere seen from outside"], ["TAN", "Gnomonic (flat)"], ["MER", "Mercator"]];

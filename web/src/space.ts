@@ -31,7 +31,11 @@ type Meta = { record: number; core: { file: string; n: number; named: number }; 
   counts: { gaia: number; ucs: number; ai: number }; classes: string[] };
 type Cat = { n: number; pos: Float32Array; vel: Float32Array; teff: Uint16Array; M: Float32Array; cls: Uint8Array; src: Uint8Array; hasRV: Uint8Array;
   sig: Float32Array; lens: Uint8Array; dflux: Float32Array; tile: Uint16Array; obj: Uint32Array };
-export type SpaceOpts = { lowPower: boolean; focus?: string; lab?: boolean; onLab?: () => void; onSky?: (ra: number, dec: number) => void; onDossier?: (id: string) => void };
+export type SpaceOpts = { lowPower: boolean; focus?: string; lab?: boolean; onLab?: () => void; onSky?: (ra: number, dec: number) => void; onDossier?: (id: string) => void;
+  /** "put it under the telescope": hand a selected object to the Observe section */
+  onObserve?: (t: { ra: number; dec: number; name?: string }) => void };
+/** close(); pause(true/false) suspends rendering while another section of the observatory is in front */
+export type SpaceHandle = (() => void) & { pause: (on: boolean) => void; focus: (nameOrId: string) => void };
 
 function parse(buf: ArrayBuffer): Cat {
   const n = Math.floor(buf.byteLength / 32), dv = new DataView(buf);
@@ -131,7 +135,7 @@ function fmtDist(pc: number) {
     : ly < 1e9 ? `${(ly / 1e6).toFixed(ly < 1e7 ? 1 : 0)} million ly` : `${(ly / 1e9).toFixed(1)} billion ly`;
 }
 
-export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<() => void> {
+export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<SpaceHandle> {
   host.innerHTML = `
     <canvas class="sp-canvas"></canvas>
     <div class="sp-labels"></div><div class="sp-ring"></div>
@@ -142,22 +146,25 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<() 
       <p class="sp-sub" id="spsub">Loading the 3D catalogue…</p>
     </div>
     <aside class="sp-ctl" id="spctl">
-      <form id="spsearch" class="sp-search"><input id="spq" list="spnames" placeholder="Find: Jupiter, Sirius, Barnard…" autocomplete="off"><datalist id="spnames"></datalist></form>
-      <div class="sp-row2"><button class="btn sm" id="sptour">▶ Autopilot tour</button><button class="btn sm ghost" id="spfree" title="Free flight (F)">✈ Free flight</button></div>
-      <button class="btn sm ghost sp-labbtn" id="splab">Open the Lab · ask the sky a question</button>
-      <div class="sp-live" id="splive"><div class="eyebrow"><span class="dotlive"></span>Live from NASA</div><div id="splivebody" class="mono">loading…</div></div>
-      <div class="eyebrow">Go to</div><div class="sp-dest" id="spdest"></div>
-      <div class="eyebrow">See with</div>
-      <div class="seg" id="speyes"><button data-v="ir" class="on">Infrared eyes</button><button data-v="vis">Human eyes</button></div>
-      <div class="eyebrow">Colour by</div>
-      <div class="seg" id="spcol"><button data-v="temp" class="on">Temperature</button><button data-v="cls">Kind</button><button data-v="lens">Lens</button><button data-v="sig">Certainty</button></div>
-      <div class="eyebrow">Show</div><div class="sp-chips" id="spshow"></div>
-      <label class="row"><span>Exposure</span><input type="range" id="spexp" min="-6" max="10" step="0.1" value="0"></label>
-      <label class="row chk"><input type="checkbox" id="spgrid" checked><span>Distance rings & Galactic centre</span></label>
-      <label class="row chk"><input type="checkbox" id="spfig" checked><span>Constellation figures (true 3D)</span></label>
-      <label class="row chk"><input type="checkbox" id="spunc"><span>Distance uncertainty (AI ±1σ)</span></label>
-      <label class="row"><span>Backdrop</span><select id="spbg"><option value="2mass">Near-IR (2MASS)</option><option value="dss">Visible (DSS)</option><option value="wise">Mid-IR (WISE)</option><option value="none">None</option></select></label>
-      <div class="sp-legend" id="splegend"></div>
+      <div class="eyebrow">Zoom out from home</div><div class="sp-dest" id="spdest"></div>
+      <div class="sp-row2"><button class="btn sm" id="sptour">▶ Guided tour</button><button class="btn sm ghost" id="spfree" title="Free flight (F)">Free flight</button></div>
+      <form id="spsearch" class="sp-search"><input id="spq" list="spnames" placeholder="Fly to: Saturn, Sirius, Voyager 1…" autocomplete="off"><datalist id="spnames"></datalist></form>
+      <details class="sp-fold" id="splive"><summary><span class="dotlive"></span>Live from NASA</summary><div id="splivebody" class="mono">loading…</div></details>
+      <details class="sp-fold"><summary>More places</summary><div class="sp-dest" id="spdest2"></div></details>
+      <details class="sp-fold"><summary>Display</summary>
+        <div class="eyebrow">See with</div>
+        <div class="seg" id="speyes"><button data-v="ir" class="on">Infrared eyes</button><button data-v="vis">Human eyes</button></div>
+        <div class="eyebrow">Colour by</div>
+        <div class="seg" id="spcol"><button data-v="temp" class="on">Temperature</button><button data-v="cls">Kind</button><button data-v="lens">Lens</button><button data-v="sig">Certainty</button></div>
+        <div class="eyebrow">Show</div><div class="sp-chips" id="spshow"></div>
+        <label class="row"><span>Exposure</span><input type="range" id="spexp" min="-6" max="10" step="0.1" value="0"></label>
+        <label class="row chk"><input type="checkbox" id="spgrid" checked><span>Distance rings & Galactic centre</span></label>
+        <label class="row chk"><input type="checkbox" id="spfig" checked><span>Constellation figures (true 3D)</span></label>
+        <label class="row chk"><input type="checkbox" id="spunc"><span>Distance uncertainty (AI ±1σ)</span></label>
+        <label class="row"><span>Backdrop</span><select id="spbg"><option value="2mass">Near-IR (2MASS)</option><option value="dss">Visible (DSS)</option><option value="wise">Mid-IR (WISE)</option><option value="none">None</option></select></label>
+        <div class="sp-legend" id="splegend"></div>
+      </details>
+      <button id="splab" hidden></button>
     </aside>
     <div class="sp-time">
       <button class="btn sm play" id="spplay">▶</button>
@@ -541,7 +548,8 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<() 
         `${c.src[i] ? `Distance from ${SOURCES[c.src[i]]}.` : ""} ${d0 * LY < 3000 ? `The light reaching SPHEREx in 2025 left it around <b>${fmtYear(lightLeft)}</b>.` : ""}
         ${Math.abs(Math.log2(df)) > 0.25 ? ` Its 4.6 µm brightness ${df > 1 ? "rose" : "fell"} <b>${df > 1 ? df.toFixed(1) + "×" : Math.round((1 - df) * 100) + "%"}</b> between WISE (2016) and SPHEREx (2025).` : ""}`}</p>
       <div class="actions">
-        <button class="btn sm" id="spfly">Fly here</button>
+        ${!isSun && opts.onObserve ? `<button class="btn sm solid" id="spobs" title="Watch every SPHEREx exposure of this object and read it with the instruments">Observe with SPHEREx</button>` : ""}
+        <button class="btn sm${!isSun && opts.onObserve ? " ghost" : ""}" id="spfly">Fly here</button>
         ${!isSun ? `<button class="btn sm ghost" id="spback">Look back at the Sun</button>` : ""}
         ${!isSun && opts.onSky ? `<button class="btn sm ghost" id="spsky">Show on sky map</button>` : ""}
         ${c.tile[i] !== 65535 && opts.onDossier ? `<button class="btn sm ghost" id="spdos">Evidence</button>` : ""}
@@ -551,6 +559,7 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<() 
     const shp = el.querySelector("#spplanets") as HTMLElement | null; if (shp) shp.onclick = () => { const k = exo.byStar.get(i)!; flyTo(cur(i), maxA(k) * 2.6, i, 3000); };
     $("#spiclose").onclick = () => { S.sel = -1; info(-1); };
     $("#spfly").onclick = () => flyToStar(i);
+    const ob = el.querySelector("#spobs") as HTMLElement | null; if (ob) ob.onclick = () => { const [ra, dec] = radec(p0), nm = nameOf(i); opts.onObserve!({ ra, dec, name: nm && !/^(Gaia DR3|HIP) /.test(nm) ? nm : undefined }); };
     const bk = el.querySelector("#spback") as HTMLElement | null;
     if (bk) bk.onclick = () => { const p1 = cur(i); fly = null; flyTo(new THREE.Vector3(0, 0, 0), p1.length() * 1.0004, -1, 2600); setTimeout(() => { controls.target.set(0, 0, 0); camera.position.copy(p1.clone().multiplyScalar(1.0004)); }, 2650); };
     const sk = el.querySelector("#spsky") as HTMLElement | null; if (sk) sk.onclick = () => { const [ra, dec] = radec(cur(i)); opts.onSky!(ra, dec); };
@@ -615,27 +624,48 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<() 
   const named = (n: string) => { for (let i = 0; i < cat!.n; i++) if (cat!.tile[i] === 65535 && nameOf(i) === n) return i; return -1; };
   const approaches: { name: string; t: number; d: number }[] = await fetch(`${BASE}data/neighbors.json`).then((r) => r.json()).then((j) => j.approaches ?? []).catch(() => []);
   const dests: [string, () => void][] = [
+    ["Earth", () => { play(false); tweenTime(0, 600); flyToBody({ kind: "planet", k: 2 }); }],
     ["The Solar System", () => { S.sel = -1; S.body = null; info(-1); play(false); tweenTime(0, 800); flyTo(new THREE.Vector3(0, 0, 0), 45 * AU, -1, 3600); }],
-    ["Earth today (live photo)", () => { play(false); tweenTime(0, 600); flyToBody({ kind: "planet", k: 2 }); }],
+    ["The nearest stars", () => { S.sel = -1; S.body = null; info(-1); flyTo(new THREE.Vector3(0, 0, 0), 30); }],
+    ["The Milky Way", () => { S.sel = -1; info(-1); play(false); flyTo(new THREE.Vector3(8178, 0, 0), 55000, -1, 4200, new THREE.Vector3(-0.35, -0.25, 0.9).normalize()); }],
+    ["Neighbouring galaxies", () => { S.sel = -1; info(-1); flyTo(new THREE.Vector3(-150000, 380000, -190000), 2.6e6, -1, 4500); }],
+    ["The cosmic web", () => { S.sel = -1; info(-1); flyTo(new THREE.Vector3(0, 0, 0), 4.5e8, -1, 5000); }],
+    ["As far as we can see", () => { S.sel = -1; info(-1); flyTo(new THREE.Vector3(0, 0, 0), 4.2e10, -1, 5500); }],
+  ];
+  const dests2: [string, () => void][] = [
     ["The Moon", () => { play(false); tweenTime(0, 600); flyMoon(); }],
     ["Saturn and its rings", () => flyToBody({ kind: "planet", k: 5 })],
     ["Jupiter", () => flyToBody({ kind: "planet", k: 4 })],
     ["Voyager 1, edge of the Solar System", () => flyToBody({ kind: "probe", k: 0 })],
     ["The Sun's neighbourhood", () => { S.sel = -1; S.body = null; info(-1); flyTo(new THREE.Vector3(0, 0, 0), 30); }],
+    ["Jupiter", () => flyToBody({ kind: "planet", k: 4 })],
+    ["Voyager 1, edge of the Solar System", () => flyToBody({ kind: "probe", k: 0 })],
+    ["The Sun's neighbourhood", () => { S.sel = -1; S.body = null; info(-1); flyTo(new THREE.Vector3(0, 0, 0), 30); }],
+    ["Voyager 1", () => flyToBody({ kind: "probe", k: 0 })],
+    ["The Sun's neighbourhood", () => { S.sel = -1; S.body = null; info(-1); flyTo(new THREE.Vector3(0, 0, 0), 30); }],
     ["Barnard's Star", () => { const i = named("Barnard's Star"); if (i >= 0) flyToStar(i, 0.02); }],
-    ["Epsilon Indi B (methane world)", () => { const i = named("Epsilon Indi B"); if (i >= 0) flyToStar(i, 0.02); }],
+    ["Epsilon Indi B", () => { const i = named("Epsilon Indi B"); if (i >= 0) flyToStar(i, 0.02); }],
+    ["Above the Galactic disk", () => { S.sel = -1; info(-1); fly = null; flyTo(new THREE.Vector3(0, 0, 0), 2500); setTimeout(() => { if (!fly) { camera.position.set(-300, -300, 2500); } }, 2700); }],
+    ["Toward the Galactic centre", () => { S.sel = -1; info(-1); flyTo(new THREE.Vector3(1500, 0, 0), 2200); }],
     ...(approaches[0] ? [[`Closest future flyby: ${approaches[0].name}`, () => {
       const i = named(approaches[0].name); play(false); tweenTime(Math.min(T_RANGE, approaches[0].t - (NOW_Y - 2016)), 2400); flyTo(new THREE.Vector3(0, 0, 0), Math.max(2, approaches[0].d / LY * 3)); if (i >= 0) { S.sel = i; setTimeout(() => info(i), 2500); }
     }] as [string, () => void]] : []),
-    ["The Milky Way, from outside", () => { S.sel = -1; info(-1); play(false); flyTo(new THREE.Vector3(8178, 0, 0), 55000, -1, 4200, new THREE.Vector3(-0.35, -0.25, 0.9).normalize()); }],
-    ["The Local Group (Andromeda)", () => { S.sel = -1; info(-1); flyTo(new THREE.Vector3(-150000, 380000, -190000), 2.6e6, -1, 4500); }],
-    ["The cosmic web (NED galaxies)", () => { S.sel = -1; info(-1); flyTo(new THREE.Vector3(0, 0, 0), 4.5e8, -1, 5000); }],
-    ["Edge of the observable universe", () => { S.sel = -1; info(-1); flyTo(new THREE.Vector3(0, 0, 0), 4.2e10, -1, 5500); }],
-    ["Above the Galactic disk", () => { S.sel = -1; info(-1); fly = null; flyTo(new THREE.Vector3(0, 0, 0), 2500); setTimeout(() => { if (!fly) { camera.position.set(-300, -300, 2500); } }, 2700); }],
-    ["Toward the Galactic centre", () => { S.sel = -1; info(-1); flyTo(new THREE.Vector3(1500, 0, 0), 2200); }],
   ];
-  $("#spdest").innerHTML = dests.map(([n], k) => `<button class="btn sm ghost" data-k="${k}">${n}</button>`).join("");
-  host.querySelectorAll<HTMLButtonElement>("#spdest button").forEach((b) => b.onclick = () => dests[+b.dataset.k!][1]());
+  // what you are looking at, at each rung of the ladder (shown for a few seconds on arrival)
+  const RUNG_CAPS = [
+    "<b>Earth, as it is lit right now.</b> The picture on the globe is today's from NASA's EPIC camera; the Moon is where JPL's ephemeris puts it.",
+    "<b>The Solar System today.</b> Planets, spacecraft and passing asteroids at their real positions for this date (JPL Horizons).",
+    "<b>The Sun's neighbourhood.</b> Every point is a real star or brown dwarf at its measured distance, as bright as it would look from where you are. Click one to put it under the telescope.",
+    "<b>The Milky Way, from outside.</b> No spacecraft has been here: this is a model built from what we measure from within. The dot marked Sun is the whole neighbourhood you just left.",
+    "<b>Neighbouring galaxies.</b> The Local Group, at true distances and orientations. Light from Andromeda takes 2.5 million years to arrive.",
+    "<b>The cosmic web.</b> 330,000 galaxies with measured redshifts (NASA/IPAC NED), placed with a Planck cosmology: walls, filaments and voids, out to a billion light-years.",
+    "<b>As far as we can see.</b> Not the edge of the universe: the edge of sight. Light from beyond this shell has not had time to reach us, and every observer sits at the centre of a shell like it. The pattern is the cosmic microwave background (ESA Planck); the rings mark when the light set out.",
+  ];
+  let capTok = 0;
+  $("#spdest").innerHTML = dests.map(([n], k) => `<button class="rungx" data-k="${k}"><i></i>${n}</button>`).join("");
+  host.querySelectorAll<HTMLButtonElement>("#spdest button").forEach((b) => b.onclick = () => { const k = +b.dataset.k!, my = ++capTok; stopTour(); dests[k][1](); cap(RUNG_CAPS[k]); setTimeout(() => { if (my === capTok) cap(""); }, 14000); });
+  $("#spdest2").innerHTML = dests2.map(([n], k) => `<button class="btn sm ghost" data-k="${k}">${n}</button>`).join("");
+  host.querySelectorAll<HTMLButtonElement>("#spdest2 button").forEach((b) => b.onclick = () => dests2[+b.dataset.k!][1]());
 
   // ---------------------------------------------------------------- autopilot: a narrated flight using only real data
   let tourId = 0;
@@ -660,7 +690,7 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<() 
     for (const [txt, act, ms] of steps) { if (id !== tourId) return; cap(txt); act(); if (!(await wait(ms, id))) return; }
     stopTour();
   }
-  function stopTour() { tourId++; cap(""); $("#sptour").textContent = "▶ Autopilot tour"; setExp(0); }
+  function stopTour() { tourId++; cap(""); $("#sptour").textContent = "▶ Guided tour"; setExp(0); }
   function setExp(v: number) { S.exp = v; ($("#spexp") as HTMLInputElement).value = String(v); }
   $("#sptour").onclick = () => (/Stop/.test($("#sptour").textContent ?? "") ? stopTour() : tour());
 
@@ -729,7 +759,8 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<() 
   canvas.addEventListener("pointerleave", () => $("#sptip").classList.remove("on"));
   // keyboard cruise: W/S forward-back, A/D strafe, Q/E down-up; speed scales with how far you are looking
   const keys = new Set<string>();
-  const kd = (e: KeyboardEvent) => { if ((e.target as HTMLElement).tagName === "INPUT") return; const k = e.key.toLowerCase(); if ("wasdqe".includes(k) && k.length === 1) { keys.add(k); S.followFn = null; } if (e.key === "Shift") keys.add("shift"); };
+  let paused = false;
+  const kd = (e: KeyboardEvent) => { if (paused || (e.target as HTMLElement).tagName === "INPUT") return; const k = e.key.toLowerCase(); if ("wasdqe".includes(k) && k.length === 1) { keys.add(k); S.followFn = null; } if (e.key === "Shift") keys.add("shift"); };
   const ku = (e: KeyboardEvent) => { keys.delete(e.key.toLowerCase()); if (e.key === "Shift") keys.delete("shift"); };
   addEventListener("keydown", kd); addEventListener("keyup", ku);
   // search
@@ -747,7 +778,7 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<() 
     $("#sphint").textContent = `No placed object called "${q}"`;
   };
   const onKey = (e: KeyboardEvent) => {
-    if ((e.target as HTMLElement).tagName === "INPUT") return;
+    if (paused || (e.target as HTMLElement).tagName === "INPUT") return;
     if (e.code === "Space") { e.preventDefault(); play(!S.playing); }
     if (e.key === "f" || e.key === "F") setFree(!S.free);
     if (e.key === "Escape") { if (S.free) setFree(false); else close(); }
@@ -921,6 +952,8 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<() 
     ringRadii.forEach((R, k) => { ringMats[k].opacity = rf(R); });
     renderer.render(scene, camera);
     if ((frame++ & 1) === 0) labels();
+    if ((frame & 15) === 0) { const nm = uni.scaleName(Math.max(camera.position.length(), dist)), rung = nm === "Solar System" ? (dist < 2e-9 ? 0 : 1) : nm === "Around the Sun" || nm === "Stellar neighbourhood" ? 2 : nm === "Milky Way" ? 3 : nm === "Local Group" ? 4 : nm === "Cosmic web" ? 5 : 6;
+      host.querySelectorAll("#spdest .rungx").forEach((b, k) => b.classList.toggle("on", k === rung)); }
     if ((frame & 15) === 0) $("#spscale").innerHTML = `<b>${uni.scaleName(Math.max(camera.position.length(), dist))}</b> · view ≈ ${fmtSpan(2 * dist * Math.tan(camera.fov * Math.PI / 360))} across · camera ${fmtSpan(camera.position.length())} from the Sun`;
   }
   raf = requestAnimationFrame(loop);
@@ -940,7 +973,11 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<() 
     host.classList.remove("open"); host.innerHTML = "";
   }
   $("#spclose").onclick = () => { close(); (host as any).onclosed?.(); };
-  return close;
+  const handle = close as SpaceHandle;
+  handle.focus = (f: string) => { const i = /^\d+-\d+$/.test(f) ? byId(f) : named(f); if (i >= 0) { flyToStar(i, 0.03); return; }
+    const pk = PLANETS.findIndex((q) => q.name === f); if (pk >= 0) flyToBody({ kind: "planet", k: pk }); else if (f === "Sun") flyToStar(0); };
+  handle.pause = (on: boolean) => { paused = on; cancelAnimationFrame(raf); keys.clear(); if (!on) { last = performance.now(); resize(); raf = requestAnimationFrame(loop); } };
+  return handle;
 }
 
 // Before the census 3D catalogue exists: the Gaia neighbours alone (same record semantics)

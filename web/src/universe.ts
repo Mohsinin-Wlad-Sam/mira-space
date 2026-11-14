@@ -110,9 +110,22 @@ function irregular(n: number, center: THREE.Vector3, rkpc: number) {
 }
 
 export type UniLabel = { txt: string; p: THREE.Vector3; min: number; max: number };
+
+// ---- distances on the largest scales: flat ΛCDM with the Planck 2018 parameters (H0 = 67.66 km/s/Mpc, Ωm = 0.3097)
+const H0 = 67.66, OM = 0.30966, OR = 9.1e-5, OL = 1 - OM - OR, DH_PC = (299792.458 / H0) * 1e6, TH_GYR = 977.79 / H0;
+const Ez = (z: number) => Math.sqrt(OR * Math.pow(1 + z, 4) + OM * Math.pow(1 + z, 3) + OL);
+/** comoving distance (pc) and look-back time (Gyr) to redshift z, by Simpson integration */
+export function cosmo(z: number): { dc: number; lookback: number } {
+  const n = 400, h = z / n; let a = 0, b = 0;
+  for (let k = 0; k <= n; k++) { const x = k * h, w = k === 0 || k === n ? 1 : k % 2 ? 4 : 2; a += w / Ez(x); b += w / ((1 + x) * Ez(x)); }
+  return { dc: (DH_PC * a * h) / 3, lookback: (TH_GYR * b * h) / 3 };
+}
+/** redshift at which light left `gyr` billion years ago */
+function zAtLookback(gyr: number): number { let lo = 0, hi = 1100; for (let k = 0; k < 50; k++) { const mid = (lo + hi) / 2; if (cosmo(mid).lookback < gyr) lo = mid; else hi = mid; } return (lo + hi) / 2; }
 export class Universe {
   group = new THREE.Group(); mw: THREE.Points[] = []; local: THREE.Points[] = []; web: THREE.Points | null = null; qso: THREE.Points | null = null;
   cmb: THREE.Mesh | null = null; cmbR = 1.39e10; labels: UniLabel[] = []; counts = { galaxies: 0, quasars: 0 };
+  shells: THREE.LineLoop[] = [];
   constructor(scene: THREE.Scene, low: boolean) {
     scene.add(this.group);
     const s = low ? 0.35 : 1;
@@ -127,6 +140,16 @@ export class Universe {
       { txt: "Perseus Arm", p: new THREE.Vector3(-1800, 0, 0), min: 2500, max: 40000 }, { txt: "Sagittarius Arm", p: new THREE.Vector3(1500, -800, 0), min: 2500, max: 40000 },
       { txt: "Scutum–Centaurus Arm", p: new THREE.Vector3(3300, 2200, 0), min: 3000, max: 50000 }, { txt: "Sun · inside the bubble this census measured", p: new THREE.Vector3(0, 0, 0), min: 2000, max: 3e5 });
     for (const [n, ra, dec, mpc] of CLUSTERS) this.labels.push({ txt: n, p: galXYZ(ra, dec, mpc * 1e6), min: mpc * 1e6 * 0.05, max: mpc * 1e6 * 25 });
+    // look-back shells: where the light we receive today set out 5, 10 and 13 billion years ago. They make the largest
+    // scale read as what it is — a volume centred on the observer, layered in time — rather than as a solid ball.
+    for (const gyr of [5, 10, 13]) {
+      const z = zAtLookback(gyr), r = cosmo(z).dc, pts: THREE.Vector3[] = [];
+      for (let k = 0; k < 256; k++) { const a = (k / 256) * 2 * Math.PI; pts.push(new THREE.Vector3(r * Math.cos(a), r * Math.sin(a), 0)); }
+      for (const tilt of [0, Math.PI / 2]) { const loop = new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: 0xf0f0fa, transparent: true, opacity: 0, depthTest: false, depthWrite: false }));
+        loop.rotation.x = tilt; loop.visible = false; loop.renderOrder = -8; this.shells.push(loop); this.group.add(loop); }
+      this.labels.push({ txt: `light left ${gyr} billion years ago · redshift ${z.toFixed(z < 3 ? 1 : 0)}`, p: new THREE.Vector3(r * Math.SQRT1_2, r * Math.SQRT1_2, 0), min: 2.5e9, max: 1e12 });
+    }
+    this.labels.push({ txt: "You are here · every galaxy mapped in 3D so far fits inside this dot", p: new THREE.Vector3(0, 0, 0), min: 5e9, max: 1e12 });
   }
   async load() {
     const meta = await fetch(`${BASE}data/universe/meta.json`).then((r) => (r.ok && !(r.headers.get("content-type") ?? "").includes("html") ? r.json() : null)).catch(() => null);
@@ -148,7 +171,7 @@ export class Universe {
       this.cmb = new THREE.Mesh(new THREE.SphereGeometry(this.cmbR, 96, 48), new THREE.ShaderMaterial({ vertexShader: CMB_VERT, fragmentShader: CMB_FRAG, side: THREE.BackSide,
         depthTest: false, depthWrite: false, uniforms: { uTex: { value: t }, uA: { value: 0 } } }));
       this.cmb.renderOrder = -9; this.group.add(this.cmb);
-      this.labels.push({ txt: "Cosmic microwave background · the edge of the observable universe", p: new THREE.Vector3(0, 0, this.cmbR), min: 2e9, max: 1e12 });
+      this.labels.push({ txt: "Cosmic microwave background · the oldest light there is, 13.8 billion years on its way · the limit of sight, not an edge of space", p: new THREE.Vector3(0, 0, this.cmbR), min: 2e9, max: 1e12 });
     }
   }
   /** fade each layer in at its own scale; camD = camera distance from the Sun, view = distance to the target */
@@ -159,9 +182,10 @@ export class Universe {
     this.mw.forEach((m) => { (m.material as THREE.ShaderMaterial).uniforms.uA.value = aMW * 0.32; (m.material as THREE.ShaderMaterial).uniforms.uPx.value = pxPerRad; m.visible = aMW > 0.001; });
     const aL = ramp(s, 8000, 60000) * (1 - ramp(s, 2e8, 2e9));
     this.local.forEach((m) => { (m.material as THREE.ShaderMaterial).uniforms.uA.value = aL * 0.7; (m.material as THREE.ShaderMaterial).uniforms.uPx.value = pxPerRad; m.visible = aL > 0.001; });
-    if (this.web) { const a = ramp(s, 1.5e6, 1.5e7) * (1 - ramp(s, 3e9, 2e10)); const mm = this.web.material as THREE.ShaderMaterial; mm.uniforms.uA.value = a * 0.8; mm.uniforms.uPx.value = pxPerRad; this.web.visible = a > 0.001; }
+    { const a = ramp(s, 1.2e9, 8e9); this.shells.forEach((m) => { (m.material as THREE.LineBasicMaterial).opacity = 0.3 * a; m.visible = a > 0.01; }); }
+    if (this.web) { const a = ramp(s, 1.5e6, 1.5e7) * (1 - 0.45 * ramp(s, 3e9, 2e10)); const mm = this.web.material as THREE.ShaderMaterial; mm.uniforms.uA.value = a * 0.8; mm.uniforms.uPx.value = pxPerRad; this.web.visible = a > 0.001; }
     if (this.qso) { const a = ramp(s, 2e8, 2e9); const mm = this.qso.material as THREE.ShaderMaterial; mm.uniforms.uA.value = a * 0.8; mm.uniforms.uPx.value = pxPerRad; this.qso.visible = a > 0.001; }
-    if (this.cmb) { const a = ramp(s, 2e9, 2.5e10); (this.cmb.material as THREE.ShaderMaterial).uniforms.uA.value = a * 0.9; this.cmb.visible = a > 0.001; }
+    if (this.cmb) { const a = ramp(s, 2e9, 2.5e10); (this.cmb.material as THREE.ShaderMaterial).uniforms.uA.value = a * 0.62; this.cmb.visible = a > 0.001; }
   }
   scaleName(s: number) {
     return s < 2e-4 ? "Solar System" : s < 2 ? "Around the Sun" : s < 1500 ? "Stellar neighbourhood" : s < 6e4 ? "Milky Way" : s < 5e6 ? "Local Group" : s < 2e9 ? "Cosmic web" : "Observable universe";

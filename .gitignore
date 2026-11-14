@@ -8,3 +8,9 @@ bundles/cache/
 web/public/data/
 web/node_modules/
 web/dist/
+
+# local secrets (API keys for the assistant proxy) never go in the repo
+.env*
+web/.env*
+deploy/.env*
+*.local

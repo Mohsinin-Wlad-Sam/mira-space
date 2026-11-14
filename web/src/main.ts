@@ -3,8 +3,9 @@ import { load, fmt, sexa, key, loadDetail, BASE, type Summary, type Target, type
 import { drawSpectrum } from "./spectrum";
 import { spectrumStory, lightStory } from "./explain";
 import { mountBlink, type BlinkTarget } from "./blink/view";
-import { parseCoords, resolveName } from "./blink/catalogs";
-import { setBase, indexMeta } from "./blink/engine";
+import { parseCoords, resolveName, CHALLENGE } from "./blink/catalogs";
+import type { SpaceHandle } from "./space";
+import { setBase } from "./blink/engine";
 import { mountLightCurve } from "./lightcurve";
 import { mountTwins, sparkline } from "./twins";
 import { SkyLayer, REF_YEAR, WISE_EPOCH, type Row } from "./sky";
@@ -50,34 +51,32 @@ ui.innerHTML = `
 <header class="top">
   <a class="logo" href="/" aria-label="Mira home">
     <img src="/brand/mira-mark.png" width="59" height="32" alt="">
-    <span>MIRA</span></a>
-  <nav class="mainnav" aria-label="Sections">
-    <button data-view="blink" title="Any position -> a movie of every SPHEREx pass">Blink</button>
-    <button data-view="atlas" title="The whole infrared sky, 2010 against 2025, with the census of what changed">Sky atlas</button>
-    <button data-view="space" title="Fly through the census in 3D">3D space</button>
-    <button data-view="lab" title="Test ideas on the census">Lab</button>
-    <button data-view="about">About</button>
+    <span>MIRA<small>Digital research observatory</small></span></a>
+  <nav class="mainnav" aria-label="The observatory">
+    <button data-view="universe" title="The universe in 3D, from Earth to the oldest light, and the map of the whole sky">Universe</button>
+    <button data-view="blink" title="Point the telescope: every SPHEREx exposure of a place, read by three instruments">Observe</button>
+    <button data-view="lab" title="Use the instruments yourself">Lab</button>
+    <button data-view="log" title="Your observations, lists and notes">Logbook</button>
   </nav>
-  <form class="search" id="search"><input id="q" placeholder="Find on the map: a name, or RA Dec" autocomplete="off" enterkeyhint="search"></form>
-  <div class="atlasnav">
-    <button class="btn ghost sm" id="tourbtn">Tour</button>
-    <button class="btn ghost sm" id="viewbtn">Display</button>
-  </div>
-  <div class="live" id="livebox" title="Latest SPHEREx exposure in MIRA's index; the index is rebuilt from NASA/IPAC IRSA's inventory after each data release"><span class="dotlive"></span><b id="livecount">SPHEREx data</b></div>
+  <form class="search" id="search" role="search"><input id="q" placeholder="Point the telescope: a name or coordinates" autocomplete="off" enterkeyhint="search" aria-label="Point the telescope: a name or coordinates"></form>
+  <button class="btn ghost sm" id="aboutbtn">How it works</button>
 </header>
 
+<div class="unimode seg" id="unimode" role="tablist" aria-label="Two ways to look at the universe"><button data-m="3d" title="Fly through space: every object at its measured distance">In 3D</button><button data-m="map" title="The whole sky as seen from Earth, 2010 against 2025">Sky map</button></div>
 <section class="blinkpage" id="blinkpage"></section>
+<section class="logpage" id="logpage"></section>
 
 <aside class="lenses" id="lenses">
-  <div class="eyebrow lens-head">Census · 16 years of change</div>
+  <div class="eyebrow lens-head">The survey · what changed since 2010</div>
   ${(Object.keys(LENSES) as LensKey[]).map((k) => `<button class="lens" data-k="${k}" style="--c:${LENSES[k].c}"><span class="sw"></span>
     <span class="t">${LENSES[k].t}</span><span class="n" id="n-${k}">–</span><span class="d">${LENSES[k].d}</span></button>`).join("")}
-  <div class="eyebrow lens-head" style="margin-top:14px">Live</div>
-  <div class="livebtns"><button class="lens livet on" id="livess" style="--c:#ffd27a"><span class="sw"></span><span class="t">Solar System now</span><span class="n">live</span>
+  <details class="lensmore"><summary>Live sky</summary>
+  <div class="livebtns"><button class="lens livet" id="livess" style="--c:#ffd27a"><span class="sw"></span><span class="t">Solar System now</span><span class="n">live</span>
     <span class="d">Planets, Moon, Sun, spacecraft and passing asteroids where they are on the timeline's date.</span></button>
     <button class="lens livet" id="livesky" style="--c:#5be3a6"><span class="sw"></span><span class="t">My sky now</span><span class="n">⌖</span>
-    <span class="d">Your horizon and what is overhead where you are, right now.</span></button></div>
+    <span class="d">Your horizon and what is overhead where you are, right now.</span></button></div></details>
   <div class="lodstat mono" id="lodstat"></div>
+  <div class="lensfoot"><button class="link" id="tourbtn">Guided tour</button><button class="link" id="viewbtn">Display</button></div>
 </aside>
 
 <nav class="ladder" id="ladder" aria-label="See the sky in different light">
@@ -136,7 +135,8 @@ async function initSky() {
   nudge();
   let touched = false; const mark = () => { touched = true; };
   ["pointerdown", "wheel", "keydown"].forEach((ev) => addEventListener(ev, mark, { once: true, capture: true }));
-  if (!p.get("fov")) setTimeout(() => { if (touched) return; try { S.al.zoomToFoV(150, 3.0, () => nudge()); } catch { S.al.setFoV(150); } nudge([3500, 5000, 7000]); }, 3500);
+  const wide = set.projection === "AIT" || set.projection === "MOL" ? 360 : 150;       // all-sky projections show the entire sky
+  if (!p.get("fov")) setTimeout(() => { if (touched) return; try { S.al.zoomToFoV(wide, 3.0, () => nudge()); } catch { S.al.setFoV(wide); } nudge([3500, 5000, 7000]); }, 3500);
   applyGrid();
   const host = $("#sky");
   S.sky = new SkyLayer(S.al, host, { colors: Object.fromEntries(Object.entries(LENSES).map(([k, v]) => [k, v.c])), size: set.markerSize, trails: set.trails,
@@ -188,7 +188,7 @@ const RGB = [{ name: "blue", um: 1.2 }, { name: "green", um: 3.3 }, { name: "red
 function rgbLayers(): any[] { return [S.al?.getBaseImageLayer?.(), S.al?.getOverlayImageLayer?.("sxg"), S.al?.getOverlayImageLayer?.("sxr")]; }
 function styleLayers() {
   if (SURVEYS[set.survey].rgb) {
-    rgbLayers().forEach((l, i) => { try { l?.setSliceNumber?.(nearestChan(RGB[i].um)); l?.setColormap?.(RGB[i].name, { stretch: "asinh" }); l?.setGamma?.(set.gamma); l?.setContrast?.(set.contrast); l?.setBrightness?.(set.brightness); if (i) l?.setBlendingConfig?.(true); } catch { /* not ready */ } });
+    rgbLayers().forEach((l, i) => { try { setCubeFrame(l, nearestChan(RGB[i].um)); l?.setColormap?.(RGB[i].name, { stretch: "asinh" }); l?.setGamma?.(set.gamma); l?.setContrast?.(set.contrast); l?.setBrightness?.(set.brightness); if (i) l?.setBlendingConfig?.(true); } catch { /* not ready */ } });
     try { S.overlay?.setColormap?.(set.colormap === "native" ? "magma" : set.colormap, { stretch: set.stretch }); } catch { /* */ }
     return;
   }
@@ -207,8 +207,10 @@ function applyGrid() {
 function applySurvey() {
   const sv = SURVEYS[set.survey];
   for (const n of ["sxg", "sxr"]) try { if (S.al.getOverlayImageLayer?.(n)) S.al.removeImageLayer(n); } catch { /* */ }
-  try { S.al.setBaseImageLayer(A.imageHiPS(sv.url, { name: set.survey })); } catch { try { S.al.setImageSurvey(sv.url); } catch { /* */ } }
-  if (sv.rgb) RGB.slice(1).forEach((c, i) => { const n = ["sxg", "sxr"][i]; try { const l = A.imageHiPS(sv.url + "/".repeat(i + 1), { name: n, additive: true, colormap: c.name, stretch: "asinh" }); S.al.setOverlayImageLayer(l, n); } catch { /* */ } });
+  // choose the frame the moment the cube is added: Aladin's own default is one of the two blank (dichroic) frames
+  const first = (k: () => number) => (sv.cube ? { successCallback: (h: any) => { try { setCubeFrame(h, k()); } catch { /* */ } } } : {});
+  try { S.al.setBaseImageLayer(A.imageHiPS(sv.url, { name: set.survey, ...first(() => (sv.rgb ? nearestChan(RGB[0].um) : S.chan)) })); } catch { try { S.al.setImageSurvey(sv.url); } catch { /* */ } }
+  if (sv.rgb) RGB.slice(1).forEach((c, i) => { const n = ["sxg", "sxr"][i]; try { const l = A.imageHiPS(sv.url + "/".repeat(i + 1), { name: n, additive: true, colormap: c.name, stretch: "asinh", ...first(() => nearestChan(c.um)) }); S.al.setOverlayImageLayer(l, n); } catch { /* */ } });
   $("#rainbow").style.display = sv.cube && !sv.rgb ? "" : "none";
   document.querySelectorAll<HTMLElement>(".rung").forEach((b) => b.classList.toggle("on", b.dataset.s === set.survey));
   [400, 1500, 3000, 5000].forEach((ms) => setTimeout(() => { if (sv.cube && !sv.rgb) setChan(S.chan); styleLayers(); }, ms)); nudge([600, 2000, 4000]);
@@ -257,7 +259,7 @@ async function openHit(lens: LensKey, row: Row) {
 }
 
 // ============================================================================ live Solar System + my sky (lazy: pulls three.js math only when used)
-let liveOn = true, liveT = 0, liveYear = NaN, myPos: { lat: number; lon: number } | null = null, liveMod: typeof import("./skylive") | null = null;
+let liveOn = false, liveT = 0, liveYear = NaN, myPos: { lat: number; lon: number } | null = null, liveMod: typeof import("./skylive") | null = null;
 async function refreshLive(force = false) {
   if (!S.sky) return;
   if (!liveOn) { S.sky.setLive([]); return; }
@@ -289,7 +291,7 @@ function openLive(it: { name: string; kind: string; note: string; ra: number; de
     <div class="actions">${it.kind !== "moon" ? `<button class="btn sm" id="l3d">Fly to it in 3D</button>` : ""}<button class="btn sm ghost" id="lzoom">Zoom here</button></div>
     <div class="nasaimg" id="limg"></div>`;
   openPanel();
-  document.getElementById("l3d")?.addEventListener("click", () => openSpaceView(it.name));
+  document.getElementById("l3d")?.addEventListener("click", () => showUniverse("3d", it.name));
   $("#lzoom").onclick = () => flyTo(it.ra, it.dec, it.kind === "rock" || it.kind === "craft" ? 1 : 8);
   import("./live").then((m) => m.nasaImages(it.kind === "planet" || it.kind === "moon" ? `${it.name} ${it.kind === "moon" ? "lunar" : "planet"}` : it.name, 3)).then((L) => {
     const el = document.getElementById("limg"); if (el && L.length) el.innerHTML = `<div class="eyebrow">From NASA's image library</div><div class="thumbs">${L.map((x) => `<a href="${x.href}" target="_blank" rel="noopener"><img src="${x.thumb}" alt="" loading="lazy"></a>`).join("")}</div>`; });
@@ -297,15 +299,27 @@ function openLive(it: { name: string; kind: string; note: string; ra: number; de
 
 // ============================================================================ wavelength
 const OVERVIEW_CH = () => nearestChan(OVERVIEW_UM);
+// Aladin Lite 3.8 picks a cube tile from a frequency, assuming frames evenly spaced in frequency; IRSA's SPHEREx cube
+// is 102 frames in ascending wavelength. Its own setSliceNumber therefore loads another frame than the one asked for,
+// so ask for the frequency whose bin is exactly frame k (checked against the tile requests for all frames).
+function setCubeFrame(l: any, k: number) {
+  if (!l) return;
+  const lo = +l.emMin, hi = +l.emMax, n = +l.cubeDepth;
+  if (typeof l.setFrequency === "function" && lo > 0 && hi > lo && n > 1) {
+    const C = 299792458, f0 = C / hi, f1 = C / lo;
+    l.slice = k; l.setFrequency({ value: f0 + ((k + 0.5) / n) * (f1 - f0), unit: "Hz" });
+  } else l.setSliceNumber?.(k);
+}
 function nearestChan(um: number) { let b = 0; S.lam.forEach((l, i) => { if (!BLANK.has(i) && Math.abs(l - um) < Math.abs(S.lam[b] - um)) b = i; }); return b; }
 function setChan(c: number) {
   setTimeout(() => nudge([400, 1500, 3000]), 0);
   if (BLANK.has(c)) c = c === 50 ? 49 : 52;
+  if (c === 0 && SURVEYS[set.survey].cube) c = 1;   // Aladin Lite 3.8 asks for "Npix_0.png"; the HiPS standard names frame 0 without a suffix
   S.chan = c;
   const um = S.lam[c] ?? 0;
   $("#chanlbl").textContent = um ? `${um.toFixed(3)} µm · channel ${c + 1}/102` : "";
   $("#knob").style.left = `${((um - 0.75) / (5.0 - 0.75)) * 100}%`;
-  if (SURVEYS[set.survey].cube && !SURVEYS[set.survey].rgb) try { S.al?.getBaseImageLayer?.()?.setSliceNumber?.(c); } catch { /* not ready */ }
+  if (SURVEYS[set.survey].cube && !SURVEYS[set.survey].rgb) try { setCubeFrame(S.al?.getBaseImageLayer?.(), c); } catch { /* not ready */ }
 }
 function wireRainbow() {
   const bar = $("#bar");
@@ -526,7 +540,7 @@ function openObject(o: Obj, lens?: string, title?: string) {
     else if (o.spec && S.lam.length) drawSpectrum(el, S.lam, o.spec);
   });
   const fid = (title && FLIP_IDS[title]) || key(o);
-  $("#pblinkit").onclick = () => openBlink({ ra: o.ra_sx, dec: o.dec_sx, pmra: o.reliable_motion ? o.pmra ?? 0 : 0, pmdec: o.reliable_motion ? o.pmdec ?? 0 : 0, epoch: REF_YEAR,
+  $("#pblinkit").onclick = () => observe({ ra: o.ra_sx, dec: o.dec_sx, pmra: o.reliable_motion ? o.pmra ?? 0 : 0, pmdec: o.reliable_motion ? o.pmdec ?? 0 : 0, epoch: REF_YEAR,
     name: title && !/candidate|object|source|world/i.test(title) ? title : undefined, source: "MIRA census, WISE 2010–2020", otype: lens ? LENSES[lens as LensKey]?.t.toLowerCase() + " · census object" : "census object" });
   const lcSimple = (): Promise<boolean> => lightStory($("#lc"), fid, o.sx_saturated, () => mountLightCurve($("#lc"), fid, o.sx_saturated, () => { lcSimple(); }));
   lcSimple().then((ok) => { if (!ok) mountLightCurve($("#lc"), fid, o.sx_saturated); });
@@ -537,7 +551,7 @@ function openObject(o: Obj, lens?: string, title?: string) {
     const span = Math.max(0.05, Math.min(30, (o.pm ?? 1) * 16 / 3600 * 3));
     flyTo(o.ra_sx, o.dec_sx, span); setBlink(false); setYear(WISE_EPOCH); ($("#tspeed") as HTMLSelectElement).value = "2"; S.speed = 2; setTimeout(() => { S.loop = false; S.playing = true; $("#tplay").textContent = "❚❚"; $("#tplay").classList.add("on"); lastT = performance.now(); requestAnimationFrame(tick); }, 2600);
   };
-  const ph = document.getElementById("phood"); if (ph) ph.onclick = () => openSpaceView(hood || key(o));
+  const ph = document.getElementById("phood"); if (ph) ph.onclick = () => showUniverse("3d", hood || key(o));
   $("#pshare").onclick = () => { const u = `${location.origin}${location.pathname}#ra=${o.ra_sx.toFixed(5)}&dec=${o.dec_sx.toFixed(5)}&fov=0.1&k=${key(o)}`; navigator.clipboard?.writeText(u); toast("Link copied"); };
 }
 function openUnusual(u: any) {
@@ -555,7 +569,7 @@ function openUnusual(u: any) {
       <a class="btn sm ghost" target="_blank" rel="noopener" href="https://simbad.cds.unistra.fr/simbad/sim-coo?Coord=${u.ra_sx}+${u.dec_sx}&Radius=15&Radius.unit=arcsec">SIMBAD</a></div>`;
   openPanel();
   $("#ublink").onclick = () => { flyTo(u.ra_sx, u.dec_sx, 0.4); setBlink(true); };
-  $("#ublinkit").onclick = () => openBlink({ ra: u.ra_sx, dec: u.dec_sx, otype: "unusual spectrum · census object" });
+  $("#ublinkit").onclick = () => observe({ ra: u.ra_sx, dec: u.dec_sx, otype: "unusual spectrum · census object" });
 }
 /** "Inspect this spot" on the map: a small card that hands the position to BLINK (the SPHEREx movie + measurements) */
 function openPosition(ra: number, dec: number, known?: BlinkTarget) {
@@ -572,7 +586,7 @@ function openPosition(ra: number, dec: number, known?: BlinkTarget) {
       <a class="btn sm ghost" target="_blank" rel="noopener" href="https://simbad.cfa.harvard.edu/simbad/sim-coo?Coord=${ra}+${dec}&Radius=30&Radius.unit=arcsec">SIMBAD</a></div>
     <p class="note" style="margin-top:18px">Tip: right-click (or long-press) anywhere on the map to inspect that spot.</p>`;
   openPanel();
-  $("#posblink").onclick = () => openBlink(known ?? { ra, dec });
+  $("#posblink").onclick = () => observe(known ?? { ra, dec });
 }
 function flyTo(ra: number, dec: number, fov: number) {
   if (!S.al) return;
@@ -580,33 +594,83 @@ function flyTo(ra: number, dec: number, fov: number) {
   nudge([2500, 4200, 6000]);
 }
 
-// ============================================================================ Lab (standalone page, lazy-loaded)
-async function openLabPage(start?: string) {
-  shutSpace(); setBlink(false); play(false); endTour(); closePanel(); blink.pause();
-  $("#about").classList.remove("open"); document.body.classList.remove("about-on");
-  const { openLab } = await import("./labapp");
-  document.body.classList.add("lab-on");
-  const mark = (v: string) => document.querySelectorAll<HTMLElement>(".mainnav button").forEach((x) => x.classList.toggle("on", x.dataset.view === v));
-  mark("lab");
-  const closeLab = () => { document.body.classList.remove("lab-on"); mark(view); if (view === "blink") blink.resume(); };
-  await openLab($("#labpage"), closeLab, { onBlink: (t) => { $("#labpage").classList.remove("open"); $("#labpage").innerHTML = ""; closeLab(); openBlink(t); } }, start);
-}
+// ============================================================================ the observatory's sections
+// One page, four sections that share the header and a current target:
+//   Universe  the 3D map (home) and the flat sky map      Observe  the telescope + instruments (blink/)
+//   Lab       the instruments, hands-on (lab.ts)           Logbook  the visitor's own observations (logbook.ts)
+type View = "universe" | "blink" | "lab" | "log";
+type UniMode = "3d" | "map";
+const query = new URLSearchParams(location.search), EMBED = query.has("embed");
+let view: View = "universe", uniMode: UniMode = "3d", atlasP: Promise<void> | null = null, spaceP: Promise<SpaceHandle | null> | null = null, space: SpaceHandle | null = null, labStop: (() => void) | null = null;
+setBase(import.meta.env.BASE_URL);
+document.body.classList.toggle("embed", EMBED);
+const blink = mountBlink($("#blinkpage"), { embed: EMBED, toast,
+  onState: (p) => { if (EMBED) p.set("embed", "1"); history.replaceState(null, "", `${location.pathname}?${p.toString()}`); },
+  onAtlas: async (ra, dec) => { await showUniverse("map"); flyTo(ra, dec, 0.3); },
+  onSave: EMBED ? undefined : (snap) => { import("./logbook").then((m) => { m.saveSnapshot(snap); toast("Saved to your logbook"); }); } });
+const markNav = (v: string = view) => document.querySelectorAll<HTMLElement>(".mainnav button").forEach((b) => b.classList.toggle("on", b.dataset.view === v));
 
-// ============================================================================ 3D space (lazy-loaded)
-let closeSpace: (() => void) | null = null;
-/** leave the full-screen 3D view (if it is open) before showing another section */
-function shutSpace() { if (!document.body.classList.contains("space-on")) return; try { closeSpace?.(); } catch { /* already closed */ } closeSpace = null; document.body.classList.remove("space-on"); $("#space").classList.remove("open"); }
-async function openSpaceView(focus?: string, withLab = false) {
-  if (withLab) { openLabPage(); return; }
-  setBlink(false); play(false); endTour(); closePanel();
-  const { openSpace } = await import("./space");
-  document.body.classList.add("space-on");
-  const host = $("#space");
-  const done = () => { closeSpace?.(); closeSpace = null; document.body.classList.remove("space-on"); nudge([300, 1200]); };
-  (host as any).onclosed = () => { closeSpace = null; document.body.classList.remove("space-on"); nudge([300, 1200]); };
-  closeSpace = await openSpace(host, { lowPower: set.saver || LOW_POWER, focus, onLab: () => { done(); openLabPage(); },
-    onSky: async (ra, dec) => { done(); await showAtlas(); flyTo(ra, dec, 0.5); },
-    onDossier: async (id) => { done(); await showAtlas(); const o = await loadDetail(id); if (o) { flyTo(o.ra_sx, o.dec_sx, 0.3); openObject(o); } else toast("Details for this object are not exported"); } });
+/** point the telescope at a name, at coordinates, or at a ready-made target (`fallback` is used if a name cannot be resolved) */
+function observe(t: BlinkTarget | string, fallback?: BlinkTarget) { setView("blink"); if (typeof t === "string") blink.go(t, undefined, fallback); else blink.open(t); }
+
+async function setView(v: View, arg?: string) {
+  closeAbout();
+  if (v !== "universe" || uniMode !== "map") { setBlink(false); play(false); endTour(); closePanel(); $("#drawer").classList.remove("open"); }
+  if (v !== "universe") space?.pause(true);
+  if (v !== "blink") blink.pause();
+  if (v !== "lab" && labStop) { labStop(); labStop = null; }
+  view = v;
+  for (const k of ["universe", "blink", "lab", "log"]) document.body.classList.toggle(`v-${k}`, k === v);
+  document.body.classList.toggle("m-3d", v === "universe" && uniMode === "3d"); document.body.classList.toggle("m-map", v === "universe" && uniMode === "map");
+  document.body.classList.toggle("space-on", v === "universe" && uniMode === "3d");
+  $("#blinkpage").classList.toggle("open", v === "blink"); $("#labpage").classList.toggle("open", v === "lab"); $("#logpage").classList.toggle("open", v === "log");
+  document.querySelectorAll<HTMLElement>("#unimode button").forEach((b) => b.classList.toggle("on", b.dataset.m === uniMode));
+  markNav();
+  if (v === "universe") {
+    if (uniMode === "3d") { const sp = await ensureSpace(); if (sp && view === "universe" && uniMode === "3d") { sp.pause(false); if (arg) sp.focus(arg); } }
+    else { space?.pause(true); await ensureAtlas(); nudge([100, 700, 1800]); }
+  } else if (v === "blink") blink.resume();
+  else if (v === "lab") { const { mountLab } = await import("./lab"); if (view === "lab") { labStop?.(); labStop = mountLab($("#labpage"), { onObserve: observe, toast }, arg); } }
+  else { const m = await import("./logbook"); if (view === "log") m.mountLogbook($("#logpage"), { onObserve: observe, toast }); }
+}
+/** the Universe section: `mode` "3d" (fly through space) or "map" (the whole sky from Earth); `focus` = an object to fly to in 3D */
+async function showUniverse(mode: UniMode = uniMode, focus?: string) { uniMode = mode; await setView("universe", focus); }
+async function loadBasics() {
+  if (S.summary) return;
+  S.summary = await load<Summary>("summary", true); S.lam = S.summary?.lam_um ?? []; S.targets = (await load<Target[]>("targets", true)) ?? [];
+}
+function ensureAtlas() { return (atlasP ??= bootAtlas()); }
+/** the 3D universe starts once and is then only paused and resumed, so the camera and the selection survive a visit to another section */
+function ensureSpace(): Promise<SpaceHandle | null> {
+  return (spaceP ??= (async () => {
+    const host = $("#space");
+    try {
+      const { openSpace } = await import("./space");
+      space = await openSpace(host, { lowPower: set.saver || LOW_POWER,
+        onObserve: (t) => { const pos = `${t.ra.toFixed(5)} ${t.dec >= 0 ? "+" : ""}${t.dec.toFixed(5)}`; if (t.name) observe(t.name, { ra: t.ra, dec: t.dec, name: t.name, epoch: REF_YEAR }); else observe(pos); },
+        onSky: async (ra, dec) => { await showUniverse("map"); flyTo(ra, dec, 0.5); },
+        onDossier: async (id) => { await showUniverse("map"); const o = await loadDetail(id); if (o) { flyTo(o.ra_sx, o.dec_sx, 0.3); openObject(o); } else toast("Details for this object are not exported"); } });
+    } catch (e) { console.warn("3D universe unavailable", e); space = null; }
+    mountHero(host, !space);
+    return space;
+  })());
+}
+/** the first thing a visitor reads: what this place is, and the one thing to do */
+function mountHero(host: HTMLElement, noGl: boolean) {
+  if (host.querySelector("#unihero")) return;
+  host.classList.add("open");
+  host.insertAdjacentHTML("beforeend", `<div class="uni-hero${noGl ? " nogl" : ""}" id="unihero">
+    <button class="icon-btn" id="uniherox" aria-label="Hide this introduction">✕</button>
+    <div class="eyebrow">MIRA · a digital research observatory</div>
+    <h1 class="display">The universe, to scale.</h1>
+    <p>Every point here is a real object at its measured distance: the planets today, 350,000 stars and brown dwarfs, 330,000 galaxies, out to the oldest light we can see. Choose one, or any spot in the sky, and put it under NASA's SPHEREx telescope.</p>
+    <form class="bk-go" id="unigo"><input placeholder="A star's name, or coordinates (RA Dec)" autocomplete="off" spellcheck="false" enterkeyhint="go" aria-label="Point the telescope: a name or coordinates"><button class="btn" type="submit">Observe</button></form>
+    <div class="bk-try"><span>or start with one of NASA's five test targets</span><div>${CHALLENGE.map((t) => `<button class="chip" data-key="${t.key}" title="${esc(t.blurb)}">${esc(t.name)}</button>`).join("")}</div></div>
+    ${noGl ? `<p class="note">The 3D view needs WebGL, which this browser does not provide. Observe, the Sky map, the Lab and the Logbook all work without it.</p>` : ""}</div>`);
+  const hero = host.querySelector("#unihero") as HTMLElement;
+  (hero.querySelector("#unigo") as HTMLFormElement).onsubmit = (e) => { e.preventDefault(); const q = (hero.querySelector("input") as HTMLInputElement).value.trim(); if (q) observe(q); };
+  hero.querySelectorAll<HTMLButtonElement>(".chip").forEach((b) => (b.onclick = () => observe(b.dataset.key!)));
+  (hero.querySelector("#uniherox") as HTMLElement).onclick = () => hero.classList.add("gone");
 }
 
 // ============================================================================ tour
@@ -648,8 +712,8 @@ function renderStep(i: number) {
 function endTour() { $("#tour").style.display = "none"; S.tourStep = -1; document.body.classList.remove("touring"); }
 
 // ============================================================================ about
+function closeAbout() { if (!$("#about").classList.contains("open")) return; $("#about").classList.remove("open"); document.body.classList.remove("about-on"); $("#aboutbtn").classList.remove("on"); }
 async function renderAbout() {
-  shutSpace();
   await loadBasics();
   const check: [string, string][] = [
     ["Enter RA and Dec, get a series of images “like a little video”", "<b>Blink</b> takes coordinates in any common notation, or a name. Every exposure is re-projected north-up onto the same patch of sky, so the frames can be played, scrubbed and compared."],
@@ -713,9 +777,7 @@ async function renderAbout() {
     <p class="note" style="margin-top:28px">Data: NASA SPHEREx Level-2 images and all-sky maps (NASA/IPAC IRSA, doi:10.26131/IRSA629, IRSA679) · unWISE time-domain catalogue (doi:10.26131/IRSA580) · NASA WISE/NEOWISE · ESA Gaia DR3 · 2MASS · SIMBAD and VizieR (CDS) · Aladin Lite.
     Built for the NASA Space Apps Challenge 2026. AI tools were used in development and are listed in the repository (docs/07_si_usage_log.md); MIRA is not affiliated with or endorsed by NASA.</p>
     </div>`;
-  const closeAbout = () => { $("#about").classList.remove("open"); document.body.classList.remove("about-on"); document.querySelectorAll<HTMLElement>(".mainnav button").forEach((x) => x.classList.toggle("on", x.dataset.view === view)); };
-  $("#about").classList.add("open"); document.body.classList.add("about-on"); $("#about").scrollTop = 0; $("#aclose").onclick = closeAbout;
-  document.querySelectorAll<HTMLElement>(".mainnav button").forEach((x) => x.classList.toggle("on", x.dataset.view === "about"));
+  $("#about").classList.add("open"); document.body.classList.add("about-on"); $("#aboutbtn").classList.add("on"); $("#about").scrollTop = 0; $("#aclose").onclick = closeAbout;
   fetch(`${import.meta.env.BASE_URL}validation.json`).then((r) => (r.ok ? r.json() : null)).then((v) => {
     const el = document.getElementById("valtable"); if (!el || !v) return;
     const pm = (x: number) => `${x >= 0 ? "+" : "−"}${Math.abs(x).toFixed(2)}`;
@@ -745,33 +807,7 @@ async function renderAbout() {
 }
 
 // ============================================================================ boot
-// ---- two main views share the page: BLINK (the SPHEREx movie workstation, default) and the sky atlas (Aladin + census)
-type View = "blink" | "atlas";
-const query = new URLSearchParams(location.search), EMBED = query.has("embed");
-let view: View = "blink", atlasP: Promise<void> | null = null;
-setBase(import.meta.env.BASE_URL);
-document.body.classList.toggle("embed", EMBED);
-const blink = mountBlink($("#blinkpage"), { embed: EMBED, toast,
-  onState: (p) => { if (EMBED) p.set("embed", "1"); history.replaceState(null, "", `${location.pathname}?${p.toString()}`); },
-  onAtlas: async (ra, dec) => { await showAtlas(); flyTo(ra, dec, 0.3); } });
-
-function setView(v: View) {
-  shutSpace();
-  view = v; document.body.classList.toggle("v-blink", v === "blink"); document.body.classList.toggle("v-atlas", v === "atlas");
-  $("#blinkpage").classList.toggle("open", v === "blink");
-  document.querySelectorAll<HTMLElement>(".mainnav button").forEach((b) => b.classList.toggle("on", b.dataset.view === v));
-  if (v === "blink") { setBlink(false); play(false); endTour(); closePanel(); $("#drawer").classList.remove("open"); blink.resume(); }
-  else blink.pause();
-}
-function openBlink(t: BlinkTarget) { setView("blink"); blink.open(t); }
-async function showAtlas() { setView("atlas"); await ensureAtlas(); nudge([100, 700, 1800]); }
-async function loadBasics() {
-  if (S.summary) return;
-  S.summary = await load<Summary>("summary", true); S.lam = S.summary?.lam_um ?? []; S.targets = (await load<Target[]>("targets", true)) ?? [];
-}
-function ensureAtlas() { return (atlasP ??= bootAtlas()); }
-
-/** the atlas (Aladin Lite + census layers) starts only when first shown: BLINK links and embeds stay light */
+/** the sky map (Aladin Lite + survey layers) starts only when first shown */
 async function bootAtlas() {
   await loadBasics();
   await initSky();
@@ -781,7 +817,6 @@ async function bootAtlas() {
   await loadLenses();
   $("#livess").onclick = () => { liveOn = !liveOn; $("#livess").classList.toggle("on", liveOn); refreshLive(true); };
   $("#livesky").onclick = () => toggleMySky(!$("#livesky").classList.contains("on"));
-  setTimeout(() => refreshLive(true), 1500);
   document.querySelectorAll<HTMLButtonElement>(".lens:not(.livet)").forEach((b) => b.onclick = () => {
     const k = b.dataset.k as LensKey; S.lenses.has(k) ? S.lenses.delete(k) : S.lenses.add(k); applyLenses();
   });
@@ -790,20 +825,29 @@ async function bootAtlas() {
   if (SURVEYS[set.survey].rgb) applySurvey();
 }
 
+/** #universe (default) · #map · #tour · #observe · #lab[=station] · #log · #about; ?ra=&dec=[&fov=&name=] or ?target= open Observe (embeddable) */
+async function route(initial: boolean) {
+  const g = hashParams();
+  if (g.has("about")) { if (initial) await showUniverse("3d"); renderAbout(); }
+  else if (g.has("tour")) { await showUniverse("map"); renderStep(0); }
+  else if (g.has("atlas") || g.has("map") || g.has("sky")) await showUniverse("map");
+  else if (g.has("lab")) await setView("lab", g.get("lab") || undefined);
+  else if (g.has("log") || g.has("logbook")) await setView("log");
+  else if (g.has("observe") || g.has("blink")) await setView("blink");
+  else if (g.has("space") || g.has("hood") || g.has("universe") || initial) await showUniverse("3d");
+}
 async function boot() {
-  document.querySelectorAll<HTMLButtonElement>(".mainnav button").forEach((b) => b.onclick = () => {
-    const v = b.dataset.view!; endTour();
-    if (v !== "about") { $("#about").classList.remove("open"); document.body.classList.remove("about-on"); }
-    if (v !== "lab" && document.body.classList.contains("lab-on")) { $("#labpage").classList.remove("open"); $("#labpage").innerHTML = ""; document.body.classList.remove("lab-on"); }
-    if (v === "blink") setView("blink"); else if (v === "atlas") showAtlas(); else if (v === "space") openSpaceView(); else if (v === "lab") openLabPage(); else renderAbout();
-  });
+  document.querySelectorAll<HTMLButtonElement>(".mainnav button").forEach((b) => b.onclick = () => { const v = b.dataset.view as View; history.replaceState(null, "", location.pathname + location.search); if (v === "universe") showUniverse(uniMode); else setView(v); });
+  document.querySelectorAll<HTMLButtonElement>("#unimode button").forEach((b) => b.onclick = () => showUniverse(b.dataset.m as UniMode));
+  $("#aboutbtn").onclick = () => ($("#about").classList.contains("open") ? closeAbout() : renderAbout());
   $("#pclose").onclick = closePanel;
   wireSheet();
-  $("#tourbtn").onclick = async () => { await showAtlas(); renderStep(0); };
+  $("#tourbtn").onclick = async () => { await showUniverse("map"); renderStep(0); };
   $("#viewbtn").onclick = () => ($("#drawer").classList.contains("open") ? $("#drawer").classList.remove("open") : renderDrawer());
+  // one search for the whole observatory: on the sky map it flies the map there; everywhere else it points the telescope
   $("#search").onsubmit = async (e) => {
-    e.preventDefault(); const q = ($("#q") as HTMLInputElement).value.trim(); if (!q) return; endTour(); ($("#q") as HTMLInputElement).blur();
-    await showAtlas();
+    e.preventDefault(); const inp = $("#q") as HTMLInputElement, q = inp.value.trim(); if (!q) return; endTour(); inp.blur();
+    if (!(view === "universe" && uniMode === "map")) { inp.value = ""; observe(q); return; }
     const xy = parseCoords(q);
     if (xy) { flyTo(xy[0], xy[1], 0.2); setTimeout(() => openPosition(xy[0], xy[1]), 2400); return; }
     const norm = (x: string) => x.toLowerCase().replace(/\beps\b/g, "epsilon").replace(/\balf\b/g, "alpha").replace(/[^a-z0-9]/g, "");
@@ -813,20 +857,12 @@ async function boot() {
     if (r) { flyTo(r.ra, r.dec, 0.2); setTimeout(() => openPosition(r.ra, r.dec, r), 2400); toast(`${r.name ?? q} · found in SIMBAD`); return; }
     toast(`Could not find "${q}" — try RA Dec in degrees`);
   };
-  indexMeta().then((m) => { if (m) $("#livecount").textContent = `SPHEREx data through ${m.last}`; });
-  // deep links. ?ra=&dec=[&fov=&name=] or ?target=<name> open BLINK (embeddable); #atlas, #tour, #space, #lab, #about open the other sections
   const h = hashParams();
-  if (query.has("ra") || query.has("target") || query.has("name")) { setView("blink"); blink.openFromParams(query); }
-  else if (h.get("ra") && h.has("inspect")) openBlink({ ra: +h.get("ra")!, dec: +h.get("dec")! });
-  else if (h.get("ra")) { await showAtlas(); if (h.get("blink")) setBlink(true); const k = h.get("k"); if (k) { const o = await loadDetail(k); if (o) openObject(o); } }
-  else if (h.has("atlas") || h.has("tour")) await showAtlas();
-  else setView("blink");
-  const openFromHash = async () => {
-    const g = hashParams();
-    if (g.has("tour")) { await showAtlas(); renderStep(0); } else if (g.has("about")) renderAbout(); else if (g.has("lab")) openLabPage(g.get("lab") || undefined); else if (g.has("hood") || g.has("space")) openSpaceView();
-    else if (g.has("atlas") && view !== "atlas") showAtlas(); else if (g.has("blink") && !g.get("ra") && view !== "blink") setView("blink");
-  };
-  openFromHash(); window.addEventListener("hashchange", openFromHash);
+  if (EMBED || query.has("ra") || query.has("target") || query.has("name")) { await setView("blink"); blink.openFromParams(query); }
+  else if (h.get("ra") && h.has("inspect")) observe({ ra: +h.get("ra")!, dec: +h.get("dec")! });
+  else if (h.get("ra")) { await showUniverse("map"); if (h.get("blink")) setBlink(true); const k = h.get("k"); if (k) { const o = await loadDetail(k); if (o) openObject(o); } }
+  else await route(true);
+  window.addEventListener("hashchange", () => route(false));
 }
 // phone: the dossier is a bottom sheet; drag its handle down to dismiss
 function wireSheet() {
