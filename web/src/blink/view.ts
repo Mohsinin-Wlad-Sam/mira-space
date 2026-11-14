@@ -87,7 +87,7 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
           <div>${CHALLENGE.map((t) => `<button class="chip" data-key="${t.key}" title="${esc(t.blurb)}">${esc(t.name)}</button>`).join("")}</div></div>
       </div>
       <ol class="bk-chain">
-        <li><b>Evolution</b><span>the field through time, at your pace</span></li><li><b>Motion detector</b><span>which sources moved, and are they known</span></li>
+        <li><b>Evolution</b><span>1999 → 2010 → today in real pictures, at your pace</span></li><li><b>Motion detector</b><span>which sources moved, and are they known</span></li>
         <li><b>Astrometer</b><span>proper motion, parallax, distance</span></li><li><b>Spectrograph</b><span>0.75–5 µm spectrum: what it is</span></li>
         <li><b>Photometer</b><span>brightness since 1999</span></li><li><b>Detection limits</b><span>what could still hide here</span></li></ol>
     </div>
@@ -238,7 +238,7 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
   async function loadPast(my: number, saved?: Partial<Record<PastKey, Float32Array | null>> | null) {
     if (pastState !== "idle" || !frames.length) return; pastState = "loading";
     await Promise.all(SURVEYS.map(async (sv) => {
-      const img = saved ? saved[sv.key] ?? null : await pastImage(sv, center[0], center[1], N, ac?.signal).catch(() => null);
+      const img = saved?.[sv.key] ?? (await pastImage(sv, center[0], center[1], N, ac?.signal).catch(() => null));     // a picture that could not be read last time is asked for again
       if (my !== gen) return;
       past[sv.key] = img && img.length === N * N ? { key: sv.key, name: sv.name, band: sv.band, img, disp: new Float32Array(0), pct: NaN } : null;
       if (mode === "evolve") { paint(); syncControls(); }
@@ -249,7 +249,8 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
     cat.state = "loading"; const r = (N * PIX_ARCSEC) / 2 * 1.45, [ra, dec] = center, pm = Math.hypot(target.pmra ?? 0, target.pmdec ?? 0);
     const wide = r + pm * 30;                                      // catalogue epochs reach back to 1998: include where a mover was
     const twice = <T,>(f: () => Promise<T>) => f().catch(() => new Promise<T>((res, rej) => setTimeout(() => f().then(res, rej), 2500)));
-    Promise.allSettled([twice(() => gaia(ra, dec, r + pm * 12)), twice(() => allwise(ra, dec, r + pm * 18)), twice(() => twomass(ra, dec, wide))]).then(([g, w, t]) => {
+    const rowsMax = Math.round(400 * Math.max(1, (N / 64) ** 2));    // a wider field holds more sources: ask for more rows (brightest first)
+    Promise.allSettled([twice(() => gaia(ra, dec, r + pm * 12, rowsMax)), twice(() => allwise(ra, dec, r + pm * 18, rowsMax)), twice(() => twomass(ra, dec, wide, rowsMax))]).then(([g, w, t]) => {
       if (my !== gen) return;
       if (g.status === "fulfilled") cat.gaia = g.value; if (w.status === "fulfilled") cat.wise = w.value; if (t.status === "fulfilled") cat.tm = t.value as TwoMass[];
       cat.state = g.status === "fulfilled" || w.status === "fulfilled" ? "ok" : "fail"; paint(); renderReadouts(); renderPanel(); if (!probe.follow) renderTarget(); runDetect(); if (masksAll) saveField(my);
@@ -316,7 +317,9 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
     for (let i = 0; i < V.length - 1; i++) if (evo.t <= V[i + 1].yr) { const u = (evo.t - V[i].yr) / (V[i + 1].yr - V[i].yr); return { a: V[i], b: V[i + 1], f: u * u * (3 - 2 * u), i }; }
     return { a: V[V.length - 1], b: V[V.length - 1], f: 0, i: V.length - 1 };
   }
-  function evoSpan(): [number, number] { const V = visitStacks(), a = V[0]?.yr ?? 2025.3, b = V[V.length - 1]?.yr ?? 2026.8; return evo.range === "sx" ? [a - 0.06, b + 0.06] : [evo.range === "2010" ? 2010.1 : Math.min(tmYear(), 2001.5) - 0.4, b + 0.3]; }
+  function evoSpan(): [number, number] { const V = visitStacks(), a = V[0]?.yr ?? 2025.3, b = V[V.length - 1]?.yr ?? 2026.8; return evo.range === "sx" ? [a - 0.06, b + 0.06] : [evo.range === "2010" ? 2010.4 : Math.min(tmYear(), 2001.5) - 0.1, b + 0.06]; }
+  /** the earliest dated picture within the reach of the bar: where the clock goes when the reach is changed */
+  const firstStop = () => { const S2 = evoStops(); return S2.length ? S2[0].yr : evoSpan()[0]; };
   /** the dates that carry data: SPHEREx visits, and the catalogue epochs when the bar reaches back to them */
   function evoStops(): { yr: number; kind: "sx" | "wise" | "tm"; n?: number }[] {
     const out: { yr: number; kind: "sx" | "wise" | "tm"; n?: number }[] = visitStacks().map((v) => ({ yr: v.yr, kind: "sx" as const, n: v.n }));
@@ -464,7 +467,7 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
       fl.innerHTML = f.flags < 0 ? "" : names.length ? names.slice(0, 5).map((n) => `<em class="bad" title="${esc(FLAG_DEFS.find((d) => d.name === n)?.desc ?? "")}">${n}</em>`).join("") : `<em class="ok" title="No contamination flag on the target's pixels in this exposure">clean</em>`;
     } else if (it.key === "evo") {
       const e = evoAt(), V = visitStacks(), when = new Date((yearToMjd(evo.t) - 40587) * 86400000).toLocaleDateString("en-GB", { month: "short", year: "numeric", timeZone: "UTC" });
-      const on = e && Math.abs(evo.t - (e.f < 0.5 ? e.a : e.b).yr) < 0.012 ? (e.f < 0.5 ? e.a : e.b) : null;
+      const on = e && (e.a === e.b ? evo.t >= e.a.yr - 0.05 : Math.abs(evo.t - (e.f < 0.5 ? e.a : e.b).yr) < 0.012) ? (e.f < 0.5 ? e.a : e.b) : null;
       const nm = (q: EI) => (q.kind === "sx" ? `SPHEREx visit ${V.indexOf(q.vs!) + 1}` : q.kind === "wise" ? "WISE 2010" : `2MASS ${q.yr.toFixed(1)}`);
       const what = !e ? "" : evo.t < e.a.yr - 0.05 ? `${pastState === "loading" && evo.range !== "sx" ? "reading the earlier pictures from NASA's archive… meanwhile " : "no picture of this date: "}${nm(e.a)} is shown dimmed · markers at their ${evo.t.toFixed(0)} positions`
         : on ? (on.kind === "sx" ? `SPHEREx visit ${V.indexOf(on.vs!) + 1} of ${V.length} · ${on.vs!.n} exposures combined, 0.75–5 µm · ${mjdToDate(on.vs!.d0)} → ${mjdToDate(on.vs!.d1)}`
@@ -591,7 +594,7 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
     if (r.tags.includes("EDGE")) return { chip: "edge", cls: "off", text: "too close to the edge of the field" };
     return { chip: "steady", cls: "", text: m && m.base > 5 ? `no motion above ${(3 * Math.hypot(m.etot, report?.cal.pmRms ?? 0.03)).toFixed(2)}″ per year` : "no change measured" };
   }
-  const identity = (r: ChangeRow) => (r.gaia ? `${r.gaia.id}${r.gaia.mag != null ? ` · G ${r.gaia.mag.toFixed(1)}` : ""}` : r.wise ? r.wise.id : r.tm ? r.tm.id : report?.catalogs.gaia || report?.catalogs.wise ? "not in Gaia, AllWISE or 2MASS" : "catalogues not reachable");
+  const identity = (r: ChangeRow) => (r.gaia ? `${r.gaia.id}${r.gaia.mag != null ? ` · G ${r.gaia.mag.toFixed(1)}` : ""}` : r.wise ? r.wise.id : r.tm ? r.tm.id : r.known || (report?.catalogs.gaia || report?.catalogs.wise ? "not in Gaia, AllWISE or 2MASS" : "catalogues not reachable"));
 
   // ------------------------------------------------------------ analysis (spectrum, light curve, motion of the probed source)
   function analyze() {
@@ -684,6 +687,20 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
   }
   const tbl = (head: string[], rows: string[][], cls = "") => `<div class="bk-tw"><table class="bk-table ${cls}"><thead><tr>${head.map((h) => `<th>${h}</th>`).join("")}</tr></thead><tbody>${rows.map((r) => `<tr>${r.map((v) => `<td>${v}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
   const csv = (name: string, head: string[], rows: (string | number)[][], comment = "") => save(new Blob([`# MIRA · ${target.name ?? ""} · RA ${center[0].toFixed(6)} Dec ${center[1].toFixed(6)} (ICRS)${comment ? ` · ${comment}` : ""}\n${head.join(",")}\n${rows.map((r) => r.join(",")).join("\n")}\n`], { type: "text/csv" }), `${fileStem()}_${name}.csv`);
+  const say = (a?: Answer) => (!a ? "" : `${/^[—…]$/.test(a.big) || a.tone === "wait" ? "" : `<b>${esc(a.big)}${a.unit ? ` ${esc(a.unit)}` : ""} ${esc(a.label)}.</b> `}${a.text}`);
+  /** the Astrometer's reading of the selected source: composed once, shown in the panel and handed to the assistant */
+  function astro() {
+    const m = analysis?.motion ?? null, r = selRow(), L = r?.pm && r.pm.base > 5 ? r.pm : null, gpm = r ? gaiaPm(r) : null;
+    const refPm = probe.follow && hasPm() ? { ra: target.pmra!, dec: target.pmdec!, name: `${target.source ?? "catalogue"} motion` } : r?.gaia && gpm !== null ? { ra: r.gaia.pmra, dec: r.gaia.pmdec, name: "Gaia DR3 motion" } : null, ep = m ? plxError(m) : 0;
+    const e = L ? Math.hypot(L.etot, report?.cal.pmRms ?? 0.03) : 0;
+    const txt = L ? `Over ${L.base.toFixed(0)} years the source ${L.sig >= 5 && L.tot >= 0.08 ? `moved <b>${(L.tot * L.base).toFixed(1)}″</b>: <b>${L.tot.toFixed(L.tot < 1 ? 3 : 2)} ± ${e.toFixed(3)}″ per year</b> toward ${dirOf(L.ra, L.dec)} (${L.sig.toFixed(0)}σ)` : `did not move measurably: ${L.tot.toFixed(3)} ± ${e.toFixed(3)}″ per year`}.${
+        refPm ? ` ${refPm.name.replace(" motion", "")} gives ${Math.hypot(refPm.ra, refPm.dec).toFixed(3)}″ per year${Math.hypot(L.ra - refPm.ra, L.dec - refPm.dec) < Math.max(4 * e, 0.04) ? ": the two agree" : ": they disagree, so this image is probably contaminated"}.` : r && !r.gaia ? " Gaia has no motion for this source." : ""}`
+      : say(answers?.move);
+    const catPlx = probe.follow && target.plx ? target.plx / 1000 : r?.gaia?.plx ? r.gaia.plx / 1000 : null, catD = catPlx && catPlx > 0.001 ? ` The catalogue parallax, ${catPlx.toFixed(3)}″, puts it at ${(3.2616 / catPlx).toFixed(catPlx > 0.1 ? 1 : 0)} light-years.` : "";
+    const dist = !m || m.plx === null ? catD : m.plx > 5 * ep ? ` Parallax from the SPHEREx exposures alone: ${m.plx.toFixed(2)} ± ${ep.toFixed(2)}″, a distance of <b>${(3.2616 / m.plx).toFixed(1)} light-years</b> (${(3.2616 / (m.plx + ep)).toFixed(1)}–${(3.2616 / Math.max(m.plx - ep, 1e-3)).toFixed(1)}).${catD}`
+      : ` The SPHEREx exposures alone give a parallax of ${m.plx.toFixed(2)} ± ${ep.toFixed(2)}″: below the 5σ needed to state a distance (6″ pixels, 1.4-year baseline).${catD}`;
+    return { m, r, L, gpm, refPm, ep, e, html: txt + dist };
+  }
   function renderPanel() {
     const el = $("#bk-panel"), A = analysis;
     if (errorMsg && !frames.length) { el.innerHTML = `<div class="bk-empty">${esc(errorMsg)}</div>`; return; }
@@ -693,7 +710,7 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
     if (tab === "limits") return renderLimits(el);
     if (!A) { el.innerHTML = `<div class="bk-empty">${opened ? "Measuring as the exposures arrive…" : ""}</div>`; return; }
     const reading = (t: string) => (t ? `<p class="bk-reading"><b>Reading</b> ${t}</p>` : "");
-    const say = (a?: Answer) => (!a ? "" : `${/^[—…]$/.test(a.big) || a.tone === "wait" ? "" : `<b>${esc(a.big)}${a.unit ? ` ${esc(a.unit)}` : ""} ${esc(a.label)}.</b> `}${a.text}`);
+
     if (tab === "spectrum") {
       const per = [1, 2, 3, 4, 5, 6].map((d) => { const v = A.P.filter((p) => p.det === d), c2 = v.filter((p) => !p.flagged), q = DETECTORS[d - 1];
         return [`<i class="sw" style="background:${detColor(d)}"></i>D${d}`, `${q.lo.toFixed(2)}–${q.hi.toFixed(2)}`, String(v.length), c2.length ? median(c2.map((p) => p.flux)).toPrecision(3) : "–", c2.length ? median(c2.map((p) => p.snr)).toFixed(0) : "–", String(v.length - c2.length)]; });
@@ -726,21 +743,13 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
       drawLightCurve(el.querySelector("#bk-vis") as HTMLElement, A.lc);
       (el.querySelector("#bk-csv") as HTMLElement).onclick = () => csv("lightcurve", ["band", "visit", "mean_mjd", "level", "level_err", "matched_pairs"], S2.flatMap((q) => q.visits.map((v) => [q.det ? `D${q.det}` : "all", v.visit + 1, v.mjd.toFixed(3), v.ratio.toFixed(4), v.err.toFixed(4), v.n])), "brightness relative to the source's own mean, from wavelength-matched pairs");
     } else {
-      const m = A.motion, r = selRow(), L = r?.pm && r.pm.base > 5 ? r.pm : null, gpm = r ? gaiaPm(r) : null;
-      const refPm = probe.follow && hasPm() ? { ra: target.pmra!, dec: target.pmdec!, name: `${target.source ?? "catalogue"} motion` } : r?.gaia && gpm !== null ? { ra: r.gaia.pmra, dec: r.gaia.pmdec, name: "Gaia DR3 motion" } : null, ep = m ? plxError(m) : 0;
-      const e = L ? Math.hypot(L.etot, report?.cal.pmRms ?? 0.03) : 0;
-      const txt = L ? `Over ${L.base.toFixed(0)} years the source ${L.sig >= 5 && L.tot >= 0.08 ? `moved <b>${(L.tot * L.base).toFixed(1)}″</b>: <b>${L.tot.toFixed(L.tot < 1 ? 3 : 2)} ± ${e.toFixed(3)}″ per year</b> toward ${dirOf(L.ra, L.dec)} (${L.sig.toFixed(0)}σ)` : `did not move measurably: ${L.tot.toFixed(3)} ± ${e.toFixed(3)}″ per year`}.${
-          refPm ? ` ${refPm.name.replace(" motion", "")} gives ${Math.hypot(refPm.ra, refPm.dec).toFixed(3)}″ per year${Math.hypot(L.ra - refPm.ra, L.dec - refPm.dec) < Math.max(4 * e, 0.04) ? ": the two agree" : ": they disagree, so this image is probably contaminated"}.` : r && !r.gaia ? " Gaia has no motion for this source." : ""}`
-        : say(answers?.move);
-      const catPlx = probe.follow && target.plx ? target.plx / 1000 : r?.gaia?.plx ? r.gaia.plx / 1000 : null, catD = catPlx && catPlx > 0.001 ? ` The catalogue parallax, ${catPlx.toFixed(3)}″, puts it at ${(3.2616 / catPlx).toFixed(catPlx > 0.1 ? 1 : 0)} light-years.` : "";
-      const dist = !m || m.plx === null ? catD : m.plx > 5 * ep ? ` Parallax from the SPHEREx exposures alone: ${m.plx.toFixed(2)} ± ${ep.toFixed(2)}″, a distance of <b>${(3.2616 / m.plx).toFixed(1)} light-years</b> (${(3.2616 / (m.plx + ep)).toFixed(1)}–${(3.2616 / Math.max(m.plx - ep, 1e-3)).toFixed(1)}).${catD}`
-        : ` The SPHEREx exposures alone give a parallax of ${m.plx.toFixed(2)} ± ${ep.toFixed(2)}″: below the 5σ needed to state a distance (6″ pixels, 1.4-year baseline).${catD}`;
+      const { m, r, L, gpm, refPm, ep, e, html: astroHtml } = astro();
       const res: string[][] = [];
       if (L) res.push([`This work <small>${esc(L.using)} · ${L.base.toFixed(1)} yr</small>`, `${fmtPm(L.ra)} ± ${e.toFixed(3)}`, `${fmtPm(L.dec)} ± ${e.toFixed(3)}`, "–"]);
       if (m) res.push([`SPHEREx exposures only <small>${m.visits} visits · ${(m.span / 365.25).toFixed(1)} yr</small>`, `${fmtPm(m.pmra)} ± ${m.epmra.toFixed(2)}`, `${fmtPm(m.pmdec)} ± ${m.epmdec.toFixed(2)}`, m.plx === null ? "–" : `${m.plx.toFixed(2)} ± ${ep.toFixed(2)}`]);
       if (probe.follow && hasPm()) res.push([esc(target.source ?? "catalogue"), fmtPm(target.pmra!), fmtPm(target.pmdec!), target.plx ? (target.plx / 1000).toFixed(3) : "–"]);
       else if (r?.gaia && gpm !== null) res.push(["Gaia DR3", fmtPm(r.gaia.pmra), fmtPm(r.gaia.pmdec), r.gaia.plx ? (r.gaia.plx / 1000).toFixed(3) : "–"]);
-      el.innerHTML = `<h3 class="bk-h">Position of the selected source against time</h3>${reading(txt + dist)}
+      el.innerHTML = `<h3 class="bk-h">Position of the selected source against time</h3>${reading(astroHtml)}
         ${r && r.epochs.length >= 2 ? `<div class="bk-plot-host" id="bk-track"></div>` : `<p class="bk-cap show">No dated catalogue position (AllWISE 2010, 2MASS ~1999) is matched to this source, so only the SPHEREx visits are available.</p>`}
         ${res.length ? tbl(["", "μα cos δ (″/yr)", "μδ (″/yr)", "parallax (″)"], res, "num") : ""}
         ${m ? `<h3 class="bk-h sec">Every SPHEREx exposure${m.withParallax ? ": motion and parallax" : ""}</h3>${A.motionFlagged ? `<div class="bk-warn">Every exposure is flagged (saturated): centres come from the wings of the image. Indicative only.</div>` : ""}<div class="bk-plot-host" id="bk-sx"></div>
@@ -762,7 +771,7 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
     if (!R) { el.innerHTML = `<div class="bk-empty">${detecting ? "Measuring…" : "No source stands above 5σ in the combined exposures of this field."}</div>`; return; }
     const k = R.counts, sel = selRow(), fov = ((N * PIX_ARCSEC) / 60).toFixed(1), plural = (n: number, w: string) => `${n} ${w}${n === 1 ? "" : "s"}`;
     const lead = [`<b>${plural(k.measured, "source")}</b> measured in this ${fov}′ field, at ${plural(R.visits.length, "SPHEREx visit")} (${R.visits[0].yr.toFixed(1)}–${R.visits[R.visits.length - 1].yr.toFixed(1)}) and against the surveys of 2010 and ~1999.`,
-      k.moved ? `<b class="hl">${k.moved} moved</b>${k.movedUnknown ? ` — ${k.movedUnknown === k.moved ? (k.moved === 1 ? "it has" : "they have") : `${k.movedUnknown} of them ${k.movedUnknown === 1 ? "has" : "have"}`} no motion in Gaia` : ", all with a matching Gaia motion"}.` : "None moved.",
+      k.moved ? `<b class="hl">${k.moved} moved</b>${k.movedUnknown ? ` — ${k.movedUnknown === k.moved ? (k.moved === 1 ? "it has" : "they have") : `${k.movedUnknown} of them ${k.movedUnknown === 1 ? "has" : "have"}`} no motion in Gaia` : k.moved === 1 ? ", and Gaia lists the same motion" : ", all with a matching Gaia motion"}.` : "None moved.",
       k.brighter + k.fainter ? `<b class="hl">${k.brighter + k.fainter} changed brightness</b> by more than 30% since 2010.` : "None brightened or faded by more than 30% since 2010.",
       k.fresh ? `<b class="hl">${plural(k.fresh, "source")}</b> ${k.fresh === 1 ? "is" : "are"} absent from the older surveys.` : "", k.gone ? `<b class="hl">${plural(k.gone, "source")}</b> of 2010 ${k.gone === 1 ? "is" : "are"} not seen today.` : "",
       R.limits.pm ? `A motion of ${R.limits.pm.toFixed(2)}″ per year or more would have been detected here.` : ""].filter(Boolean).join(" ");
@@ -904,7 +913,7 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
   host.querySelectorAll<HTMLButtonElement>(".bk-try .chip").forEach((b) => (b.onclick = () => go(b.dataset.key!)));
   function setViewMode(v: string) { mode = v === "frames" ? (order === "lambda" ? "lambda" : "time") : (v as Mode); idx = 0; playing = false; refresh(); }
   host.querySelectorAll<HTMLButtonElement>("#bk-range button").forEach((b) => (b.onclick = () => { evo.range = b.dataset.r as typeof evo.range; evo.rate = evo.range === "sx" ? 0.5 : evo.range === "2010" ? 2 : 5;
-    const [a, z] = evoSpan(); evo.t = evo.range === "sx" ? Math.min(z, Math.max(a, evo.t)) : a; playing = false; refresh(); }));
+    const [a, z] = evoSpan(); evo.t = evo.range === "sx" ? Math.min(z, Math.max(a, evo.t)) : firstStop(); playing = false; refresh(); }));
   $("#bk-loop").onclick = () => { evo.loop = !evo.loop; syncControls(); };
   ($("#bk-rate") as HTMLSelectElement).onchange = (e) => { const v = +(e.target as HTMLSelectElement).value; if (mode === "evolve") evo.rate = v; else fps = v; tick(); };
   host.querySelectorAll<HTMLButtonElement>("#bk-views button").forEach((b) => (b.onclick = () => setViewMode(b.dataset.v!)));
@@ -999,14 +1008,15 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
           sources: R.rows.slice(0, 25).map((q) => ({ n: q.n, result: verdict(q).chip, detail: verdict(q).text, motion_arcsec_yr: q.pm && q.pm.base > 5 ? +q.pm.tot.toFixed(3) : null, sigma: q.pm ? +q.pm.sig.toFixed(1) : null,
             gaia_motion: gaiaPm(q) !== null ? +gaiaPm(q)!.toFixed(3) : null, now_over_2010: (q.dW2 ?? q.dW1) ? +(q.dW2 ?? q.dW1)!.ratio.toFixed(2) : null, identity: identity(q), target: q.isTarget })) } : null,
         selected: r ? { n: r.n, identity: identity(r), result: verdict(r).chip, detail: verdict(r).text } : null,
-        readings: answers ? { astrometer: answers.move.text.replace(/<[^>]+>/g, ""), photometer: answers.change.text.replace(/<[^>]+>/g, ""), spectrograph: answers.made.text.replace(/<[^>]+>/g, "") } : null };
+        readings: answers ? { astrometer: astro().html.replace(/<[^>]+>/g, ""), photometer: answers.change.text.replace(/<[^>]+>/g, ""), spectrograph: answers.made.text.replace(/<[^>]+>/g, "") } : null };
     },
     /** let the assistant operate the instruments */
     act(a: { instrument?: string; view?: string; select?: number; play?: boolean; date?: number; range?: string; layers?: Record<string, boolean> }) {
       if (a.instrument && TABS.some((t) => t[0] === a.instrument)) tab = a.instrument as Tab;
       if (a.view && VIEWS.some((v) => v.k === a.view)) setViewMode(a.view);
-      if (a.range && ["sx", "2010", "1999"].includes(a.range)) { evo.range = a.range as typeof evo.range; const [x0] = evoSpan(); evo.t = x0; }
-      if (typeof a.date === "number") { const [x0, x1] = evoSpan(); evo.t = Math.min(x1, Math.max(x0, a.date)); }
+      if (a.range && ["sx", "2010", "1999"].includes(a.range)) { evo.range = a.range as typeof evo.range; evo.rate = evo.range === "sx" ? 0.5 : evo.range === "2010" ? 2 : 5; evo.t = firstStop(); }
+      if (typeof a.date === "number") { if (a.date < 2009 && evo.range !== "1999") evo.range = "1999"; else if (a.date < 2024 && evo.range === "sx") evo.range = "2010";      // reach back far enough for the date asked
+        const [x0, x1] = evoSpan(), t = Math.min(x1, Math.max(x0, a.date)), near = evoStops().find((q) => Math.abs(q.yr - t) < 0.75); evo.t = near ? near.yr : t; }
       if (a.layers) for (const k of ["det", "gaia", "wise", "mask", "track"] as const) if (k in a.layers) (view as any)[k] = !!a.layers[k];
       if (typeof a.select === "number" && report) { const q = report.rows.find((x) => x.n === a.select); if (q) { selectRow(q); } }
       if (typeof a.play === "boolean" && a.play !== playing) togglePlay();

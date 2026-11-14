@@ -5,7 +5,7 @@ export type AsstCtx = {
   view: () => string; lab: () => any; labAct: (a: any) => void; catalogue: () => Promise<any>; catalogueAct: (a: any) => Promise<any>;
   observe: (q: string) => void; go: (v: string) => void; method: () => void;
 };
-type Msg = { role: "user" | "assistant" | "tool"; content: string; tool_calls?: { id: string; type: "function"; function: { name: string; arguments: string } }[]; tool_call_id?: string };
+type Msg = { role: "user" | "assistant" | "tool"; content: string; /** the model's own thinking: kept so that it can be sent back with the conversation, never shown */ reasoning_content?: string; tool_calls?: { id: string; type: "function"; function: { name: string; arguments: string } }[]; tool_call_id?: string };
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]!));
 /** the little formatting a model answer uses: paragraphs, bold, bullet lines */
 const fmt = (t: string) => esc(t).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/`([^`]+)`/g, "<code>$1</code>").split(/\n{2,}/).map((p) => (/^\s*[-•*] /m.test(p) ? `<ul>${p.split("\n").filter(Boolean).map((l) => `<li>${l.replace(/^\s*[-•*] /, "")}</li>`).join("")}</ul>` : `<p>${p.replace(/\n/g, "<br>")}</p>`)).join("");
@@ -74,12 +74,19 @@ async function runTool(name: string, a: any): Promise<string> {
     return `error: unknown tool ${name}`;
   } catch (e) { return `error: ${(e as Error).message}`; }
 }
+/** what is sent with a question: the last few exchanges, starting on a question (a tool result is never sent without
+ *  the request it answers), with the long page readings of earlier exchanges shortened */
+function recent(msgs: Msg[]): Msg[] {
+  let from = Math.max(0, msgs.length - 18); while (from < msgs.length - 1 && msgs[from].role !== "user") from++;
+  const lastQ = msgs.map((m) => m.role).lastIndexOf("user");
+  return msgs.slice(from).map((m, k) => (m.role === "tool" && from + k < lastQ && m.content.length > 1500 ? { ...m, content: m.content.slice(0, 1500) + " …(shortened)" } : m));
+}
 async function ask(q: string) {
   const s = state!; if (s.busy) return;
   s.busy = true; s.msgs.push({ role: "user", content: q }); draw("Thinking");
   try {
     for (let round = 0; round < 6; round++) {
-      const r = await fetch("/api/assistant", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ messages: s.msgs, page: await page() }) });
+      const r = await fetch("/api/assistant", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ messages: recent(s.msgs), page: await page() }) });
       const j = await r.json().catch(() => null);
       if (!r.ok || !j?.message) { s.msgs.push({ role: "assistant", content: j?.error ?? "The assistant could not answer just now." }); break; }
       const m = j.message as Msg; s.msgs.push(m);

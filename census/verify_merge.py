@@ -176,7 +176,7 @@ def main():
     c = c.sort_values("conf", ascending=False)
     cols = dict(id=list(c.id), ra=[round(x, 5) for x in c.ra_now], dec=[round(x, 5) for x in c.dec_now], pm=r3(c.pm_m), pmra=r3(c.pmra_m), pmdec=r3(c.pmdec_m), epm=r3(c.epm_m, 2), conf=r3(c.conf, 3), snr=r3(c.ssnr, 3),
                 J=r3(c.J), H=r3(c.H), K=r3(c.K), W1=r3(c.W1 / ZP["W1"]), W2=r3(c.W2 / ZP["W2"]), w12=r3(c.w12, 2), ch4=r3(c.ch4, 2), w2_wise=r3(c.w2_uJy / 1000), known=[int(x) for x in c.known], gaia=list(c.gaia.astype(str)),
-                G=r3(c.G, 4), gpm=r3(c.gpm), plx=r3(c.plx, 4), kind=list(c.kind), glat=[round(float(x), 1) for x in c.glat], dp=r3(c.d_pred, 2), ds=r3(c.d_stat, 3), yr=r3(c.syr, 6), wpm=r3(c.pm), n=[int(x) for x in c.n], simbad=list(c.simbad.fillna("").astype(str)), slow=[int(x) for x in (((c.lens.astype(int) & 1) == 0))], methane=[int(i in ch4ids) for i in c.id])
+                G=r3(c.G, 4), gpm=r3(c.gpm), plx=r3(c.plx, 4), kind=list(c.kind), glat=[float(np.trunc(x * 100) / 100) for x in c.glat], dp=r3(c.d_pred, 2), ds=r3(c.d_stat, 3), yr=r3(c.syr, 6), wpm=r3(c.pm), n=[int(x) for x in c.n], simbad=list(c.simbad.fillna("").astype(str)), slow=[int(x) for x in (((c.lens.astype(int) & 1) == 0))], methane=[int(i in ch4ids) for i in c.id])
     (out / "objects.json").write_text(json.dumps(dict(n=len(c), cols=cols), separators=(",", ":")))
     if len(ch):
         cv = ch[ch.verdict != "unchanged"].sort_values("z2", key=lambda s: -s.abs())

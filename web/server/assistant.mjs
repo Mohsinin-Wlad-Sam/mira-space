@@ -3,7 +3,7 @@
 // instructions and the list of tools, limits how often it can be called, and forwards to an OpenAI-compatible endpoint.
 //   env: MIRA_LLM_KEY (required)   MIRA_LLM_URL (default https://api.ifm.ai/v1)   MIRA_LLM_MODEL (default K2 Horizon)
 export const SYSTEM = `You are the assistant of MIRA, a digital research observatory: a web Lab whose instruments measure NASA SPHEREx Level-2 exposures (0.75–5 µm, 102 wavelength channels on 6 detectors, 6.15 arcsec pixels, each sky position revisited about every 6 months since April 2025).
-The Lab works on one field at a time (3.3 to 13 arcmin wide). Its instruments: Evolution (deep image per visit on a time bar), Motion detector (every source of the field: moved / brighter / fainter / new / steady, with significance and Gaia identity), Astrometer (position against time with 2MASS ~1999, AllWISE 2010.5 and SPHEREx visits; proper motion; parallax), Spectrograph (0.75–5 µm spectrum; methane at 3.3 µm marks cold brown dwarfs and giant planets), Photometer (brightness against 2MASS and AllWISE, and visit to visit), Detection limits (which planet or brown dwarf this field's depth would reveal, and out to what distance).
+The Lab works on one field at a time (3.3 to 13 arcmin wide). Its instruments: Evolution (one time bar through three NASA pictures of the same field: 2MASS at 2.2 µm around 1999, WISE at 4.6 µm in 2010, then one deep SPHEREx image per visit in 2025–26; the pictures are for the eye, the numbers come from the catalogues and the SPHEREx exposures), Motion detector (every source of the field: moved / brighter / fainter / new / steady, with significance and Gaia identity), Astrometer (position against time with 2MASS ~1999, AllWISE 2010.5 and SPHEREx visits; proper motion; parallax), Spectrograph (0.75–5 µm spectrum; methane at 3.3 µm marks cold brown dwarfs and giant planets), Photometer (brightness against 2MASS and AllWISE, and visit to visit), Detection limits (which planet or brown dwarf this field's depth would reveal, and out to what distance).
 The Catalogue is the verified survey: motion claims from 16 years of WISE data that were re-measured on raw SPHEREx exposures and confirmed. Cases are the visitor's saved measurements. Universe is a 3D map for context.
 The motivating problem is "Planet X": an unknown cold body near the Sun shows itself by moving against the stars; the same instruments serve any star, brown dwarf or variable source.
 
@@ -21,7 +21,7 @@ export const TOOLS = [
     parameters: { type: "object", properties: {
       instrument: { type: "string", enum: ["changes", "motion", "spectrum", "light", "limits", "frames", "export"], description: "changes = Motion detector, motion = Astrometer, spectrum = Spectrograph, light = Photometer, limits = Detection limits, frames = Exposures" },
       select: { type: "integer", description: "number of the source to point the instruments at" }, view: { type: "string", enum: ["evolve", "frames", "rgb", "diff"] },
-      range: { type: "string", enum: ["sx", "2010", "1999"], description: "how far back the time bar reaches" }, date: { type: "number", description: "decimal year to move the time bar to" }, play: { type: "boolean" },
+      range: { type: "string", enum: ["sx", "2010", "1999"], description: "how far back the time bar reaches: sx = SPHEREx visits only, 2010 = from the WISE picture, 1999 = from the 2MASS picture" }, date: { type: "number", description: "decimal year to move the time bar to; 2010.5 shows the WISE picture, 1999.5 the 2MASS picture, 2026 the latest SPHEREx visit" }, play: { type: "boolean", description: "true plays the time bar from its earliest picture to today" },
       layers: { type: "object", properties: { det: { type: "boolean" }, gaia: { type: "boolean" }, wise: { type: "boolean" }, mask: { type: "boolean" }, track: { type: "boolean" } } } } } },
   { name: "catalogue_query", description: "Open the Catalogue and filter or sort the verified movers; returns the matching count and the first rows. Properties in filters combine (all must hold). Use select with a census id to pick a row; open=true sends the selected row to the Lab.",
     parameters: { type: "object", properties: {
@@ -46,7 +46,10 @@ function clean(messages) {
   const out = [];
   for (const m of Array.isArray(messages) ? messages.slice(-24) : []) {
     if (m?.role === "user") out.push({ role: "user", content: clip(m.content, 2000) });
-    else if (m?.role === "assistant") out.push({ role: "assistant", content: clip(m.content, 6000), ...(Array.isArray(m.tool_calls) ? { tool_calls: m.tool_calls.slice(0, 6).map((t) => ({ id: clip(t.id, 80), type: "function", function: { name: clip(t.function?.name, 40), arguments: clip(t.function?.arguments, 2000) } })) } : {}) });
+    // the model service wants each earlier assistant turn back as it was returned, thinking field included (measured:
+    // without it the model sometimes writes its thinking into the answer). The page keeps that field and sends it
+    // back; it is never displayed.
+    else if (m?.role === "assistant") out.push({ role: "assistant", content: clip(m.content, 6000), reasoning_content: clip(m.reasoning_content, 12000), ...(Array.isArray(m.tool_calls) ? { tool_calls: m.tool_calls.slice(0, 6).map((t) => ({ id: clip(t.id, 80), type: "function", function: { name: clip(t.function?.name, 40), arguments: clip(t.function?.arguments, 2000) } })) } : {}) });
     else if (m?.role === "tool") out.push({ role: "tool", tool_call_id: clip(m.tool_call_id, 80), content: clip(m.content, 14000) });
   }
   return out;
@@ -68,7 +71,7 @@ export async function handle(req, res, env = process.env) {
   const ip = local && req.headers["x-forwarded-for"] ? String(req.headers["x-forwarded-for"]).split(",").pop().trim() : peer, why = limited(ip);
   if (why) return send(res, 429, { error: why });
   let raw = ""; let tooBig = false;
-  await new Promise((ok) => { req.on("data", (c) => { raw += c; if (raw.length > 120000) { tooBig = true; req.destroy(); ok(); } }); req.on("end", ok); req.on("error", ok); });
+  await new Promise((ok) => { req.on("data", (c) => { raw += c; if (raw.length > 300000) { tooBig = true; req.destroy(); ok(); } }); req.on("end", ok); req.on("error", ok); });
   if (tooBig) return send(res, 413, { error: "Request too large." });
   let body; try { body = JSON.parse(raw); } catch { return send(res, 400, { error: "Bad request." }); }
   const page = clip(JSON.stringify(body.page ?? {}), 16000);
@@ -90,7 +93,7 @@ export async function handle(req, res, env = process.env) {
     const known = new Set(TOOLS.map((t) => t.function.name));
     const calls = (Array.isArray(m.tool_calls) ? m.tool_calls : []).filter((t) => { if (!known.has(t?.function?.name)) return false; try { const a = JSON.parse(t.function.arguments || "{}"); return a !== null && typeof a === "object" && !Array.isArray(a); } catch { return false; } }).slice(0, 4)
       .map((t) => ({ id: String(t.id ?? "").slice(0, 80), type: "function", function: { name: t.function.name, arguments: String(t.function.arguments || "{}").slice(0, 2000) } }));
-    return send(res, 200, { message: { role: "assistant", content: text, ...(calls.length ? { tool_calls: calls } : {}) }, model: model.split("/").pop() });
+    return send(res, 200, { message: { role: "assistant", content: text, reasoning_content: clip(String(m.reasoning_content ?? m.reasoning ?? ""), 12000), ...(calls.length ? { tool_calls: calls } : {}) }, model: model.split("/").pop() });
   } catch (e) {
     return send(res, 504, { error: e?.name === "AbortError" ? "The model took too long to answer." : "The model service could not be reached." });
   }

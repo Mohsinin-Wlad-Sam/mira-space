@@ -86,7 +86,7 @@ resampled values to 0.005%, decoded flag masks bit for bit.
 | … of those, no Gaia source at all · of which unnamed in SIMBAD and red (W1−W2 > 0.6) | 907 · 41 |
 | … within 10° of the plane (2,539 rows) that match Gaia | 44%: crowding defeats the test there, so these rows are hidden by default |
 | Known L and T dwarfs recovered (SIMBAD spectral types) | 174 |
-| The 22 survey candidates, through the Lab's detector | 19 detected · 8 moved at ≥ 5σ over 15–28 years · 19 listed by CatWISE2020 with the same motion · 6 with a SIMBAD entry, none with a spectral type |
+| The 22 survey candidates, through the Lab's detector | 19 detected · 9 moved at ≥ 5σ over 16–28 years, 8 of them with the motion CatWISE2020 lists · CatWISE2020 lists 19 of the 22, 17 with the survey's motion · 2 have a Gaia DR3 entry after all · 6 have a SIMBAD entry, none a spectral type · all 9 with a measurable 3.3/4.0 µm ratio are below 0.6 |
 | Methane dips confirmed (3.3 µm flux below 60% of the 4.0 µm flux, and lower by at least 3σ) | 44 of 1,635 measurable |
 | Brightness changes that hold against AllWISE | 17 of 1,981 clean cases: blazars, a Seyfert galaxy, a young star, the site of SN 2022gzi |
 

@@ -240,9 +240,10 @@ export const features: Feature[] = [
     eyebrow: 'At your pace',
     title: 'Time you can steer',
     body:
-      'Each SPHEREx visit becomes one deep image on a time bar that reaches back to 1999. Drag it, step from date ' +
-      'to date, slow it down: a moving source walks along its measured path while the stars stay put. Nothing ' +
-      'plays by itself, and every mark on the image is explained beside it.',
+      'One time bar, three NASA missions: the pictures 2MASS took around 1999 and WISE in 2010, then one deep ' +
+      'SPHEREx image per visit. Drag it, step from date to date, slow it down: a moving source walks along its ' +
+      'measured path while the stars stay put. Nothing plays by itself, and every mark on the image is explained ' +
+      'beside it.',
     cta: { label: 'Follow a brown dwarf across 27 years', href: viewer.luhman },
     image: images.motion,
   },

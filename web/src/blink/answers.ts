@@ -50,11 +50,11 @@ export function answerMove(A: Analysis | null, cat?: { pmra?: number; pmdec?: nu
   const tot = Math.hypot(m.pmra, m.pmdec), etot = Math.hypot(m.epmra, m.epmdec) / Math.SQRT2, sig = tot / Math.max(etot, 1e-6);
   if (sig <= 4) return { tone: "neutral", chip: "At rest", big: `< ${(3 * etot).toFixed(2)}`, unit: "″/yr", label: "no motion detected (3σ limit)",
     text: `Nothing slower than this could be noticed over SPHEREx's first ${(m.span / 365.25).toFixed(1)} years of images.` };
-  const ep = plxError(m), plxOk = m.plx !== null && m.plx / ep > 3 && !A.motionFlagged, catTot = cat && Math.hypot(cat.pmra ?? 0, cat.pmdec ?? 0) > 0.05 ? Math.hypot(cat.pmra ?? 0, cat.pmdec ?? 0) : 0;
+  const ep = plxError(m), plxOk = m.plx !== null && m.plx / ep > 5 && !A.motionFlagged, catTot = cat && Math.hypot(cat.pmra ?? 0, cat.pmdec ?? 0) > 0.05 ? Math.hypot(cat.pmra ?? 0, cat.pmdec ?? 0) : 0;
   return { tone: "pos", chip: "Moving", big: tot.toFixed(tot < 1 ? 2 : 1), unit: "″/yr", label: `proper motion · toward the ${compass(m.pmra, m.pmdec)}`,
     text: `${tot > 0.4 ? `It crosses the width of the full Moon in about ${Math.round(1800 / tot / 10) * 10} years.` : "A slow drift across the sky."}` +
       (A.motionFlagged ? ` The star overflows the camera, so the figure is approximate.` : "") +
-      (plxOk ? ` Its yearly swing against the background puts it <b>${(3.2616 / (m.plx! + ep)).toFixed(0)}–${(3.2616 / (m.plx! - ep)).toFixed(0)} light-years</b> away.` : "") +
+      (plxOk ? ` Its yearly swing against the background, measured on the SPHEREx exposures alone, puts it <b>${(3.2616 / (m.plx! + ep)).toFixed(0)}–${(3.2616 / (m.plx! - ep)).toFixed(0)} light-years</b> away.` : "") +
       (catTot ? ` ${cat!.source?.includes("Gaia") ? "Gaia" : "Catalogue"} value: ${catTot.toFixed(catTot < 1 ? 2 : 1)}″/yr.` : "") };
 }
 /** PHOTOMETER — brightness from visit to visit, compared only at matching wavelengths */

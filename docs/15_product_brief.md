@@ -94,9 +94,11 @@ ratio), ~40 objects per second.
 - Methane list: 44 confirmed dips out of 1,635 measurable (3.3 µm flux below 60% of the 4.0 µm flux and lower by at
   least 3σ; 51 on the ratio alone).
 - The 22 candidates, through the field detector and against other catalogues (`web/public/data/verified/candidates.json`,
-  Cases page): 19 detected, 8 moved at ≥ 5σ over 15–28 years; CatWISE2020 lists 19 of them with the same motion; 6 have
-  a SIMBAD entry (two as brown-dwarf candidates), none a spectral type. Eight of the ten with a measurable 3.3/4.0 µm
-  ratio are below 0.6 (methane-like).
+  Cases page): 19 detected, 9 moved at ≥ 5σ over 16–28 years, 8 of them with the motion CatWISE2020 lists. CatWISE2020
+  lists 19 of the 22 (17 with the survey's motion); 2 turn out to have a Gaia DR3 entry; 6 have a SIMBAD entry (two as
+  brown-dwarf candidates), none a spectral type. All 9 with a measurable 3.3/4.0 µm ratio are below 0.6
+  (methane-like). None of the 19 detected is absent from every catalogue: the open question for each is what it is,
+  which needs a spectrum.
 
 The catalogue the app shows is the **verified** one, with the counts above stated as they are.
 

@@ -159,7 +159,7 @@ export function detectChanges(frames: Frame[], N: number, center: [number, numbe
     G.forEach((g, k) => { if (g.plx === null || Math.hypot(g.pmra, g.pmdec) * Math.abs(yrAll - z.yr) < 6) return; const [ra, dec] = catPos(g, z.yr), [x, y] = sky(ra, dec);
       if (Math.hypot(x - z.xi, y - z.eta) < 4 && (g.mag ?? 30) < bm) { bm = g.mag ?? 30; bk = k; } });
     if (bk < 0) continue; z.old = true;
-    if (!zones.some((q) => !q.old && Math.hypot(q.xi - gNow[bk][0], q.eta - gNow[bk][1]) < 10)) zones.push({ xi: gNow[bk][0], eta: gNow[bk][1], r: z.r, id: z.id, yr: yrAll });
+    if (!zones.some((q) => !q.old && Math.hypot(q.xi - gNow[bk][0], q.eta - gNow[bk][1]) < 10)) zones.push({ xi: gNow[bk][0], eta: gNow[bk][1], r: 1.3 * z.r, id: z.id, yr: yrAll });   // SPHEREx's own glare reaches further than the old surveys' did
   }
   const zoneOf = (xi: number, eta: number) => zones.find((z) => Math.hypot(z.xi - xi, z.eta - eta) < z.r);
   // ---- tie every visit to Gaia: the median offset of the reference stars in that visit
@@ -306,6 +306,13 @@ export function detectChanges(frames: Frame[], N: number, center: [number, numbe
           r.pm = fitLine(r.epochs, "SPHEREx + WISE 2010 + 2MASS, linked"); } }
     }
   }
+  // ---- how deep the catalogue rows in hand go. The services return the brightest rows first, up to a cap: in a
+  //      crowded or wide field the list stops well above the survey's own limit, and a source fainter than its last row
+  //      cannot be called absent from that survey. (Three quarters of a magnitude of margin.)
+  const faintest = (v: (number | null | undefined)[]) => { const m = v.filter((x): x is number => typeof x === "number" && Number.isFinite(x)); return m.length ? Math.max(...m) : null; };
+  const wEnd = faintest(W.map((w) => w.mag)), tEnd = faintest(T.map((t) => t.k));
+  const reach = { w1: wEnd !== null ? magToMjy(wEnd - 0.75, "W1") : Infinity, w2: wEnd !== null ? magToMjy(wEnd - 0.75, "W2") : Infinity, k: tEnd !== null ? magToMjy(tEnd - 0.75, "Ks") : Infinity };
+  const shortList = (wEnd !== null && wEnd < 15.5) || W.length >= 400;
   // ---- verdicts
   for (const r of rows) {
     const ok = clean(r), vis = r.epochs.filter((e) => e.src === "SPHEREx");
@@ -329,10 +336,10 @@ export function detectChanges(frames: Frame[], N: number, center: [number, numbe
     if (ok2 && r.snr >= 15 && strong.length && !ds.some((d) => Math.sign(Math.log(d.ratio)) !== Math.sign(Math.log(strong[0].ratio)) && Math.abs(d.z) > 2)) r.tags.unshift(strong[0].ratio > 1 ? "BRIGHTER" : "FAINTER");
     if (ok2 && r.snr >= 30 && r.lc?.variable) r.tags.push("VARIABLE");
     // "new" only means something for a source the old surveys would have seen, and that is there at more than one visit
-    const deep = (sn(r.W1) >= 5 && r.W1!.f > 0.25) || (sn(r.W2) >= 5 && r.W2!.f > 0.3) || (sn(r.K) >= 5 && r.K!.f > 2);
+    const deep = (sn(r.W1) >= 5 && r.W1!.f > Math.max(0.25, reach.w1)) || (sn(r.W2) >= 5 && r.W2!.f > Math.max(0.3, reach.w2)) || (sn(r.K) >= 5 && r.K!.f > Math.max(2, reach.k));
     if (ok2 && !r.wise && !r.gaia && !r.tm && haveW && haveG && r.snr >= 12 && deep && vis.filter((q) => (q.snr ?? 0) >= 6).length >= Math.min(2, V.length) &&
       !within(wPos, ...tan(r.x, r.y), 7).length && !within(tPos, ...tan(r.x, r.y), 7).length) r.tags.unshift("NEW");
-    r.known = r.gaia ? r.gaia.id : r.wise ? r.wise.id : r.tm ? r.tm.id : haveG || haveW ? "not in Gaia, AllWISE or 2MASS" : "catalogues unavailable";
+    r.known = r.gaia ? r.gaia.id : r.wise ? r.wise.id : r.tm ? r.tm.id : !(haveG || haveW) ? "catalogues unavailable" : deep || !shortList ? "not in Gaia, AllWISE or 2MASS" : "fainter than the catalogue rows read for this field";
   }
   for (const z of zones) {
     if (z.old || Math.abs(z.xi) > (c - 2) * PIX || Math.abs(z.eta) > (c - 2) * PIX) continue;
