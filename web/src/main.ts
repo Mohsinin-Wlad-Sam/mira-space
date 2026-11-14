@@ -3,7 +3,9 @@ import A from "aladin-lite";
 import { load, fmt, sexa, key, loadDetail, BASE, type Summary, type Target, type Obj } from "./data";
 import { drawSpectrum } from "./spectrum";
 import { spectrumStory, lightStory } from "./explain";
-import { mountFlipbook } from "./flipbook";
+import { mountBlink, type BlinkTarget } from "./blink/view";
+import { parseCoords, resolveName } from "./blink/catalogs";
+import { setBase, indexMeta } from "./blink/engine";
 import { mountLightCurve } from "./lightcurve";
 import { mountTwins, sparkline } from "./twins";
 import { SkyLayer, REF_YEAR, WISE_EPOCH, type Row } from "./sky";
@@ -12,7 +14,7 @@ import { loadSettings, saveSettings, DEFAULTS, SURVEYS, LADDER, COLORMAPS, PROJE
 
 const FLIP_IDS: Record<string, string> = { "Barnard's Star": "barnard", "Epsilon Indi B": "eps-indi-b", "WISE 0855-0714": "wise-0855", "WISE 0855−0714": "wise-0855", "RW Aurigae": "rw-aur", "R Draconis": "r-dra" };
 const NEARBY: Record<string, string> = { "Barnard's Star": "Barnard's Star", "Epsilon Indi B": "Epsilon Indi B", "WISE 0855-0714": "WISE 0855-0714", "WISE 0855−0714": "WISE 0855-0714" };
-let stopFlip: (() => void) | undefined, stop3d: (() => void) | undefined;
+let stop3d: (() => void) | undefined;
 
 // ============================================================================ constants
 const WISE_URL = SURVEYS.wise.url;
@@ -49,17 +51,23 @@ ui.innerHTML = `
 <header class="top">
   <a class="logo" href="/" aria-label="Mira home">
     <img src="/brand/mira-mark.png" width="59" height="32" alt="">
-    <span>MIRA<small>Sky viewer · 16-year census</small></span></a>
-  <form class="search" id="search"><input id="q" placeholder="Search a star, or RA Dec" autocomplete="off" enterkeyhint="search"></form>
-  <nav class="topnav">
-    <button class="btn ghost sm" id="tourbtn">Tour</button>
-    <button class="btn sm" id="hoodbtn" title="Fly through the census in 3D, every object at its measured or AI-inferred distance">3D Space</button>
-    <button class="btn ghost sm" id="labbtn" title="Test ideas on the census and run simulations">Lab</button>
-    <button class="btn ghost sm" id="viewbtn">View</button>
-    <button class="btn ghost sm" id="aboutbtn">About</button>
+    <span>MIRA</span></a>
+  <nav class="mainnav" aria-label="Sections">
+    <button data-view="blink" title="Any position -> a movie of every SPHEREx pass">Blink</button>
+    <button data-view="atlas" title="The whole infrared sky, 2010 against 2025, with the census of what changed">Sky atlas</button>
+    <button data-view="space" title="Fly through the census in 3D">3D space</button>
+    <button data-view="lab" title="Test ideas on the census">Lab</button>
+    <button data-view="about">About</button>
   </nav>
-  <div class="live"><div class="eyebrow"><span class="dotlive"></span>Census live</div><b id="livecount">–</b></div>
+  <form class="search" id="search"><input id="q" placeholder="Find on the map: a name, or RA Dec" autocomplete="off" enterkeyhint="search"></form>
+  <div class="atlasnav">
+    <button class="btn ghost sm" id="tourbtn">Tour</button>
+    <button class="btn ghost sm" id="viewbtn">Display</button>
+  </div>
+  <div class="live" id="livebox" title="Latest SPHEREx exposure in MIRA's index; the index is rebuilt from NASA/IPAC IRSA's inventory after each data release"><span class="dotlive"></span><b id="livecount">SPHEREx data</b></div>
 </header>
+
+<section class="blinkpage" id="blinkpage"></section>
 
 <aside class="lenses" id="lenses">
   <div class="eyebrow lens-head">Lenses — what to light up</div>
@@ -488,15 +496,14 @@ function openObject(o: Obj, lens?: string, title?: string) {
         <li>${c.gaia_dist ? `Gaia DR3 also sees it: parallax distance <b>${fmtLy(c.gaia_dist)}</b> — ${Math.abs(Math.log(c.ai_dist / c.gaia_dist)) < 0.5 ? "consistent with our AI" : "different from our AI estimate"}.` : "Gaia DR3 has no parallax for it — too faint and red in visible light, as expected for a cold brown dwarf."}</li></ul>
         <p class="note">Not a confirmed discovery: it still needs a spectrum or a parallax to be confirmed. ${m ? `The same selection recovered ${m.recovered_known.toLocaleString()} already-known brown dwarfs, which is how we know it works.` : ""} Check it below in every SPHEREx pass, or in WiseView.</p></div>`; })() : ""}
     <div class="actions">
-      <button class="btn sm" id="pblink">Blink here</button>
+      <button class="btn sm ghost" id="pblink" title="Flip the map between WISE 2010 and SPHEREx 2025 here">2010 ↔ 2025</button>
       ${o.reliable_motion && (o.pm ?? 0) > 0.3 ? `<button class="btn sm ghost" id="pplay">Watch it move</button>` : ""}
       <button class="btn sm ghost" id="phood">Fly to it in 3D</button>
       <button class="btn sm ghost" id="pshare">Copy link</button>
       <a class="btn sm ghost" target="_blank" rel="noopener" href="http://byw.tools/wiseview#ra=${o.ra}&dec=${o.dec}&size=176&band=3&speed=200&minbright=-50&maxbright=500&window=0.5&diff_window=1&linear=1&zoom=9">WiseView</a>
       <a class="btn sm ghost" target="_blank" rel="noopener" href="https://simbad.cds.unistra.fr/simbad/sim-coo?Coord=${o.ra_sx}+${o.dec_sx}&Radius=15&Radius.unit=arcsec">SIMBAD</a>
     </div>
-    <div class="eyebrow" style="margin-top:26px">Flipbook · every SPHEREx exposure</div>
-    <div id="flip"></div>
+    <button class="cta" id="pblinkit"><span><b>Blink it</b><small>Every SPHEREx exposure of this object as a movie, with its spectrum and motion measured live</small></span><i>→</i></button>
     <div class="eyebrow" style="margin-top:26px">What its light is made of · SPHEREx, 102 colours</div>
     <div id="spec"></div>
     <div class="eyebrow" style="margin-top:26px">Artist's impression · drawn from its measured temperature</div>
@@ -516,16 +523,9 @@ function openObject(o: Obj, lens?: string, title?: string) {
     if (o.spec && S.lam.length && !o.sx_saturated) { const ph = m.estimatePhys(o, title); const simple = () => spectrumStory(el, S.lam, o.spec!, o, ph.T, ph.kind, () => drawSpectrum(el, S.lam, o.spec!, "", simple)); simple(); }
     else if (o.spec && S.lam.length) drawSpectrum(el, S.lam, o.spec);
   });
-  stopFlip?.();
   const fid = (title && FLIP_IDS[title]) || key(o);
-  const spec = o.spec && S.lam.length ? { lam: S.lam, flux: o.spec.map((v) => (v[0] === null ? null : v[0])) } : undefined;
-  mountFlipbook($("#flip"), fid, spec).then(async (stop) => {
-    if (stop) { stopFlip = stop; return; }
-    // not precomputed: build it live from NASA's archive (follows the object's measured motion)
-    const { mountLiveFlipbook } = await import("./liveflip");
-    if (S.sky?.selected !== myKey) return;
-    stopFlip = await mountLiveFlipbook($("#flip"), { ra: o.ra_sx, dec: o.dec_sx, pmra: o.reliable_motion ? o.pmra : 0, pmdec: o.reliable_motion ? o.pmdec : 0, epochYear: REF_YEAR });
-  });
+  $("#pblinkit").onclick = () => openBlink({ ra: o.ra_sx, dec: o.dec_sx, pmra: o.reliable_motion ? o.pmra ?? 0 : 0, pmdec: o.reliable_motion ? o.pmdec ?? 0 : 0, epoch: REF_YEAR,
+    name: title && !/candidate|object|source|world/i.test(title) ? title : undefined, source: "MIRA census, WISE 2010–2020", otype: lens ? LENSES[lens as LensKey]?.t.toLowerCase() + " · census object" : "census object" });
   const lcSimple = (): Promise<boolean> => lightStory($("#lc"), fid, o.sx_saturated, () => mountLightCurve($("#lc"), fid, o.sx_saturated, () => { lcSimple(); }));
   lcSimple().then((ok) => { if (!ok) mountLightCurve($("#lc"), fid, o.sx_saturated); });
   mountTwins($("#twins"), fid, S.lam, (ra, dec) => { flyTo(ra, dec, 0.4); toast("Flying to a spectral twin"); }, { ra: o.ra_sx, dec: o.dec_sx });
@@ -549,28 +549,28 @@ function openUnusual(u: any) {
     <p class="why">Our autoencoder learned what normal SPHEREx spectra look like from millions of examples. It <b>cannot reproduce this one</b>:
       the shape below (log flux, normalised) deviates from every pattern it knows. It could be a rare kind of object — an emission-line source, an ice-wrapped young star, a quasar at high redshift — or an instrumental artifact. Worth a human look.</p>
     <div style="margin:14px 0">${sparkline(u.shape, S.lam, undefined, 400, 140)}</div>
-    <div class="actions"><button class="btn sm" id="ublink">Blink here</button>
+    <div class="actions"><button class="btn sm" id="ublinkit">Blink it</button><button class="btn sm ghost" id="ublink">2010 ↔ 2025</button>
       <a class="btn sm ghost" target="_blank" rel="noopener" href="https://simbad.cds.unistra.fr/simbad/sim-coo?Coord=${u.ra_sx}+${u.dec_sx}&Radius=15&Radius.unit=arcsec">SIMBAD</a></div>`;
   openPanel();
   $("#ublink").onclick = () => { flyTo(u.ra_sx, u.dec_sx, 0.4); setBlink(true); };
+  $("#ublinkit").onclick = () => openBlink({ ra: u.ra_sx, dec: u.dec_sx, otype: "unusual spectrum · census object" });
 }
-/** "Inspect this spot": any RA/Dec -> live SPHEREx flipbook + spectrum, built in the browser (the challenge's core use case) */
-async function openPosition(ra: number, dec: number) {
-  stop3d?.(); stop3d = undefined; stopFlip?.(); stopFlip = undefined; S.sky?.select(null);
+/** "Inspect this spot" on the map: a small card that hands the position to BLINK (the SPHEREx movie + measurements) */
+function openPosition(ra: number, dec: number, known?: BlinkTarget) {
+  stop3d?.(); stop3d = undefined; S.sky?.select(null);
   const g = (() => { const R = [[-0.0548755604162154, -0.8734370902348850, -0.4838350155487132], [0.4941094278755837, -0.4448296299600112, 0.7469822444972189], [-0.8676661490190047, -0.1980763734312015, 0.4559837761750669]];
     const a = ra * Math.PI / 180, d = dec * Math.PI / 180, u = [Math.cos(d) * Math.cos(a), Math.cos(d) * Math.sin(a), Math.sin(d)], v = R.map((r) => r[0] * u[0] + r[1] * u[1] + r[2] * u[2]);
     return [(Math.atan2(v[1], v[0]) * 180 / Math.PI + 360) % 360, Math.asin(v[2]) * 180 / Math.PI]; })();
-  const link = `${location.origin}${location.pathname}#ra=${ra.toFixed(5)}&dec=${dec.toFixed(5)}&fov=0.3&inspect=1`;
-  $("#pbody").innerHTML = `<div class="eyebrow">Any spot on the sky</div><h2 class="display">${sexa(ra, dec).replace(/s /, "s<br>")}</h2>
+  $("#pbody").innerHTML = `<div class="eyebrow">This spot on the sky</div><h2 class="display">${sexa(ra, dec).replace(/s /, "s<br>")}</h2>
     <div class="coord">RA ${ra.toFixed(5)}° · Dec ${dec.toFixed(5)}° · Galactic ${g[0].toFixed(2)}°, ${g[1].toFixed(2)}°</div>
-    <div class="actions"><button class="btn sm ghost" id="poscopy">Copy embeddable link</button>
+    <button class="cta" id="posblink"><span><b>Blink this spot</b><small>A movie of every SPHEREx pass over it, read live from NASA's archive, with spectra on the fly</small></span><i>→</i></button>
+    <div class="actions">
       <a class="btn sm ghost" target="_blank" rel="noopener" href="https://irsa.ipac.caltech.edu/applications/spherex/?__action=layout.showDropDown&view=MultiTableSearchCmd&position=${ra}+${dec}">IRSA SPHEREx</a>
-      <a class="btn sm ghost" target="_blank" rel="noopener" href="http://byw.tools/wiseview#ra=${ra}&dec=${dec}&size=176&band=3&speed=200&minbright=-50&maxbright=500&window=0.5&diff_window=1&linear=1&zoom=9">WiseView</a></div>
-    <div class="eyebrow" style="margin-top:20px">Every SPHEREx pass over this spot · built live</div><div id="posflip"></div>`;
+      <a class="btn sm ghost" target="_blank" rel="noopener" href="http://byw.tools/wiseview#ra=${ra}&dec=${dec}&size=176&band=3&speed=200&minbright=-50&maxbright=500&window=0.5&diff_window=1&linear=1&zoom=9">WiseView</a>
+      <a class="btn sm ghost" target="_blank" rel="noopener" href="https://simbad.cfa.harvard.edu/simbad/sim-coo?Coord=${ra}+${dec}&Radius=30&Radius.unit=arcsec">SIMBAD</a></div>
+    <p class="note" style="margin-top:18px">Tip: right-click (or long-press) anywhere on the map to inspect that spot.</p>`;
   openPanel();
-  $("#poscopy").onclick = () => { navigator.clipboard?.writeText(link); toast("Link copied — it opens this spot and builds the flipbook"); };
-  const { mountLiveFlipbook } = await import("./liveflip");
-  stopFlip = await mountLiveFlipbook($("#posflip"), { ra, dec }, true);
+  $("#posblink").onclick = () => openBlink(known ?? { ra, dec });
 }
 function flyTo(ra: number, dec: number, fov: number) {
   if (!S.al) return;
@@ -597,8 +597,8 @@ async function openSpaceView(focus?: string, withLab = false) {
   const done = () => { closeSpace?.(); closeSpace = null; document.body.classList.remove("space-on"); nudge([300, 1200]); };
   (host as any).onclosed = () => { closeSpace = null; document.body.classList.remove("space-on"); nudge([300, 1200]); };
   closeSpace = await openSpace(host, { lowPower: set.saver || LOW_POWER, focus, onLab: () => { done(); openLabPage(); },
-    onSky: (ra, dec) => { done(); flyTo(ra, dec, 0.5); },
-    onDossier: async (id) => { done(); const o = await loadDetail(id); if (o) { flyTo(o.ra_sx, o.dec_sx, 0.3); openObject(o); } else toast("Details for this object are not exported"); } });
+    onSky: async (ra, dec) => { done(); await showAtlas(); flyTo(ra, dec, 0.5); },
+    onDossier: async (id) => { done(); await showAtlas(); const o = await loadDetail(id); if (o) { flyTo(o.ra_sx, o.dec_sx, 0.3); openObject(o); } else toast("Details for this object are not exported"); } });
 }
 
 // ============================================================================ tour
@@ -640,7 +640,8 @@ function renderStep(i: number) {
 function endTour() { $("#tour").style.display = "none"; S.tourStep = -1; document.body.classList.remove("touring"); }
 
 // ============================================================================ about
-function renderAbout() {
+async function renderAbout() {
+  await loadBasics();
   const rows = S.targets.map((t) => `<tr><td>${esc(t.name)}</td><td class="m">${t.census ? `${fmt(t.census.pmra, 2)}, ${fmt(t.census.pmdec, 2)}` : "pending"}</td>
     <td class="m">${fmt(t.pmra / 1000, 2)}, ${fmt(t.pmdec / 1000, 2)}</td><td class="m">${t.census ? fmt(t.census.sx_w2_snr, 0) : "–"}</td></tr>`).join("");
   $("#about").innerHTML = `<button class="icon-btn aclose" id="aclose">✕</button>
@@ -681,15 +682,36 @@ function renderAbout() {
 }
 
 // ============================================================================ boot
-async function boot() {
-  S.summary = await load<Summary>("summary", true);
-  S.lam = S.summary?.lam_um ?? [];
-  S.targets = (await load<Target[]>("targets", true)) ?? [];
+// ---- two main views share the page: BLINK (the SPHEREx movie workstation, default) and the sky atlas (Aladin + census)
+type View = "blink" | "atlas";
+const query = new URLSearchParams(location.search), EMBED = query.has("embed");
+let view: View = "blink", atlasP: Promise<void> | null = null;
+setBase(import.meta.env.BASE_URL);
+document.body.classList.toggle("embed", EMBED);
+const blink = mountBlink($("#blinkpage"), { embed: EMBED, toast,
+  onState: (p) => { if (EMBED) p.set("embed", "1"); history.replaceState(null, "", `${location.pathname}?${p.toString()}`); },
+  onAtlas: async (ra, dec) => { await showAtlas(); flyTo(ra, dec, 0.3); } });
+
+function setView(v: View) {
+  view = v; document.body.classList.toggle("v-blink", v === "blink"); document.body.classList.toggle("v-atlas", v === "atlas");
+  $("#blinkpage").classList.toggle("open", v === "blink");
+  document.querySelectorAll<HTMLElement>(".mainnav button").forEach((b) => b.classList.toggle("on", b.dataset.view === v));
+  if (v === "blink") { setBlink(false); play(false); endTour(); closePanel(); $("#drawer").classList.remove("open"); blink.resume(); }
+  else blink.pause();
+}
+function openBlink(t: BlinkTarget) { setView("blink"); blink.open(t); }
+async function showAtlas() { setView("atlas"); await ensureAtlas(); nudge([100, 700, 1800]); }
+async function loadBasics() {
+  if (S.summary) return;
+  S.summary = await load<Summary>("summary", true); S.lam = S.summary?.lam_um ?? []; S.targets = (await load<Target[]>("targets", true)) ?? [];
+}
+function ensureAtlas() { return (atlasP ??= bootAtlas()); }
+
+/** the atlas (Aladin Lite + census layers) starts only when first shown: BLINK links and embeds stay light */
+async function bootAtlas() {
+  await loadBasics();
   await initSky();
-  const s = S.summary;
-  if (s) $("#livecount").textContent = `${s.tiles_done.toLocaleString()} / ${s.tiles_total.toLocaleString()} sky tiles`;
-  const p0 = hashParams();
-  if (!p0.get("ra")) S.chan = OVERVIEW_CH();
+  if (!hashParams().get("ra")) S.chan = OVERVIEW_CH();
   setChan(S.chan); wireRainbow(); wireTime();
   $("#rainbow").style.display = SURVEYS[set.survey].cube && !SURVEYS[set.survey].rgb ? "" : "none";
   await loadLenses();
@@ -702,42 +724,43 @@ async function boot() {
   document.querySelectorAll<HTMLButtonElement>(".rung").forEach((b) => b.onclick = () => pickSurvey(b.dataset.s as SurveyKey));
   document.querySelectorAll<HTMLElement>(".rung").forEach((b) => b.classList.toggle("on", b.dataset.s === set.survey));
   if (SURVEYS[set.survey].rgb) applySurvey();
+}
+
+async function boot() {
+  document.querySelectorAll<HTMLButtonElement>(".mainnav button").forEach((b) => b.onclick = () => {
+    const v = b.dataset.view!; endTour();
+    if (v === "blink") setView("blink"); else if (v === "atlas") showAtlas(); else if (v === "space") openSpaceView(); else if (v === "lab") openLabPage(); else renderAbout();
+  });
   $("#pclose").onclick = closePanel;
   wireSheet();
-  $("#tourbtn").onclick = () => renderStep(0);
-  $("#aboutbtn").onclick = renderAbout;
+  $("#tourbtn").onclick = async () => { await showAtlas(); renderStep(0); };
   $("#viewbtn").onclick = () => ($("#drawer").classList.contains("open") ? $("#drawer").classList.remove("open") : renderDrawer());
-  $("#hoodbtn").onclick = () => { endTour(); openSpaceView(); };
-  $("#labbtn").onclick = () => { endTour(); openSpaceView(undefined, true); };
   $("#search").onsubmit = async (e) => {
-    e.preventDefault(); const q = ($("#q") as HTMLInputElement).value.trim(); endTour(); ($("#q") as HTMLInputElement).blur();
-    const m = q.match(/^\s*(-?\d+(?:\.\d+)?)[\s,]+(-?\d+(?:\.\d+)?)\s*$/);
-    // sexagesimal: "08h55m10.8s -07°14′43″", "08:55:10.8 -07:14:43" or "08 55 10.8 -07 14 43"
-    const toks = q.trim().replace(/−/g, "-").split(/[\s,]+/);
-    const halves = toks.length === 2 ? toks : toks.length === 6 ? [toks.slice(0, 3).join(":"), toks.slice(3).join(":")] : null;
-    const num3 = (t: string) => t.replace(/[hmsd°′'″":]/gi, " ").trim().split(/\s+/).map(Number);
-    const rp = halves ? num3(halves[0]) : [], dp = halves ? num3(halves[1]) : [];
-    if (!m && halves && rp.length === 3 && dp.length === 3 && [...rp, ...dp].every(isFinite)) {
-      const ra = (rp[0] + rp[1] / 60 + rp[2] / 3600) * 15, dec = (halves[1].startsWith("-") ? -1 : 1) * (Math.abs(dp[0]) + dp[1] / 60 + dp[2] / 3600);
-      flyTo(ra, dec, 0.2); setTimeout(() => openPosition(ra, dec), 2400); return;
-    }
-    if (m) { flyTo(+m[1], +m[2], 0.2); setTimeout(() => openPosition(+m[1], +m[2]), 2400); return; }
+    e.preventDefault(); const q = ($("#q") as HTMLInputElement).value.trim(); if (!q) return; endTour(); ($("#q") as HTMLInputElement).blur();
+    await showAtlas();
+    const xy = parseCoords(q);
+    if (xy) { flyTo(xy[0], xy[1], 0.2); setTimeout(() => openPosition(xy[0], xy[1]), 2400); return; }
     const norm = (x: string) => x.toLowerCase().replace(/\beps\b/g, "epsilon").replace(/\balf\b/g, "alpha").replace(/[^a-z0-9]/g, "");
     const t = S.targets.find((x) => norm(x.name).includes(norm(q)));
     if (t?.census) { flyTo(t.census.ra_sx, t.census.dec_sx, 0.5); setTimeout(() => openObject(t.census!, undefined, t.name), 3500); return; }
-    try {
-      const r = await fetch(`https://cds.unistra.fr/cgi-bin/nph-sesame/-oJ/SNV?${encodeURIComponent(q)}`);
-      const j = await r.json(); const res = j?.Target?.Resolver; const pos = Array.isArray(res) ? res[0] : res;
-      if (pos?.jradeg !== undefined) { flyTo(pos.jradeg, pos.jdedeg, 0.2); setTimeout(() => openPosition(pos.jradeg, pos.jdedeg), 2400); toast(`${q}: resolved by CDS Sesame — building its SPHEREx flipbook`); return; }
-    } catch { /* */ }
+    const r = await resolveName(q).catch(() => null);
+    if (r) { flyTo(r.ra, r.dec, 0.2); setTimeout(() => openPosition(r.ra, r.dec, r), 2400); toast(`${r.name ?? q} · found in SIMBAD`); return; }
     toast(`Could not find "${q}" — try RA Dec in degrees`);
   };
-  const p = hashParams();
-  if (p.get("ra")) { if (p.get("blink")) setBlink(true); const k = p.get("k"); if (k) { const o = await loadDetail(k); if (o) openObject(o); } else if (p.get("inspect")) setTimeout(() => openPosition(+p.get("ra")!, +p.get("dec")!), 1500); }
-  // deep links from the landing page: #tour starts the guided tour, #about opens "How it works", #hood the 3D neighbourhood
-  const openFromHash = () => { const h = hashParams(); if (h.has("tour")) renderStep(0); else if (h.has("about")) renderAbout(); else if (h.has("lab")) openSpaceView(undefined, true); else if (h.has("hood") || h.has("space")) openSpaceView(); };
+  indexMeta().then((m) => { if (m) $("#livecount").textContent = `SPHEREx data through ${m.last}`; });
+  // deep links. ?ra=&dec=[&fov=&name=] or ?target=<name> open BLINK (embeddable); #atlas, #tour, #space, #lab, #about open the other sections
+  const h = hashParams();
+  if (query.has("ra") || query.has("target") || query.has("name")) { setView("blink"); blink.openFromParams(query); }
+  else if (h.get("ra") && h.has("inspect")) openBlink({ ra: +h.get("ra")!, dec: +h.get("dec")! });
+  else if (h.get("ra")) { await showAtlas(); if (h.get("blink")) setBlink(true); const k = h.get("k"); if (k) { const o = await loadDetail(k); if (o) openObject(o); } }
+  else if (h.has("atlas") || h.has("tour")) await showAtlas();
+  else setView("blink");
+  const openFromHash = async () => {
+    const g = hashParams();
+    if (g.has("tour")) { await showAtlas(); renderStep(0); } else if (g.has("about")) renderAbout(); else if (g.has("lab")) openLabPage(); else if (g.has("hood") || g.has("space")) openSpaceView();
+    else if (g.has("atlas") && view !== "atlas") showAtlas(); else if (g.has("blink") && !g.get("ra") && view !== "blink") setView("blink");
+  };
   openFromHash(); window.addEventListener("hashchange", openFromHash);
-  setInterval(async () => { const s2 = await load<Summary>("summary", true); if (s2) $("#livecount").textContent = `${s2.tiles_done.toLocaleString()} / ${s2.tiles_total.toLocaleString()} sky tiles`; }, 120000);
 }
 // phone: the dossier is a bottom sheet; drag its handle down to dismiss
 function wireSheet() {
