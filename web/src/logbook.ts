@@ -32,16 +32,16 @@ const brief = (a: Answer): Brief => ({ chip: a.chip, text: `${a.big}${a.unit ? `
 const VERDICTS: [string, string][] = [["", "no verdict yet"], ["real", "looks real"], ["moving", "moves"], ["variable", "varies"], ["artifact", "artifact or blend"], ["nothing", "nothing there"], ["follow", "needs follow-up"]];
 
 export function mountLogbook(host: HTMLElement, ctx: LogCtx) {
-  let tab: "mine" | "cases" = "mine", cases: any[] | null = null, ac: AbortController | null = null, fresh = new Map<string, { n: number; last: number }>();
+  let tab: "mine" | "cases" = "mine", checked = new Map<string, any>(), cases: any[] | null = null, ac: AbortController | null = null, fresh = new Map<string, { n: number; last: number }>();
   host.innerHTML = `<div class="lg">
-    <div class="lg-top"><div><div class="eyebrow">Logbook</div><h2 class="display">Your observations</h2>
+    <div class="lg-top"><div><div class="eyebrow">Cases · your saved measurements</div><h2 class="display">Your cases</h2>
       <p class="lg-sub">What you save stays in this browser: MIRA has no accounts and keeps nothing. Take it with you as a file, bring it back on any device, or hand it to a colleague.</p></div>
       <div class="lg-acts"><button class="btn sm" id="lgadd">Add a list of targets</button><button class="btn sm ghost" id="lgexp">Export</button><label class="btn sm ghost" for="lgfile">Import</label><input type="file" id="lgfile" accept=".json,application/json" hidden></div></div>
     <div class="lg-addbox" id="lgaddbox" hidden>
-      <p>One name or position per line (up to 15). MIRA observes each in turn — about 15 seconds apiece — and files the instrument readouts here.</p>
+      <p>One name or position per line (up to 15). MIRA measures each in turn — about 15 seconds apiece — and files the instrument readings here.</p>
       <textarea id="lgq" rows="6" spellcheck="false" placeholder="Luhman 16&#10;Wolf 359&#10;331.0965 -56.8007&#10;08h55m10.83s -07d14m42.5s"></textarea>
-      <div class="lg-row"><button class="btn sm" id="lgrun">Observe them all</button><button class="btn sm ghost" id="lgcancel">Close</button><span class="mono" id="lgprog"></span></div></div>
-    <div class="bk-modes lg-tabs" role="tablist"><button data-t="mine">My observations <span id="lgn"></span></button><button data-t="cases">Open cases <span id="lgc"></span></button></div>
+      <div class="lg-row"><button class="btn sm" id="lgrun">Measure them all</button><button class="btn sm ghost" id="lgcancel">Close</button><span class="mono" id="lgprog"></span></div></div>
+    <div class="bk-modes lg-tabs" role="tablist"><button data-t="mine">My cases <span id="lgn"></span></button><button data-t="cases">Survey candidates <span id="lgc"></span></button></div>
     <div id="lgbody"></div></div>`;
   const $ = <T extends HTMLElement>(q: string) => host.querySelector(q) as T;
 
@@ -63,8 +63,8 @@ export function mountLogbook(host: HTMLElement, ctx: LogCtx) {
     const L = loadLog(), body = $("#lgbody");
     $("#lgn").textContent = L.length ? `(${L.length})` : "";
     body.innerHTML = L.length ? `<div class="lg-list">${L.map(card).join("")}</div>` : `<div class="lg-empty"><b>Nothing here yet.</b>
-      <p>Observe a place and press <b>Save to logbook</b>, add a list of targets above, or judge one of the survey's open cases.</p>
-      <div class="lg-row"><button class="btn sm" id="lgfirst">Observe ε Indi B, a brown dwarf 12 light-years away</button><button class="btn sm ghost" id="lgcases">See the open cases</button></div></div>`;
+      <p>Measure a field in the Lab and press <b>Save as a case</b>, add a list of targets above, or examine one of the survey's candidates.</p>
+      <div class="lg-row"><button class="btn sm" id="lgfirst">Measure ε Indi B, a brown dwarf 12 light-years away</button><button class="btn sm ghost" id="lgcases">See the survey candidates</button></div></div>`;
     host.querySelector<HTMLElement>("#lgfirst")?.addEventListener("click", () => ctx.onObserve("eps-indi-b"));
     host.querySelector<HTMLElement>("#lgcases")?.addEventListener("click", () => { tab = "cases"; render(); });
     body.querySelectorAll<HTMLElement>(".lg-card").forEach((c) => { const id = c.dataset.id!, get = () => loadLog().find((x) => x.id === id);
@@ -76,19 +76,25 @@ export function mountLogbook(host: HTMLElement, ctx: LogCtx) {
   /** the survey's unconfirmed brown-dwarf candidates: nobody has looked at them one by one */
   function renderCases() {
     const body = $("#lgbody");
-    if (!cases) { body.innerHTML = `<div class="lg-empty">Loading the open cases…</div>`;
-      fetch(`${BASE}data/candidates.json`).then((r) => (r.ok ? r.json() : null)).then((j) => { cases = j?.items ?? []; $("#lgc").textContent = cases!.length ? `(${cases!.length})` : ""; if (tab === "cases") renderCases(); }).catch(() => { cases = []; if (tab === "cases") renderCases(); });
+    if (!cases) { body.innerHTML = `<div class="lg-empty">Loading the survey candidates…</div>`;
+      Promise.all([fetch(`${BASE}data/candidates.json`).then((r) => (r.ok ? r.json() : null)).catch(() => null), fetch(`${BASE}data/verified/candidates.json`).then((r) => (r.ok && !(r.headers.get("content-type") ?? "").includes("html") ? r.json() : null)).catch(() => null)]).then(([j, v]) => {
+        cases = j?.items ?? []; checked = new Map(((v?.items ?? []) as any[]).map((q) => [q.id, q])); $("#lgc").textContent = cases!.length ? `(${cases!.length})` : ""; if (tab === "cases") renderCases(); });
       return; }
-    if (!cases.length) { body.innerHTML = `<div class="lg-empty">The list of open cases is not available on this deployment.</div>`; return; }
+    if (!cases.length) { body.innerHTML = `<div class="lg-empty">The list of survey candidates is not available on this deployment.</div>`; return; }
     const mine = new Map(loadLog().map((e) => [e.id, e]));
-    body.innerHTML = `<p class="lg-intro">MIRA's survey of 16 years of infrared sky found <b>${cases.length} objects</b> that look like cold, nearby brown dwarfs — they move, or show methane — and are in no catalogue of known ones. The same search recovers 125 known brown dwarfs, so it works; but each of these still needs a person to look. Observe one, check that it moves away from its 2010 marker and is brightest at 4–5 µm, and record your verdict.</p>
+    const nOk = [...checked.values()].filter((q) => q.tags?.includes("MOVED")).length;
+    body.innerHTML = `<p class="lg-intro">The survey of 16 years of infrared sky singled out <b>${cases.length} objects</b> that look like cold, nearby brown dwarfs — they move, or show a methane dip — and have no identification among known brown dwarfs (the same search recovers 125 known ones). ${checked.size ? `Each was then put through the Lab's motion detector on raw SPHEREx exposures: <b>${nOk} of ${checked.size}</b> show a motion above 5σ over 15 to 27 years. NASA's CatWISE2020 catalogue lists ${[...checked.values()].filter((q) => q.catwise).length} of them as moving sources with the same motion, and ${[...checked.values()].filter((q) => q.simbad).length} have an entry in SIMBAD, none with a measured spectral type: what MIRA adds is a new epoch and a 0.75–5 µm spectrum.` : ""} They are candidates, not discoveries: open one in the Lab, look at its track and its spectrum, and record your verdict.</p>
       <div class="lg-list">${cases.map((it: any, k: number) => { const id = idOf(it.ra_sx, it.dec_sx), e = mine.get(id), mu = Math.hypot(it.pmra ?? 0, it.pmdec ?? 0);
+        const q = checked.get(`${it.tile}-${it.obj}`), ok = q?.tags?.includes("MOVED");
+        const chk = !q ? "" : !q.detected ? `<em class="tag off">not detected</em> not seen on the raw exposures` : ok ? `<em class="tag pos">motion confirmed</em> ${Math.hypot(q.pm.ra, q.pm.dec).toFixed(3)} ± ${q.pm.err.toFixed(3)}″/yr over ${q.pm.baseline.toFixed(0)} yr (${q.pm.sigma.toFixed(0)}σ)`
+          : q.pm ? `<em class="tag warn">not confirmed</em> ${Math.hypot(q.pm.ra, q.pm.dec).toFixed(3)} ± ${q.pm.err.toFixed(3)}″/yr (${q.pm.sigma.toFixed(1)}σ)${q.tags?.length ? ` · ${q.tags.join(", ").toLowerCase()}` : ""}` : `<em class="tag warn">not measured</em>`;
         return `<article class="lg-case" data-k="${k}"><span class="mono lg-k">${String(k + 1).padStart(2, "0")}</span>
-          <div class="lg-main"><b class="mono">${sexa(it.ra_sx, it.dec_sx)}</b><span>${it.moving ? `moves ${mu.toFixed(2)}″ a year · ` : ""}${it.has_methane ? "methane dip · " : ""}AI estimate: about ${(it.ai_dist * 3.2616).toFixed(0)} light-years, ${Math.round(it.ai_teff / 10) * 10} K${it.gaia_dist ? ` · Gaia sees it at ${(it.gaia_dist * 3.2616).toFixed(0)} light-years` : ""}</span></div>
+          <div class="lg-main"><b class="mono">${sexa(it.ra_sx, it.dec_sx)}</b><span>${it.moving ? `survey: moves ${mu.toFixed(2)}″ a year · ` : ""}${it.has_methane ? "methane dip · " : ""}AI estimate: about ${(it.ai_dist * 3.2616).toFixed(0)} light-years, ${Math.round(it.ai_teff / 10) * 10} K${it.gaia_dist ? ` · Gaia sees it at ${(it.gaia_dist * 3.2616).toFixed(0)} light-years` : ""}</span>
+            ${q ? `<span class="lg-chk">${chk}${q.catwise ? ` · ${esc(q.catwise.name)}: ${Math.hypot(q.catwise.pmra, q.catwise.pmdec).toFixed(3)}″/yr` : ""}${q.ch4 !== null && q.ch4 !== undefined ? ` · 3.3/4.0 µm flux ratio ${q.ch4}` : ""} · ${q.simbad ? `SIMBAD: ${esc(q.simbad)}` : "no SIMBAD entry"}</span>` : ""}</div>
           <select aria-label="Your verdict">${VERDICTS.map(([v, l]) => `<option value="${v}"${e?.verdict === v ? " selected" : ""}>${l}</option>`).join("")}</select>
-          <button class="btn sm">Observe</button></article>`; }).join("")}</div>`;
+          <button class="btn sm">Open in the Lab</button></article>`; }).join("")}</div>`;
     body.querySelectorAll<HTMLElement>(".lg-case").forEach((c) => { const it = cases![+c.dataset.k!], k = +c.dataset.k!;
-      const t: BlinkTarget = { ra: it.ra_sx, dec: it.dec_sx, pmra: it.reliable_motion ? it.pmra : 0, pmdec: it.reliable_motion ? it.pmdec : 0, epoch: 2025.84, name: `Open case ${String(k + 1).padStart(2, "0")}`, otype: "possible brown dwarf · unconfirmed", source: "MIRA survey, WISE 2010–2020" };
+      const t: BlinkTarget = { ra: it.ra_sx, dec: it.dec_sx, pmra: it.reliable_motion ? it.pmra : 0, pmdec: it.reliable_motion ? it.pmdec : 0, epoch: 2025.84, name: `Candidate ${String(k + 1).padStart(2, "0")}`, otype: "possible brown dwarf · unconfirmed", source: "MIRA survey, WISE 2010–2020" };
       (c.querySelector("button") as HTMLElement).onclick = () => ctx.onObserve(t);
       (c.querySelector("select") as HTMLSelectElement).onchange = (ev) => { const v = (ev.target as HTMLSelectElement).value;
         upsert({ id: idOf(t.ra, t.dec), name: t.name!, ra: t.ra, dec: t.dec, pmra: t.pmra, pmdec: t.pmdec, epoch: t.epoch, otype: t.otype, source: t.source, savedAt: new Date().toISOString(), note: "", verdict: v, kind: "case" });
@@ -133,7 +139,7 @@ export function mountLogbook(host: HTMLElement, ctx: LogCtx) {
   $("#lgadd").onclick = () => { const bx = $("#lgaddbox"); bx.hidden = !bx.hidden; if (!bx.hidden) ($("#lgq") as HTMLTextAreaElement).focus(); };
   $("#lgcancel").onclick = () => { ac?.abort(); $("#lgaddbox").hidden = true; };
   $("#lgrun").onclick = runList;
-  $("#lgexp").onclick = () => { const L = loadLog(); if (!L.length) { ctx.toast("The logbook is empty"); return; }
+  $("#lgexp").onclick = () => { const L = loadLog(); if (!L.length) { ctx.toast("No case saved yet"); return; }
     download(JSON.stringify({ format: "mira-logbook", version: 1, exported: new Date().toISOString(), field_arcmin_per_32px: +((32 * PIX_ARCSEC) / 60).toFixed(2), entries: L }, null, 1), `mira_logbook_${new Date().toISOString().slice(0, 10)}.json`, "application/json");
     const rows = ["name,ra_deg,dec_deg,pmra_arcsec_yr,pmdec_arcsec_yr,saved_utc,exposures,spectrograph,photometer,astrometer,verdict,note"];
     for (const e of L) rows.push([e.name, e.ra, e.dec, e.pmra ?? "", e.pmdec ?? "", e.savedAt, e.frames ?? "", e.answers?.made.text ?? "", e.answers?.change.text ?? "", e.answers?.move.text ?? "", e.verdict, e.note].map((v) => `"${String(v).replace(/"/g, '""')}"`).join(","));
@@ -141,7 +147,7 @@ export function mountLogbook(host: HTMLElement, ctx: LogCtx) {
   ($("#lgfile") as HTMLInputElement).onchange = async (ev) => { const f = (ev.target as HTMLInputElement).files?.[0]; if (!f) return;
     try { const j = JSON.parse(await f.text()), L: LogEntry[] = Array.isArray(j) ? j : j.entries; if (!Array.isArray(L)) throw new Error("not a logbook file");
       let n = 0; for (const e of L) if (e && isFinite(e.ra) && isFinite(e.dec)) { upsert({ ...e, id: e.id ?? idOf(e.ra, e.dec), name: String(e.name ?? sexa(e.ra, e.dec)), savedAt: e.savedAt ?? new Date().toISOString(), note: e.note ?? "", verdict: e.verdict ?? "", kind: e.kind ?? "saved" }); n++; }
-      ctx.toast(`${n} entries imported`); render(); } catch { ctx.toast("That file is not a MIRA logbook"); }
+      ctx.toast(`${n} entries imported`); render(); } catch { ctx.toast("That file is not a MIRA cases file"); }
     (ev.target as HTMLInputElement).value = ""; };
   render(); checkFresh();
   fetch(`${BASE}data/candidates.json`).then((r) => (r.ok ? r.json() : null)).then((j) => { if (j?.items) { cases = j.items; $("#lgc").textContent = `(${j.items.length})`; } }).catch(() => {});

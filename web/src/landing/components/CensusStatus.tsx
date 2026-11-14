@@ -1,4 +1,4 @@
-/** Header shortcut into the app: a live dot, "Open the app", and the tool's name. */
+/** Header shortcut into the app: a live dot, "Open the app", and the name of the working environment. */
 export default function CensusStatus({ className = '' }: { className?: string }) {
   return (
     <>
@@ -6,7 +6,7 @@ export default function CensusStatus({ className = '' }: { className?: string })
         <span className="census-status__dot" aria-hidden="true" />
         <span className="census-status__text">Open the app</span>
       </span>
-      <span className={`census-status__value ${className}`.trim()}>Blink the sky</span>
+      <span className={`census-status__value ${className}`.trim()}>The Lab</span>
     </>
   )
 }

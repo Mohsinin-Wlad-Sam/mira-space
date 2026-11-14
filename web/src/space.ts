@@ -21,7 +21,7 @@ const GC = new THREE.Vector3(8178, 0, 0);    // Galactic centre (GRAVITY 2019)
 // Galactic -> ICRS (transpose of the ICRS -> Galactic rotation)
 const RG = [[-0.0548755604162154, -0.8734370902348850, -0.4838350155487132], [0.4941094278755837, -0.4448296299600112, 0.7469822444972189],
   [-0.8676661490190047, -0.1980763734312015, 0.4559837761750669]];
-const CLASSES = ["Dwarf star", "Giant / evolved star", "Brown dwarf", "Galaxy / quasar"];
+const CLASSES = ["Main-sequence star", "Giant / evolved star", "Brown dwarf", "Galaxy / quasar"];
 const SOURCES = ["–", "Gaia DR3 parallax", "UltracoolSheet parallax", "AI: SPHEREx spectrum + WISE motion", "Gaia DR3 (nearby star)", "Hipparcos parallax (ESA)"];
 const LENS = [{ bit: 1, name: "Motion", c: "#7cc4ff" }, { bit: 2, name: "Methane", c: "#c792ff" }, { bit: 4, name: "Vanished", c: "#ff5c6c" },
   { bit: 8, name: "Brightened", c: "#ffc857" }, { bit: 16, name: "Unusual", c: "#5be3a6" }, { bit: 32, name: "Named", c: "#ffffff" }];
@@ -249,9 +249,15 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<Spa
     const near = (p: number[], i: number) => Math.hypot(c0.pos[i * 3] - p[0], c0.pos[i * 3 + 1] - p[1], c0.pos[i * 3 + 2] - p[2]);
     for (const b of bright.stars) {
       let dup = -1;
-      for (let i = 1; i < c0.n; i++) { if (c0.tile[i] !== 65535) continue; if (near(b.p, i) < Math.max(0.03, b.d * 0.01)) { dup = i; break; } }
+      const bd = Math.hypot(b.p[0], b.p[1], b.p[2]);
+      for (let i = 1; i < c0.n; i++) { if (c0.tile[i] !== 65535) continue; if (near(b.p, i) < Math.max(0.03, b.d * 0.01)) { dup = i; break; }
+        // same direction within an arcminute and distance within 5%: the same system, placed by two different parallaxes
+        const gd = Math.hypot(c0.pos[i * 3], c0.pos[i * 3 + 1], c0.pos[i * 3 + 2]); if (!(gd > 0) || Math.abs(gd - bd) > 0.05 * bd) continue;
+        const cosang = (c0.pos[i * 3] * b.p[0] + c0.pos[i * 3 + 1] * b.p[1] + c0.pos[i * 3 + 2] * b.p[2]) / (gd * bd); if (cosang > 1 - 4.5e-8) { dup = i; break; } }
       if (dup >= 0 && Math.abs(c0.M[dup] - b.Mw2) < 2.5) { hipIdx.set(b.hip, dup); continue; }        // already in Gaia
-      if (dup >= 0 && b.name) { const old = nm[c0.obj[dup]]; if (old === b.name || old?.startsWith(b.name)) nm[c0.obj[dup]] = b.name.replace(/ A$/, "") + " B"; }   // Gaia caught the faint companion
+      if (dup >= 0 && b.name) { const old = nm[c0.obj[dup]]; if (old === b.name || old?.startsWith(b.name)) nm[c0.obj[dup]] = b.name.replace(/ A$/, "") + " B";    // Gaia caught the faint companion
+        // put the bright star at the companion's (more precise) Gaia distance, so the pair sits together as it does in the sky
+        const gd = Math.hypot(c0.pos[dup * 3], c0.pos[dup * 3 + 1], c0.pos[dup * 3 + 2]); if (gd > 0 && bd > 0) b.p = b.p.map((x) => (x * gd) / bd); }
       keep.push(b);
     }
     const n = keep.length, bc: Cat = { n, pos: new Float32Array(n * 3), vel: new Float32Array(n * 3), teff: new Uint16Array(n), M: new Float32Array(n), cls: new Uint8Array(n),
@@ -260,6 +266,15 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<Spa
       bc.obj[k] = nm.length; nm.push(b.name || `HIP ${b.hip}`); hipIdx.set(b.hip, c0.n + k); });
     cat = concat(cat!, bc);
   }
+  // Nearby Gaia stars carry a temperature from their colour and a brightness scaled from G. A white dwarf is several
+  // magnitudes fainter than a main-sequence star of the same colour (M_G > 10 + 2.6 (BP−RP)); the colour is recovered
+  // from the stored temperature. Stars stored without any colour (1000 K, M = 12) have no usable temperature or size.
+  const BTc: [number, number][] = [[-0.2, 12000], [0, 9700], [0.3, 7400], [0.6, 6200], [0.8, 5600], [1, 5200], [1.2, 4800], [1.5, 4400], [1.85, 3900], [2.2, 3600], [2.6, 3400], [3, 3200], [3.5, 3000], [4, 2800], [4.6, 2600], [5, 2400]];
+  const colourOf = (T: number) => { if (T >= 12000) return -0.2; for (let k = 1; k < BTc.length; k++) if (T >= BTc[k][1]) return BTc[k - 1][0] + ((BTc[k][0] - BTc[k - 1][0]) * (BTc[k - 1][1] - T)) / (BTc[k - 1][1] - BTc[k][1]); return 5; };
+  const whiteDwarf = new Set<number>(), noPhot = new Set<number>();
+  for (let i = 1; i < cat!.n; i++) { if (cat!.src[i] !== 4 || cat!.tile[i] !== 65535) continue; const T = cat!.teff[i], M = cat!.M[i];
+    if (T === 1000 && Math.abs(M - 12) < 0.006) { noPhot.add(i); continue; }
+    const col = colourOf(T), MG = M + 0.3 + 1.35 * col; if (T >= 4000 && MG > 10 + 2.6 * col) whiteDwarf.add(i); }
   const names: string[] = meta?.names ?? fbNames;
   const nameOf = (i: number) => (cat!.obj[i] === 999999 && cat!.tile[i] === 65535 ? "Sun" : cat!.tile[i] === 65535 ? names[cat!.obj[i]] ?? "Nearby star" : `Census ${cat!.tile[i]}-${cat!.obj[i]}`);
 
@@ -534,11 +549,11 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<Spa
     const T = c.teff[i], df = c.dflux[i];
     const lightLeft = EPOCH - d0 * LY;
     el.innerHTML = `<button class="icon-btn" id="spiclose">✕</button>
-      <div class="eyebrow">${isSun ? "Our star" : CLASSES[c.cls[i]]}${c.src[i] === 3 ? " · AI classification" : ""}</div>
+      <div class="eyebrow">${isSun ? "Our star" : whiteDwarf.has(i) ? "White dwarf" : noPhot.has(i) ? "Nearby star" : CLASSES[c.cls[i]]}${c.src[i] === 3 ? " · AI classification" : ""}</div>
       <h3 class="display">${labelText(i)}</h3>
       <div class="facts">
         <div class="fact"><b>${isSun ? "0" : fmtDist(d)}</b><span>${Math.abs(S.time) > 1 ? `distance in ${fmtYear(NOW_Y + S.time)}` : "distance now"}${c.sig[i] > 0.005 ? ` · ±${Math.round(c.sig[i] * 100)}%` : ""}</span></div>
-        <div class="fact"><b>${T ? T.toLocaleString() + " K" : "–"}</b><span>temperature${c.src[i] === 3 ? " (AI)" : ""} · ≈${(() => { const R = isSun ? 1 : radiusRsun(T, c.M[i], c.cls[i]); return R < 0.2 ? (R * 9.73).toFixed(1) + " Jupiters" : R.toFixed(R < 3 ? 2 : 0) + " Suns"; })()} wide</span></div>
+        <div class="fact"><b>${noPhot.has(i) || !T ? "–" : whiteDwarf.has(i) && T >= 12000 ? "> 12,000 K" : T.toLocaleString() + " K"}</b><span>${noPhot.has(i) ? "no colour measured by Gaia" : whiteDwarf.has(i) ? "temperature from its colour · about the size of Earth" : `temperature${c.src[i] === 3 ? " (AI)" : ""} · ≈${(() => { const R = isSun ? 1 : radiusRsun(T, c.M[i], c.cls[i]); return R < 0.2 ? (R * 9.73).toFixed(1) + " Jupiters" : R.toFixed(R < 3 ? 2 : 0) + " Suns"; })()} wide`}</span></div>
         <div class="fact"><b>${sp.toFixed(1)} km/s</b><span>speed relative to the Sun${c.hasRV[i] ? "" : " (sky-plane only)"}</span></div>
         <div class="fact"><b>${vr > 0.5 ? "receding" : vr < -0.5 ? "approaching" : "–"}</b><span>${c.hasRV[i] ? `${Math.abs(vr).toFixed(1)} km/s radial (Gaia)` : "no radial velocity"}</span></div>
       </div>
@@ -548,7 +563,7 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<Spa
         `${c.src[i] ? `Distance from ${SOURCES[c.src[i]]}.` : ""} ${d0 * LY < 3000 ? `The light reaching SPHEREx in 2025 left it around <b>${fmtYear(lightLeft)}</b>.` : ""}
         ${Math.abs(Math.log2(df)) > 0.25 ? ` Its 4.6 µm brightness ${df > 1 ? "rose" : "fell"} <b>${df > 1 ? df.toFixed(1) + "×" : Math.round((1 - df) * 100) + "%"}</b> between WISE (2016) and SPHEREx (2025).` : ""}`}</p>
       <div class="actions">
-        ${!isSun && opts.onObserve ? `<button class="btn sm solid" id="spobs" title="Watch every SPHEREx exposure of this object and read it with the instruments">Observe with SPHEREx</button>` : ""}
+        ${!isSun && opts.onObserve ? `<button class="btn sm solid" id="spobs" title="Read the SPHEREx exposures of this object and run the instruments on it">Measure it in the Lab</button>` : ""}
         <button class="btn sm${!isSun && opts.onObserve ? " ghost" : ""}" id="spfly">Fly here</button>
         ${!isSun ? `<button class="btn sm ghost" id="spback">Look back at the Sun</button>` : ""}
         ${!isSun && opts.onSky ? `<button class="btn sm ghost" id="spsky">Show on sky map</button>` : ""}

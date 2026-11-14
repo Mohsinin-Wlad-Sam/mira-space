@@ -719,67 +719,92 @@ function closeAbout() { if (!$("#about").classList.contains("open")) return; $("
 async function renderAbout() {
   await loadBasics();
   const check: [string, string][] = [
-    ["Enter RA and Dec, get a series of images “like a little video”", "<b>Blink</b> takes coordinates in any common notation, or a name. Every exposure is re-projected north-up onto the same patch of sky, so the frames can be played, scrubbed and compared."],
-    ["Make moving objects easy to spot", "Frames are pinned to the sky; <b>Follow target</b> re-centres on a known mover; Gaia stars are drawn where they are at each frame's date, with arrows on fast ones; <b>Difference</b> shows what left and what arrived. The <b>Motion</b> tab measures proper motion and parallax from the frames."],
-    ["Test on Barnard's Star, ε Indi B, WISE 0855, RW Aur, R Dra", "One click each on the start screen; results in the validation table below. Typing the challenge's 2010 coordinates for WISE 0855 is recognised and followed to where it is now."],
-    ["Easy to update with new data releases", "Pixels are never copied: the browser reads them from NASA's archive. Only a small index of exposure footprints is hosted, rebuilt from IRSA's inventory by one script in about a minute. The header shows the date of the newest exposure indexed."],
-    ["Creative use of the 102 bands; co-add per detector", "Detector chips select any of the six arrays; <b>Deep stack</b> co-adds them per visit; <b>Colour</b> folds them into one RGB image; <b>Spectral sweep</b> plays the exposures in wavelength order."],
-    ["“Extra kudos”: spectra on the fly", "The <b>Spectrum</b> tab: PSF-weighted photometry of the target, or of any source you click, at the wavelength each exposure saw, with 2MASS and WISE fluxes for comparison. Methane is detected automatically. CSV download."],
-    ["Add or subtract images taken at different times", "<b>Deep stack</b> adds (with outlier rejection; along the target's motion when following it). <b>Difference</b> subtracts the first visit from each later one."],
+    ["Enter RA and Dec, get a series of images “like a little video”", "The <b>Lab</b> takes coordinates in any common notation, or a name. <b>Evolution</b> shows one deep image per SPHEREx visit on a time bar you steer (drag, step from date to date, choose the speed); <b>Exposures</b> shows every single 2-minute exposure, in time or wavelength order."],
+    ["Make moving objects easy to spot", "The <b>Motion detector</b> measures every source of the field and lists the ones that moved, with their significance and whether Gaia knows them; their dated positions since 1999 are drawn on the image. <b>Follow target</b>, Gaia positions at each date and <b>Difference</b> are there for the eye."],
+    ["Test on Barnard's Star, ε Indi B, WISE 0855, RW Aur, R Dra", "One click each on the Lab's start screen; results in the tables below. Typing the challenge's 2010 coordinates for WISE 0855 is recognised and followed to where it is now."],
+    ["Easy to update with new data releases", "Pixels are never copied: the browser reads them from NASA's archive. Only a small index of exposure footprints is hosted, rebuilt from IRSA's inventory by one script in about a minute; the Lab shows the date of the newest exposure indexed, and saved cases are flagged when newer data exists."],
+    ["Creative use of the 102 bands; co-add per detector", "Detector chips select any of the six arrays; each visit's exposures are co-added into a deep image; <b>Colour</b> folds the detectors into one RGB picture; the Spectrograph uses every exposure at the wavelength it saw."],
+    ["“Extra kudos”: spectra on the fly", "The <b>Spectrograph</b>: PSF-weighted photometry of any source in the field at the wavelength of each exposure, with molecular bands marked and 2MASS / WISE fluxes for comparison. Methane is detected automatically. CSV download."],
+    ["Add or subtract images taken at different times", "Evolution adds the exposures of each visit (with outlier rejection); <b>Difference</b> subtracts the first visit from each later one."],
     ["Let users choose the field of view", "3.3′, 6.6′, 9.8′ or 13.1′, and 36, 72 or all indexed exposures, with the download size stated before you choose."],
-    ["Overlay Gaia or WISE", "Gaia DR3 (moved to each frame's date) and AllWISE (where WISE saw each source in 2010) toggles; the atlas adds eight all-sky surveys from ultraviolet to microwave."],
-    ["Coordinates in the URL; embeddable", "<span class='mono'>/explore/?ra=…&amp;dec=…&amp;fov=…</span> or <span class='mono'>?target=name</span>. The Share tab gives the link and an &lt;iframe&gt; snippet (<span class='mono'>&amp;embed=1</span> hides the site chrome)."],
-    ["Show metadata such as contamination flags", "NASA's quality flags are read from each exposure's compressed FLAGS extension: badges on every frame, a full flag overlay on demand, and the exposure's identifiers, timing, PSF and background in the <b>Exposure</b> tab."],
-    ["Use Astropy and Aladin", "The index and the census are built with Astropy; the atlas runs on Aladin Lite (CDS); the in-browser astrometry and flag decoding are verified against Astropy."],
+    ["Overlay Gaia or WISE", "Gaia DR3 (moved to the date shown) and AllWISE (where WISE saw each source in 2010) toggles, next to the detector's own numbered sources."],
+    ["Coordinates in the URL; embeddable", "<span class='mono'>/explore/?ra=…&amp;dec=…&amp;fov=…</span> or <span class='mono'>?target=name</span>. The Export panel gives the link and an &lt;iframe&gt; snippet (<span class='mono'>&amp;embed=1</span> hides the site chrome)."],
+    ["Show metadata such as contamination flags", "NASA's per-pixel flags are read from each exposure's compressed FLAGS extension and applied to every source of the field; they can be painted on the image, and the Exposures panel lists them with each exposure's date, wavelength and noise."],
+    ["Use Astropy", "The exposure index, the survey and its verification are built with Astropy; the browser engine's astrometry and flag decoding are checked against Astropy on the same NASA files (0.004 px, bit-exact masks)."],
   ];
-  const rows = S.targets.map((t) => `<tr><td>${esc(t.name)}</td><td class="m">${t.census ? `${fmt(t.census.pmra, 2)}, ${fmt(t.census.pmdec, 2)}` : "–"}</td>
-    <td class="m">${fmt(t.pmra / 1000, 2)}, ${fmt(t.pmdec / 1000, 2)}</td><td class="m">${t.census ? fmt(t.census.sx_w2_snr, 0) : "–"}</td></tr>`).join("");
   $("#about").innerHTML = `<button class="icon-btn aclose" id="aclose" aria-label="Close">✕</button>
     <div class="about-in">
-    <div class="eyebrow">How it works</div><h2 class="display">From NASA's archive to a movie in your browser</h2>
-    <p class="lead">MIRA does not keep a copy of SPHEREx. When you ask for a position, your browser reads just the pixels it needs from NASA's public archive, lines them up, and measures them — in about fifteen seconds, with no server in between.</p>
+    <div class="eyebrow">Method</div><h2 class="display">What MIRA measures, and how far to trust it</h2>
+    <p class="lead">MIRA is a research observatory in the browser. Its instruments read NASA's SPHEREx exposures directly from the public archive and answer one chain of questions about any field of the sky: what moved, how fast and how far away it is, what it is, whether it changed, and what could still hide there. The motivating case is the search for unknown cold bodies near the Sun ("Planet X"); the instruments work on any star, brown dwarf or variable source.</p>
+
+    <div class="eyebrow sec">How a field is measured</div>
     <ol class="steps">
       <li><b>Find the exposures.</b> A small index, built from IRSA's inventory of 1.6 million SPHEREx exposures, lists those whose footprint covers each patch of sky, spread over every visit and all six detectors.</li>
-      <li><b>Read only what is needed.</b> Each exposure is a 65 MB file on NASA's public cloud storage. The browser fetches its header and only the detector rows that cross your field — about 0.4 MB.</li>
-      <li><b>Line them up.</b> SPHEREx rolls between visits. Using each exposure's astrometric solution (tangent projection with distortion terms), every frame is resampled north-up onto the same sky grid.</li>
-      <li><b>Know the wavelength.</b> SPHEREx's filter changes colour across each detector. A wavelength map per detector gives the colour each exposure saw at the target: 0.75 to 5 µm.</li>
-      <li><b>Check the flags.</b> NASA marks hot pixels, cosmic rays, saturation and ghosts in a compressed table. MIRA decodes the rows it needs, shows the flags, and blanks defects that are not sky.</li>
-      <li><b>Measure.</b> Brightness in every exposure gives a spectrum; exposures of different visits at the same wavelength give a light curve; the source's position in each frame gives its motion and parallax.</li>
+      <li><b>Read only what is needed.</b> Each exposure is a 65 MB file on NASA's public cloud storage. The browser fetches its header, the detector rows that cross the field and the matching rows of NASA's flag table — under 1 MB.</li>
+      <li><b>Register.</b> Using each exposure's astrometric solution (tangent projection with distortion terms), every frame is resampled north-up onto the same sky grid; the wavelength each pixel saw comes from the filter map of its detector.</li>
+      <li><b>One deep image per visit.</b> A visit's exposures are combined with outlier rejection. A position does not depend on wavelength, so all six detectors add up, reaching sources too faint for a single exposure.</li>
+      <li><b>Detect and tie to Gaia.</b> Sources above 5σ are located at every visit. The Gaia stars of the same field, moved to each date with their own motion and parallax, fix the reference frame visit by visit and measure how good the positions are at each brightness.</li>
+      <li><b>Compare with the past.</b> Each source is matched to AllWISE (2010) and 2MASS (~1999); a counterpart more than 3″ away must also match in brightness. A straight line through all dated positions gives the motion over 15–27 years; brightness is compared on the field's own zero point.</li>
+      <li><b>Judge carefully.</b> “Moved” needs 5σ against the scatter with which Gaia stars are recovered in that same field. Saturated, blended and edge sources are listed but not judged; a star whose position disagrees with its Gaia motion is flagged as contaminated, not moving.</li>
     </ol>
+
+    <div class="eyebrow sec">How well it works</div>
+    <div class="tablewrap"><table><thead><tr><th>Field</th><th>MIRA, SPHEREx + 2010 + 1999 (″/yr)</th><th>Reference (″/yr)</th></tr></thead><tbody>
+      <tr><td>ε Indi B</td><td class="m">+3.991, −2.496 ± 0.015</td><td class="m">+3.982, −2.467 (Gaia DR3)</td></tr>
+      <tr><td>Luhman 16 <small>no Gaia motion; linked to its 2010 and 1999 positions</small></td><td class="m">−2.758, +0.364 ± 0.013</td><td class="m">−2.75, +0.36 (literature)</td></tr>
+      <tr><td>Barnard's Star <small>saturated: from the image wings</small></td><td class="m">−0.809, +10.432 ± 0.034</td><td class="m">−0.802, +10.362 (Gaia DR3)</td></tr>
+      <tr><td>Survey candidate 6661-325678 <small>not in Gaia</small></td><td class="m">−0.335, −0.006 ± 0.041 (8σ)</td><td class="m">−0.357, +0.022 (CatWISE2020)</td></tr>
+      <tr><td>Empty high-latitude field, 40 sources</td><td class="m">nothing flagged</td><td class="m">—</td></tr></tbody></table></div>
+    <div id="valdet"></div>
+    <p class="note">Same code as the Lab, run with <span class="mono">npx tsx scripts/test_detect.mts</span>. In a typical field the motions of Gaia stars are recovered to 0.01–0.02″ per year; that figure is measured in every field and shown under the detector's table.</p>
+    <div class="eyebrow sec">SPHEREx exposures alone · the five challenge targets</div>
+    <div class="tablewrap" id="valtable"><p class="note">Loading the validation run…</p></div>
+    <p class="note">Engine checks against Astropy on the same NASA file: pixel positions agree to 0.004 px, resampled pixel values to 0.005%, and decoded flag masks bit for bit. Reproduce with <span class="mono">npx tsx scripts/validate_blink.mts</span>.</p>
+
+    <div class="eyebrow sec">The survey, and what verification did to it</div>
+    <p>On a cluster we linked the unWISE time-domain catalogue — 39.9 billion WISE detections over 16 epochs, 2010–2020 — into objects with their motion, and compared them with SPHEREx's all-sky maps. That produced 1.56 million claims of motion or change. Claims at that level are cheap and mostly wrong, so each one worth checking was re-measured on the raw SPHEREx exposures with the Lab's own engine: where is the source really, against the place its motion predicts and against the place it would be had it never moved.</p>
+    <div id="funnel" class="tablewrap"></div>
+    <p>The Catalogue shows only what passed. The old “brightened” and “vanished” lists did not survive: for ordinary stars SPHEREx and WISE agree to 5%, and against AllWISE only a handful of the claimed changes are real. They are no longer presented as findings.</p>
 
     <div class="eyebrow sec">The challenge, point by point</div>
     <div class="tablewrap"><table class="checklist"><tbody>${check.map(([q, a]) => `<tr><td>${q}</td><td>${a}</td></tr>`).join("")}</tbody></table></div>
 
-    <div class="eyebrow sec">Validation · the five challenge targets, through the same code your browser runs</div>
-    <div class="tablewrap" id="valtable"><p class="note">Loading the validation run…</p></div>
-    <p class="note">Engine checks against Astropy on the same NASA file: pixel positions agree to 0.004 px, resampled pixel values to 0.005%, and decoded flag masks bit for bit. Reproduce with <span class="mono">npx tsx scripts/validate_blink.mts</span>.</p>
-
-    <div class="eyebrow sec">The atlas · a census of 16 years of change</div>
-    <p>For each of 12,288 patches of sky we linked the unWISE time-domain catalogue — 40 billion WISE detections over 16 epochs, 2010–2020 — into individual objects with their motion,
-    then measured every object again in SPHEREx's 102-colour all-sky map at the position its motion predicts. Comparing the two shows what moved, what changed and what each object is made of.
-    The heavy computing ran once on a GPU cluster; the site only reads the results. Dots move with each object's measured proper motion; the background blends WISE 2010 into SPHEREx 2025 imagery and shows no intermediate observations.</p>
-    <div class="tablewrap"><table><thead><tr><th>Census check</th><th>Census motion ″/yr (RA, Dec)</th><th>Literature</th><th>SPHEREx S/N</th></tr></thead><tbody>${rows}</tbody></table></div>
-    <p>A deep ensemble of neural networks reads each SPHEREx spectrum together with the WISE colour and the 16-year motion, and estimates the object's intrinsic brightness, temperature and kind, each with its own uncertainty.
-    It learned from 1.57 million stars with Gaia parallaxes and 1,487 brown dwarfs from the UltracoolSheet. Distance follows from how bright the object appears. The 3D view places objects by Gaia parallax where one exists and by this estimate elsewhere, and says which.</p>
-    <div id="aimetrics" class="tablewrap"></div>
-
-    <div class="eyebrow sec">Live NASA data in the atlas and 3D view</div>
-    <p><b>JPL Horizons</b> positions of the planets, the Moon and 13 spacecraft; <b>JPL SBDB</b> orbits of asteroids passing within 0.05 au; <b>DONKI</b> coronal mass ejections; today's Sun from <b>SDO</b> and Earth from <b>EPIC</b>;
-    4,834 planetary systems from the <b>NASA Exoplanet Archive</b>. Feeds that do not allow browser access are refreshed into small static files by one script.</p>
-
-    <div class="eyebrow sec">Honest limits</div>
+    <div class="eyebrow sec">Limits</div>
     <ul>
-      <li>SPHEREx pixels are 6.15″ and its images about 7–9″ sharp: sources closer than that blend. MIRA warns when a Gaia star shares the aperture.</li>
-      <li>Fluxes assume a Gaussian image of the width NASA reports for each exposure. They agree with 2MASS and WISE to roughly 10–15% for isolated sources; they are not a substitute for NASA's own spectrophotometry.</li>
-      <li>Stars brighter than about 8th magnitude saturate. Their fluxes are lower limits, their light curves come from the halo, and their motions are indicative only.</li>
-      <li>The index holds up to 24 exposures per detector and sky patch (144 in all), spread over the visits — typically 90 to 125 usable for a position, out of the several hundred that exist.</li>
-      <li>Motions come from about a year and a half of SPHEREx data: uncertainties of 0.2″ per year, enough for nearby stars and brown dwarfs, not for distant ones. A parallax is quoted only above 3σ and with three or more visits.</li>
-      <li>The comparison catalogues come from CDS mirrors; if they are unreachable the overlays are simply absent.</li>
-      <li>Census flags such as “vanished” mean “not seen by SPHEREx at the expected brightness”. Every candidate is a prompt for a closer look, not a discovery.</li>
+      <li>SPHEREx pixels are 6.15″: two sources closer than about 10″ blend. The detector flags blends from Gaia's positions, from neighbours in its own images and from a red-versus-blue centroid shift, and does not judge them. A faint mover sitting on a star (WISE 0855 today lies 8″ from a 16th-magnitude star) is measured when tracked with a known motion, not found blind.</li>
+      <li>SPHEREx alone covers 1.5 years: by itself it sees motions above about 2.5″ per year. Slower motions rest on the 2010 and 1999 catalogue positions, so a source needs a counterpart there.</li>
+      <li>Parallaxes from SPHEREx alone are indicative: 6″ pixels and a spacecraft roll that flips every six months, in step with the parallax swing. A distance is stated only above 5σ.</li>
+      <li>Fluxes assume a Gaussian image of the width NASA reports for each exposure. They agree with WISE to about 5% for isolated stars; they are not a substitute for NASA's own spectrophotometry.</li>
+      <li>Stars brighter than about 8th magnitude saturate: listed, not measured, except for their motion (image wings) and their visit-to-visit brightness (halo).</li>
+      <li>Planet Nine as proposed is below SPHEREx's depth; the Detection limits panel states what is and is not excluded in each field. A planet a few hundred au away would also shift by many arcminutes between visits: finding it means linking single-visit sources across fields, which MIRA does not do yet.</li>
+      <li>The catalogues come from public services (CDS VizieR mirrors, SIMBAD). If they do not answer, the detector says so and compares only SPHEREx visits.</li>
+      <li>Catalogue rows are confirmed motions, not discoveries. “No Gaia motion” means exactly that; CatWISE2020 lists most of these sources, and only a spectrum and a parallax make an identification.</li>
     </ul>
-    <p class="note" style="margin-top:28px">Data: NASA SPHEREx Level-2 images and all-sky maps (NASA/IPAC IRSA, doi:10.26131/IRSA629, IRSA679) · unWISE time-domain catalogue (doi:10.26131/IRSA580) · NASA WISE/NEOWISE · ESA Gaia DR3 · 2MASS · SIMBAD and VizieR (CDS) · Aladin Lite.
-    Built for the NASA Space Apps Challenge 2026. AI tools were used in development and are listed in the repository (docs/07_si_usage_log.md); MIRA is not affiliated with or endorsed by NASA.</p>
+
+    <div class="eyebrow sec">Staying current, and your data</div>
+    <p>A new SPHEREx release needs one script (<span class="mono">deploy/update_spherex.sh</span>) that rebuilds the exposure index; every instrument then reads the new exposures, and the verification run re-tests open claims. The site adapts to what the files say: header lengths, flag definitions and pipeline versions are read from each exposure, the catalogue services have mirrors, and a failure is reported in place instead of breaking the page. Your cases stay in your browser and can be exported; nothing is uploaded.</p>
+    <div class="eyebrow sec">The assistant</div>
+    <p>The assistant is a language model (K2 Horizon, MBZUAI Institute of Foundation Models) that receives your question and the numbers on the page, and can operate the instruments. It does not measure anything itself: the panels are the reference. AI tools were also used in development and are listed in the repository (docs/07_si_usage_log.md).</p>
+    <p class="note" style="margin-top:28px">Data: NASA SPHEREx Level-2 images and all-sky maps (NASA/IPAC IRSA, doi:10.26131/IRSA629, IRSA679) · unWISE time-domain catalogue (doi:10.26131/IRSA580) · NASA WISE/NEOWISE, AllWISE and CatWISE2020 · ESA Gaia DR3 · 2MASS · SIMBAD and VizieR (CDS).
+    Built for the NASA Space Apps Challenge 2026. MIRA is not affiliated with or endorsed by NASA.</p>
     </div>`;
+  fetch(`${import.meta.env.BASE_URL}data/verified/meta.json`).then((r) => (r.ok ? r.json() : null)).then((m) => {
+    const el = document.getElementById("funnel"); if (!el || !m?.funnel) return; const f = m.funnel.motion_fast, b = m.funnel.motion_fast_bright, n = (x: number) => x.toLocaleString("en-US"), pc = (a: number, t: number) => `${((100 * a) / t).toFixed(a / t < 0.1 ? 1 : 0)}%`;
+    el.innerHTML = `<table><thead><tr><th>Step</th><th>Objects</th><th></th></tr></thead><tbody>
+      <tr><td>Survey-level claims of motion or change</td><td class="m">${n(m.claims.total)}</td><td>from 39.9 billion detections</td></tr>
+      <tr><td>Re-measured on raw SPHEREx exposures</td><td class="m">${n(m.remeasured)}</td><td>every motion claim above 0.3″/yr and samples of the rest</td></tr>
+      <tr><td>Motion above 0.3″/yr: confirmed</td><td class="m">${n(f.moved)} of ${n(f.tested)}</td><td>${pc(f.moved, f.tested)}; among those brighter than 1 mJy: ${pc(b.moved, b.tested)}</td></tr>
+      <tr><td>… not detected at all</td><td class="m">${n(f.undetected)}</td><td>${pc(f.undetected, f.tested)}</td></tr>
+      <tr><td>… only an unrelated source nearby</td><td class="m">${n(f.elsewhere)}</td><td>${pc(f.elsewhere, f.tested)}</td></tr>
+      <tr><td>… saturated / unclear / found where it had been</td><td class="m">${n(f.saturated)} / ${n(f.unclear)} / ${n(f.static)}</td><td></td></tr>
+      <tr><td>Confirmed movers that are known Gaia stars with the same motion</td><td class="m">${n(m.movers_known)} of ${n(m.confirmed_movers)}</td><td>${pc(m.movers_known, m.confirmed_movers)}: an independent check of the method</td></tr>
+      <tr><td>Methane dips confirmed</td><td class="m">${m.funnel.methane?.confirmed ?? "–"} of ${n(m.funnel.methane?.measurable ?? 0)} measurable</td><td></td></tr>
+      <tr><td>Brightness changes that hold against AllWISE</td><td class="m">${m.funnel.brightness_checked ? m.funnel.brightness_checked.brighter + m.funnel.brightness_checked.fainter : "–"} of ${n(m.funnel.brightness_checked?.clean ?? 0)} clean cases</td><td></td></tr></tbody></table>`;
+  }).catch(() => {});
+  fetch(`${import.meta.env.BASE_URL}data/verified/detector_validation.json`).then((r) => (r.ok && !(r.headers.get("content-type") ?? "").includes("html") ? r.json() : null)).then((v) => {
+    const el = document.getElementById("valdet"); if (!el || !v) return;
+    el.innerHTML = `<div class="tablewrap"><table><thead><tr><th>Control run on ${v.fields} fields</th><th>Result</th></tr></thead><tbody>${(v.rows as [string, string][]).map(([a, b]) => `<tr><td>${a}</td><td class="m">${b}</td></tr>`).join("")}</tbody></table></div>`;
+  }).catch(() => {});
   $("#about").classList.add("open"); document.body.classList.add("about-on"); $("#aboutbtn").classList.add("on"); $("#about").scrollTop = 0; $("#aclose").onclick = closeAbout;
   fetch(`${import.meta.env.BASE_URL}validation.json`).then((r) => (r.ok ? r.json() : null)).then((v) => {
     const el = document.getElementById("valtable"); if (!el || !v) return;
@@ -800,7 +825,7 @@ async function renderAbout() {
       <p class="note">Run of ${esc(String(v.built).replace("T", " "))} · ${v.stamp_px} × ${v.stamp_px} px stamps · index through ${esc(v.index?.last ?? "")}.</p>`;
   }).catch(() => { /* table stays as a note */ });
   load<any>("ai_metrics", true).then((m) => {
-    if (!m) return; const r = (k: string, label: string) => m[k] ? `<tr><td>${label}</td><td class="m">${m[k].n.toLocaleString()}</td><td class="m">${(m[k].dist_frac_err * 100).toFixed(0)}%</td><td class="m">${(m[k].frac_within_1sigma * 100).toFixed(0)}%</td></tr>` : "";
+    if (!m || !document.getElementById("aimetrics")) return; const r = (k: string, label: string) => m[k] ? `<tr><td>${label}</td><td class="m">${m[k].n.toLocaleString()}</td><td class="m">${(m[k].dist_frac_err * 100).toFixed(0)}%</td><td class="m">${(m[k].frac_within_1sigma * 100).toFixed(0)}%</td></tr>` : "";
     $("#aimetrics").innerHTML = `<table><thead><tr><th>AI hold-out test (sky tiles never seen in training)</th><th>objects</th><th>distance error</th><th>within ±1σ (ideal 68%)</th></tr></thead><tbody>
       ${r("M_gaia", "Stars with Gaia parallaxes")}${r("M_ultracool", "Brown dwarfs (UltracoolSheet)")}${r("M_giants", "Giants (hardest)")}
       ${m.Teff ? `<tr><td>Temperature</td><td class="m">${m.Teff.n.toLocaleString()}</td><td class="m">${(m.Teff.robust_frac * 100).toFixed(1)}% scatter</td><td class="m">${(m.Teff.frac_within_1sigma * 100).toFixed(0)}%</td></tr>` : ""}
