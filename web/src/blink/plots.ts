@@ -58,7 +58,7 @@ export function plot(el: HTMLElement, s: PlotSpec, on: { pick?: (k: number) => v
   if (s.equal) { const pw = W - L - R, ph = (pw * (s.y.hi - s.y.lo)) / (s.x.hi - s.x.lo); H = Math.round(ph + T + B); }
   const pw = W - L - R, ph = H - T - B;
   const tx = (a: Axis, v: number) => (a.log ? (Math.log10(Math.max(v, 1e-300)) - Math.log10(a.lo)) / (Math.log10(a.hi) - Math.log10(a.lo)) : (v - a.lo) / (a.hi - a.lo));
-  const X = (v: number) => L + (s.x.invert ? 1 - tx(s.x, v) : tx(s.x, v)) * pw, Y = (v: number) => T + (1 - tx(s.y, v)) * ph;
+  const X = (v: number) => L + (s.x.invert ? 1 - tx(s.x, v) : tx(s.x, v)) * pw, Y = (v: number) => T + (s.y.invert ? tx(s.y, v) : 1 - tx(s.y, v)) * ph;
   const cl = (v: number, a: number, b: number) => Math.min(b, Math.max(a, v));
   let g = `<rect x="${L}" y="${T}" width="${pw}" height="${ph}" class="pl-box"/>`;
   if (s.title) g += `<text x="${L}" y="14" class="pl-title">${esc(s.title)}</text>`;

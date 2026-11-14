@@ -167,10 +167,10 @@
 .bk-strip { cursor: ew-resize; touch-action: none; }
 .bk-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 16px; margin: 10px auto 0; max-width: 720px; font-size: 11.5px; line-height: 1.5; color: var(--dim); }
 .bk-legend span { display: inline-flex; align-items: center; gap: 6px; }
-.lg { display: inline-block; flex: none; width: 10px; height: 10px; }
-.lg.box { border: 1.3px solid #7df0a6; } .lg.box.o { border-color: #ff9d4d; } .lg.ring { border: 1.3px solid #78dcff; border-radius: 50%; }
-.lg.dia { border: 1.3px solid #ffba5c; transform: rotate(45deg) scale(.8); } .lg.px { background: rgb(255 70 90 / .6); }
-.lg.plus { position: relative; } .lg.plus::before, .lg.plus::after { content: ""; position: absolute; background: var(--white); } .lg.plus::before { left: 4.5px; top: 0; width: 1px; height: 10px; } .lg.plus::after { top: 4.5px; left: 0; height: 1px; width: 10px; }
+.lgd { display: inline-block; flex: none; width: 10px; height: 10px; }
+.lgd.box { border: 1.3px solid #7df0a6; } .lgd.box.o { border-color: #ff9d4d; } .lgd.ring { border: 1.3px solid #78dcff; border-radius: 50%; }
+.lgd.dia { border: 1.3px solid #ffba5c; transform: rotate(45deg) scale(.8); } .lgd.px { background: rgb(255 70 90 / .6); }
+.lgd.plus { position: relative; } .lgd.plus::before, .lgd.plus::after { content: ""; position: absolute; background: var(--white); } .lgd.plus::before { left: 4.5px; top: 0; width: 1px; height: 10px; } .lgd.plus::after { top: 4.5px; left: 0; height: 1px; width: 10px; }
 
 /* which source the instruments are reading */
 .bk-srcbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 18px; padding: 10px 12px; border: .8px solid var(--hair); min-height: 46px; }

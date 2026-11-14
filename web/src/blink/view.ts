@@ -576,8 +576,8 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
     if (rate.dataset.kind !== (ev ? "evo" : "fps")) { rate.dataset.kind = ev ? "evo" : "fps";
       rate.innerHTML = ev ? RATES.map((r) => `<option value="${r}">${r} yr / s</option>`).join("") : [1, 2, 4, 6, 10, 16].map((f) => `<option value="${f}">${f} per s</option>`).join(""); }
     rate.value = String(ev ? evo.rate : fps);
-    $("#bk-legend").innerHTML = `${view.det ? `<span><i class="lg box"></i>measured source (number = row in the Motion detector)</span><span><i class="lg box o"></i>moved: its dated positions, oldest to newest</span>` : ""}
-      ${view.gaia ? `<span><i class="lg ring"></i>Gaia star at this date</span>` : ""}${view.wise ? `<span><i class="lg dia"></i>where WISE saw a source in 2010</span>` : ""}${view.mask ? `<span><i class="lg px"></i>pixel flagged by NASA</span>` : ""}<span><i class="lg plus"></i>target position</span>`;
+    $("#bk-legend").innerHTML = `${view.det ? `<span><i class="lgd box"></i>measured source (number = row in the Motion detector)</span><span><i class="lgd box o"></i>moved: its dated positions, oldest to newest</span>` : ""}
+      ${view.gaia ? `<span><i class="lgd ring"></i>Gaia star at this date</span>` : ""}${view.wise ? `<span><i class="lgd dia"></i>where WISE saw a source in 2010</span>` : ""}${view.mask ? `<span><i class="lgd px"></i>pixel flagged by NASA</span>` : ""}<span><i class="lgd plus"></i>target position</span>`;
     host.querySelector(".bk")!.classList.toggle("explain", explain); $("#bk-help").classList.toggle("on", explain);
     const n = plan?.picked ?? Math.min(maxFrames, 120); $("#bk-cost").textContent = `≈ ${Math.round((n * ((N * 1.42 + 3) * 8160 + 60000)) / 1e6)} MB`;
     $("#bk-cost").title = "Read from NASA's archive for this field of view and number of exposures. Wider or more = slower.";
