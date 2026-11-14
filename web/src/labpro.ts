@@ -250,7 +250,7 @@ GJ 1111</textarea>
     <button class="btn" id="bgo">Run the list</button> <button class="btn sm ghost" id="bcsv" style="display:none">Download table (CSV)</button>` +
     how(`Each line is resolved (coordinates, or SIMBAD through CDS Sesame), then run through the BLINK engine with 72 exposures on a 32-pixel field. Motion: weighted least-squares fit of the centroids, quoted with its 1σ error; “significant” means above 4σ. Variability: wavelength-matched pairs between visits (halo photometry when saturated). Methane: median flux at 3.20–3.45 µm against 3.90–4.20 µm. Known proper motions from SIMBAD are used only to keep the source centred.`);
   P.innerHTML = `<div class="lab-wait">The table appears here as each target finishes.</div>`;
-  const render = () => { P.innerHTML = `<div class="tablewrap"><table class="ltab btab"><thead><tr><th>Target</th><th>Exposures</th><th>Motion ″/yr (E, N)</th><th>Moves?</th><th>Varies?</th><th>3.3/4.0 µm</th><th>4.6 µm</th><th></th></tr></thead><tbody>${rows.map((r, k) => {
+  const render = () => { P.innerHTML = `<div class="tablewrap"><table class="ltab btab"><thead><tr><th>Target</th><th>Exposures</th><th>Motion ″/yr (E, N)</th><th>Moves?</th><th>Varies?</th><th>Methane ratio</th><th>Flux at 4.6 microns</th><th></th></tr></thead><tbody>${rows.map((r, k) => {
       if (r.err) return `<tr><td>${esc(r.name)}</td><td colspan="7" class="dim">${esc(r.err)}</td></tr>`;
       if (r.frames === undefined) return `<tr><td>${esc(r.name)}</td><td colspan="7" class="dim">${r.ra === undefined ? "waiting…" : "reading exposures…"}</td></tr>`;
       const m = r.motion, tot = m ? Math.hypot(m.pmra, m.pmdec) : 0, sig = m ? tot / Math.max(Math.hypot(m.epmra, m.epmdec) / Math.SQRT2, 1e-6) : 0;

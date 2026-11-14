@@ -477,7 +477,7 @@ function openObject(o: Obj, lens?: string, title?: string) {
     <div class="facts">
       <div class="fact"><b>${fmt(o.pm, 2)}″</b><span>motion per year</span></div>
       <div class="fact"><b>${o.n_ep}/16</b><span>WISE epochs seen</span></div>
-      <div class="fact"><b>${fmt(o.sx_w2_snr, 0)}</b><span>SPHEREx S/N (4–5 µm)</span></div>
+      <div class="fact"><b>${fmt(o.sx_w2_snr, 0)}</b><span>SPHEREx signal-to-noise, 4–5 microns</span></div>
       <div class="fact"><b>${o.sx_saturated ? "sat." : fmt(o.decade_ratio_w2, 2) + "×"}</b><span>${o.sx_saturated ? "too bright to compare" : "brightness vs 2010s"}</span></div>
     </div>
     ${o.ai_dist && o.ai_cls !== null && o.ai_cls !== undefined ? `<div class="airead"><div class="eyebrow">AI reading · trained on Gaia &amp; UltracoolSheet</div>
@@ -582,7 +582,7 @@ function flyTo(ra: number, dec: number, fov: number) {
 
 // ============================================================================ Lab (standalone page, lazy-loaded)
 async function openLabPage(start?: string) {
-  setBlink(false); play(false); endTour(); closePanel(); blink.pause();
+  shutSpace(); setBlink(false); play(false); endTour(); closePanel(); blink.pause();
   $("#about").classList.remove("open"); document.body.classList.remove("about-on");
   const { openLab } = await import("./labapp");
   document.body.classList.add("lab-on");
@@ -594,6 +594,8 @@ async function openLabPage(start?: string) {
 
 // ============================================================================ 3D space (lazy-loaded)
 let closeSpace: (() => void) | null = null;
+/** leave the full-screen 3D view (if it is open) before showing another section */
+function shutSpace() { if (!document.body.classList.contains("space-on")) return; try { closeSpace?.(); } catch { /* already closed */ } closeSpace = null; document.body.classList.remove("space-on"); $("#space").classList.remove("open"); }
 async function openSpaceView(focus?: string, withLab = false) {
   if (withLab) { openLabPage(); return; }
   setBlink(false); play(false); endTour(); closePanel();
@@ -647,6 +649,7 @@ function endTour() { $("#tour").style.display = "none"; S.tourStep = -1; documen
 
 // ============================================================================ about
 async function renderAbout() {
+  shutSpace();
   await loadBasics();
   const check: [string, string][] = [
     ["Enter RA and Dec, get a series of images “like a little video”", "<b>Blink</b> takes coordinates in any common notation, or a name. Every exposure is re-projected north-up onto the same patch of sky, so the frames can be played, scrubbed and compared."],
@@ -753,6 +756,7 @@ const blink = mountBlink($("#blinkpage"), { embed: EMBED, toast,
   onAtlas: async (ra, dec) => { await showAtlas(); flyTo(ra, dec, 0.3); } });
 
 function setView(v: View) {
+  shutSpace();
   view = v; document.body.classList.toggle("v-blink", v === "blink"); document.body.classList.toggle("v-atlas", v === "atlas");
   $("#blinkpage").classList.toggle("open", v === "blink");
   document.querySelectorAll<HTMLElement>(".mainnav button").forEach((b) => b.classList.toggle("on", b.dataset.view === v));
