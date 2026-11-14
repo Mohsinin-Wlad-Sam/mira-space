@@ -37,7 +37,7 @@ export type Frame = {
   aff: number[];                                      // stamp (i, j) -> detector (x, y): [x0, dx/di, dx/dj, y0, dy/di, dy/dj]
   flags: number; flagsNear: number;                   // OR of the flag bits within 1.5 px / 3.5 px of the target; -1 = not read
   psf: number; exptime: number; obsid: string; dateObs: string; version: string; roll: number;
-  flagsAt?: { start: number; heap: number; ver: string }; // where this file's FLAGS table and heap begin (for on-demand masks)
+  flagsAt?: { start: number; heap: number; ver: string; n1: number; n2: number }; // where this file's FLAGS table and heap begin, and the detector size (for on-demand masks)
 };
 
 export const mjdToYear = (mjd: number) => 2000 + (mjd - 51544.5) / 365.25;
@@ -249,7 +249,8 @@ async function flagsLayout(url: string, ver: string, flagsStart: number, signal?
   const hit = flagHdrCache.get(ver); if (hit) return hit;
   let buf = await range(url, flagsStart, flagsStart + 23039, signal), p = parseCards(buf, 0);
   if (!p) { buf = await range(url, flagsStart, flagsStart + 57599, signal); p = parseCards(buf, 0); }
-  if (!p || p.h.ZCMPTYPE !== "RICE_1" || +p.h.ZTILE2 !== 1) throw new Error("unexpected FLAGS layout");
+  // if a future pipeline reorders the extensions or changes the compression, flags are reported as "not read" instead of being misread
+  if (!p || p.h.ZCMPTYPE !== "RICE_1" || +p.h.ZTILE2 !== 1 || (p.h.EXTNAME !== undefined && !/FLAG/i.test(String(p.h.EXTNAME)))) throw new Error("unexpected FLAGS layout");
   const defs: FlagDef[] = [];
   for (const k of Object.keys(p.h)) if (k.startsWith("MSKN")) { const n = k.slice(4), bit = Math.round(Math.log2(+(p.h[`MSKM${n}`] ?? 2 ** +n))); defs.push({ bit, name: String(p.h[k]), desc: String(p.h[`MSKD${n}`] ?? "") }); }
   if (defs.length) FLAG_DEFS = defs.sort((a, b) => a.bit - b.bit);
@@ -328,7 +329,7 @@ export async function readFrame(exp: Exposure, t: Target, o: ReadOpts): Promise<
   let flags = -1, flagsNear = -1, flagsAt: Frame["flagsAt"];
   const descP = o.flags === false ? null : (async () => {
     const lay = await flagsLayout(exp.url, ver, flagsStart, o.signal);
-    flagsAt = { start: flagsStart + lay.hdrLen, heap: flagsStart + lay.hdrLen + lay.theap, ver };
+    flagsAt = { start: flagsStart + lay.hdrLen, heap: flagsStart + lay.hdrLen + lay.theap, ver, n1: w.n1, n2: w.n2 };
     return readFlagDesc(exp.url, flagsAt, w.n1, y0, y1, o.signal);
   })().catch((e) => { if ((e as Error).name === "AbortError") throw e; return null; });
 
@@ -387,9 +388,9 @@ export async function readFrame(exp: Exposure, t: Target, o: ReadOpts): Promise<
 /** full flag mask for a frame's stamp (nearest detector pixel), fetched on demand */
 export async function readMask(f: Frame, N: number, signal?: AbortSignal): Promise<Int32Array | null> {
   if (!f.flagsAt) return null;
-  const a = f.aff, ys: number[] = [], n1 = 2040;
+  const a = f.aff, ys: number[] = [], n1 = f.flagsAt.n1, n2 = f.flagsAt.n2;
   for (const [i, j] of [[0, 0], [N - 1, 0], [0, N - 1], [N - 1, N - 1]]) ys.push(a[3] + a[4] * i + a[5] * j);
-  const y0 = Math.max(0, Math.floor(Math.min(...ys))), y1 = Math.min(n1 - 1, Math.ceil(Math.max(...ys)));
+  const y0 = Math.max(0, Math.floor(Math.min(...ys))), y1 = Math.min(n2 - 1, Math.ceil(Math.max(...ys)));
   const rows = await readFlagRows(f.exp.url, f.flagsAt, n1, y0, y1, signal), out = new Int32Array(N * N);
   for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
     const x = Math.round(a[0] + a[1] * i + a[2] * j), y = Math.round(a[3] + a[4] * i + a[5] * j);

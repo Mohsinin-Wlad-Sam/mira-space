@@ -1,91 +1,132 @@
 <p align="center"><img src="web/public/brand/mira-emblem.png" width="160" alt="Mira logo"></p>
 
-# Mira — watch the sky move
+# MIRA — a research observatory in the browser
 
 **NASA Space Apps Challenge 2026 · "Planet X and SPHEREx"** · team *assrar-dawla*
 
-Type a position on the sky. Mira finds every NASA SPHEREx exposure that covers it, reads the pixels straight from
-NASA's public archive, lines them up on the sky and plays them as a movie — then measures the spectrum, the light
-curve and the motion of anything you click. No server, no sign-up: it all happens in the browser.
+Give MIRA a position on the sky. Its instruments read every NASA SPHEREx exposure of that field straight from the
+public archive and measure it: **which sources moved** since 1999 and 2010, how fast, how far away, what their
+spectrum says they are, whether they brightened or faded, and what could still hide there. No server, no sign-up,
+no telescope time.
 
-Behind the tool is a 16-year census: 40 billion WISE/NEOWISE detections (2010–2020) linked into moving objects and
-measured again in SPHEREx's 102-colour all-sky map, browsable as an atlas and in 3D.
+The motivating problem is Planet X: an unknown cold body near the Sun shows itself only by moving against the
+stars. The same instruments serve any star, brown dwarf or variable source.
 
-*Mira was called **SKYLENS** during development; older docs, HPC paths (`~/skylens`) and some identifiers keep that name.*
+*MIRA was called **SKYLENS** during development; older docs, HPC paths (`~/skylens`) and some identifiers keep that name.*
 
-## What it does
+## What it is
 
-| Part | What a visitor gets | Built from |
+| Section | What you do there | Built from |
 |---|---|---|
-| **Blink** (`/explore/`) | A sky-registered movie of every SPHEREx pass over any RA/Dec or name. Modes: movie, spectral sweep (frames in wavelength order), deep stack (shift-and-add when following a mover), colour (six detectors → RGB), difference. Gaia DR3 and AllWISE overlays at each frame's date. NASA's quality flags on every frame. Field of view 3.3′–13′. Link, embed, PNG / WebM / CSV export. | SPHEREx Level-2 exposures read by HTTP Range from `s3://nasa-irsa-spherex`; exposure index built from IRSA's inventory |
-| **On-the-fly measurements** | Spectrum of the target or any clicked source (PSF-weighted photometry at the wavelength each exposure saw, with 2MASS / WISE anchors and automatic methane detection); light curve from wavelength-matched pairs of exposures; proper motion and parallax fitted to centroids; halo photometry for saturated stars | the same exposures |
-| **Sky atlas** (`/explore/#atlas`) | The whole infrared sky, WISE 2010 against SPHEREx 2025, in eight wavelengths; census layers (motion, methane, vanished, brightened, unusual, new candidates); live Solar System | IRSA HiPS + census feeds |
-| **3D space** (`#space`) | Fly from the planets (JPL Horizons) through 400,000 census objects at their Gaia or AI distances out to the cosmic microwave background | census + NASA/ESA catalogues |
-| **Lab** (`#lab`) | Ten experiments that start from a question: *Could SPHEREx see Planet X?*, *How far is that star? Measure it* (live parallax fit with bootstrap), a candidate-vetting queue, a batch tool for target lists, and six on the census | engine + census |
-| **Method** (`#about`) | How it works, the challenge point by point, validation, limits | — |
+| **Lab** (`/explore/`) | The working environment. One field, six instruments: **Evolution** (one deep image per SPHEREx visit on a time bar you steer, back to 1999), **Motion detector** (every source: moved / brighter / fainter / new / steady, with significance and its Gaia identity), **Astrometer** (position against time, proper motion, parallax), **Spectrograph** (0.75–5 µm spectrum, molecular bands, methane), **Photometer** (brightness against 1999 and 2010, and visit to visit), **Detection limits** (which planet or brown dwarf the field's depth would reveal). Plus every exposure with NASA's flags, and exports (CSV, FITS cube, Python, link, embed). | SPHEREx Level-2 exposures read by HTTP Range from `s3://nasa-irsa-spherex`; Gaia DR3, AllWISE, 2MASS from CDS mirrors |
+| **Catalogue** (`#catalogue`) | The survey, verified: filter and sort the confirmed movers, see them on a reduced proper-motion diagram and an all-sky chart, read the evidence for each, open it in the Lab | 39.9 billion WISE detections linked on a cluster, each claim re-measured on raw SPHEREx exposures |
+| **Cases** (`#cases`) | Your saved measurements, notes, target lists, exports; the survey's candidates with their verification | browser storage only |
+| **Universe** (`#universe`) | Where these objects are: the Sun's neighbourhood in 3D, out to the oldest light | Gaia, Hipparcos, census, NASA/ESA catalogues |
+| **Assistant** | Reads the page, explains it, and operates the instruments ("open Luhman 16 and tell me how fast it moves") | K2 Horizon through a small server-side proxy |
+| **Method** (`#about`) | How a field is measured, the tests, the verification funnel, the limits | — |
 
-## Validation (five challenge targets, through the same code the browser runs)
+## How well it works
 
-From `web/scripts/validate_blink.mts`, run of 14 Nov 2026 (index through 5 Oct 2026):
+Field detector, same code as the Lab (`web/scripts/test_detect.mts`):
 
-| Target | Measured by Mira from SPHEREx alone | Reference |
+| Field | MIRA: SPHEREx + AllWISE 2010 + 2MASS ~1999 (″/yr) | Reference (″/yr) |
 |---|---|---|
-| Barnard's Star | saturated in 121 of 121 exposures (OVERFLOW flag shown); motion from the image wings −2.5 ± 0.4, +10.2 ± 0.4 ″/yr (indicative); halo brightness steady to 8% | −0.80, +10.36 ″/yr (Gaia DR3) |
-| ε Indi B | motion +4.11 ± 0.17, −2.57 ± 0.17 ″/yr; parallax 0.36 ± 0.12″; 82% fainter at 3.3 µm than at 4.0 µm (methane); steady | +3.98, −2.47 ″/yr; 0.271″ |
+| ε Indi B | +3.991, −2.496 ± 0.015 | +3.982, −2.467 (Gaia DR3) |
+| Luhman 16 (no Gaia motion; linked to its 2010 and 1999 positions) | −2.758, +0.364 ± 0.013 | −2.75, +0.36 (literature) |
+| Barnard's Star (saturated: image wings) | −0.809, +10.432 ± 0.034 | −0.802, +10.362 (Gaia DR3) |
+| Survey candidate 6661-325678 (not in Gaia) | −0.335, −0.006 ± 0.041 | −0.357, +0.022 (CatWISE2020) |
+| Empty high-latitude field, 40 sources | nothing flagged | — |
+
+SPHEREx exposures alone, 1.5-year baseline (`web/scripts/validate_blink.mts`, run of 14 Nov 2026):
+
+| Target | Measured from SPHEREx alone | Reference |
+|---|---|---|
+| ε Indi B | motion +4.11 ± 0.17, −2.57 ± 0.17 ″/yr; parallax 0.36 ± 0.12″ (indicative); 82% fainter at 3.3 µm than at 4.0 µm (methane) | +3.98, −2.47 ″/yr; 0.271″ |
 | WISE 0855−0714 | seen only at 3.8–5 µm: 0.57 mJy at 4.6 µm; motion −8.4 ± 0.8, +2.7 ± 0.8 ″/yr from 7 exposures; its 2010 coordinates are recognised and followed | 0.57 mJy (WISE W2); −8.12, +0.67 ″/yr |
+| Barnard's Star | saturated in 121 of 121 exposures; motion from the image wings −2.5 ± 0.4, +10.2 ± 0.4 ″/yr (indicative) | −0.80, +10.36 ″/yr |
 | RW Aurigae | saturated; halo photometry: 1.9× brighter at 3.8–4.4 µm in Sep 2025 than in Sep 2026 | T Tauri star with dimming events |
-| R Draconis | saturated; halo photometry: 10× brighter at 0.75–1.1 µm in Sep 2026 than in Sep 2025, 1.2× at 2.4–3.9 µm | Mira variable, 246 d |
+| R Draconis | saturated; halo photometry: 10× brighter at 0.75–1.1 µm in Sep 2026 than in Sep 2025 | Mira variable, 246 d |
 
-Engine checks against Astropy on the same NASA file: pixel positions to 0.004 px, resampled values to 0.005%, decoded
-flag masks bit for bit.
+The two tables differ on purpose: the first uses the 2010 and 1999 catalogue positions (15–27 years), the second
+only SPHEREx's own 1.5 years. Engine checks against Astropy on the same NASA file: pixel positions to 0.004 px,
+resampled values to 0.005%, decoded flag masks bit for bit.
 
-## How Blink works
+## The survey and its verification
+
+| Step | Objects |
+|---|---|
+| WISE / NEOWISE detections linked into objects (2010–2020) | 39.9 billion |
+| Survey-level claims of motion or change | 1,564,553 |
+| Re-measured on raw SPHEREx exposures (14 Nov 2026, ~50 min on three cluster nodes) | 202,528 |
+| Motion above 0.3″/yr: confirmed / tested | 17,017 / 177,221 (9.6%; 29% of those brighter than 1 mJy) |
+| … not detected at all · only an unrelated source nearby | 43% · 40% |
+| Confirmed movers (including a sample of slower ones) | 17,604 |
+| … known Gaia stars with the same motion | 14,323 (81%: an independent check of the method) |
+| … no Gaia source at all · of which unnamed in SIMBAD and red (W1−W2 > 0.6) | 1,348 · 42 |
+| Known L and T dwarfs recovered (SIMBAD spectral types) | 174 |
+| Methane dips confirmed | 51 of 1,635 measurable |
+| Brightness changes that hold against AllWISE | 19 of 1,989 clean cases: blazars, a Seyfert galaxy, a young star, the site of SN 2022gzi |
+
+The survey-level "brightened", "vanished" and "methane" lists (hundreds of thousands of objects) did not survive
+this test and are not shown. Catalogue rows are confirmed motions, not discoveries.
+
+## How a field is measured
 
 1. **Index** — `census/sphx_index2.py` turns IRSA's inventory of 1.6 M exposures into one small JSON per HEALPix
-   nside-32 patch: up to 24 exposures per detector, whole-patch coverage first, spread over the visits.
-2. **Read** — per exposure, one Range request for the FITS header and one for the detector rows the field needs (~0.4 MB of a 65 MB file).
-3. **Register** — TAN-SIP astrometry (SIP inverted by iteration), bilinear resampling onto a north-up grid.
-4. **Wavelength** — the linear-variable-filter map gives the wavelength at every pixel of each detector.
-5. **Flags** — the FLAGS extension is a Rice-compressed table, one row per tile: only the rows needed are decoded
-   (`web/src/blink/rice.ts`); defects that are not sky are blanked, saturation is reported.
-6. **Measure** — `web/src/blink/measure.ts`: photometry, wavelength-matched light curves, motion + parallax.
+   nside-32 patch.
+2. **Read** — per exposure: the FITS header, the detector rows the field needs and the matching rows of NASA's
+   Rice-compressed flag table (`web/src/blink/engine.ts`, `rice.ts`), under 1 MB of a 65 MB file.
+3. **Register** — TAN-SIP astrometry, bilinear resampling onto a north-up grid; the wavelength of every pixel from
+   the filter map of its detector.
+4. **Detect** — `web/src/blink/detect.ts`: deep signal-to-noise stacks per visit; sources located at every visit;
+   each visit tied to Gaia with the field's own stars; counterparts in AllWISE and 2MASS; straight-line fit;
+   verdicts against the scatter with which Gaia stars are recovered in that field.
+5. **Measure one source** — `measure.ts`: PSF-weighted photometry at each exposure's wavelength, visit-to-visit
+   brightness from wavelength-matched pairs, per-exposure astrometry with parallax.
 
 ## Run it
 
 ```bash
 cd web
 npm install
-npm run dev        # http://localhost:5173/  (landing)  and  /explore/  (app)
+npm run dev        # http://localhost:5173/  (landing)  and  /explore/  (the observatory)
 npm run build      # typecheck + production build -> web/dist/
-npx tsx scripts/validate_blink.mts     # the validation table above (needs the dev server and network)
+npx tsx scripts/test_detect.mts        # the field detector on reference fields (needs the dev server and network)
+npx tsx scripts/validate_blink.mts     # the five challenge targets through the engine
 ```
 
-Links: `/explore/?ra=<deg>&dec=<deg>&fov=<arcmin>` or `/explore/?target=<name>` open Blink on a position (add
-`&embed=1` inside an `<iframe>`); `#atlas`, `#tour`, `#space`, `#lab`, `#about` open the other sections.
+Links: `/explore/?ra=<deg>&dec=<deg>&fov=<arcmin>` or `/explore/?target=<name>` open the Lab on a field (add
+`&embed=1` inside an `<iframe>`); `#catalogue`, `#cases`, `#universe`, `#about` open the other sections.
 
-The census feeds and the exposure index live in `web/public/data/` (not in git; `web/sync_data.sh` pulls them from
-the cluster). Deployment on a small instance, and how to re-index after each SPHEREx release, are in
-[`docs/14_deployment_and_updates.md`](docs/14_deployment_and_updates.md).
+The assistant needs a model key on the server side: in development put `MIRA_LLM_KEY=…` in `web/.env.local`
+(ignored by git); in production run `deploy/assistant-proxy.mjs`. Without a key the rest of the site works unchanged.
+
+The exposure index and the verified catalogue live in `web/public/data/` (not in git; `web/sync_data.sh` pulls them
+from the cluster). Deployment on a small instance, and how to re-index and re-verify after each SPHEREx release, are
+in [`docs/14_deployment_and_updates.md`](docs/14_deployment_and_updates.md).
 
 ## Repo map
 
 | Path | Contents |
 |---|---|
-| `web/src/blink/` | the Blink engine, measurements, catalogues, plots and view |
-| `web/src/main.ts`, `sky.ts`, `space.ts`, `labapp.ts`, `labpro.ts`, … | app shell, atlas, 3D view, Lab |
+| `web/src/blink/` | the engine (`engine.ts`, `rice.ts`), the field detector (`detect.ts`), measurements, catalogues, plots, detection limits and the Lab view (`view.ts`) |
+| `web/src/catalogue.ts`, `logbook.ts`, `assistant.ts`, `space.ts`, `main.ts` | Catalogue, Cases, assistant panel, 3D view, shell |
+| `web/server/assistant.mjs`, `deploy/assistant-proxy.mjs` | the assistant's server side (dev and production) |
+| `web/scripts/` | `verify_census.mts` (raw-exposure re-measurement), `candidates_report.mts`, `validate_detector.mts`, `test_detect.mts`, `validate_blink.mts` |
 | `web/src/landing/` | landing page (React); all copy in `content.ts` |
-| `census/` | census pipeline (linker, SPHEREx forced photometry, AI, exporters) and the exposure index builders |
-| `deploy/` | Caddy / nginx / Docker configs and `update_spherex.sh` |
-| `docs/13_business_plan.md` | how Mira stays free and alive |
+| `census/` | survey pipeline (linker, SPHEREx photometry, exporters), `verify_select.py`, `verify_lists.py`, `verify_merge.py` |
+| `deploy/` | Caddy / nginx / Docker configs, `update_spherex.sh`, the assistant proxy |
+| `docs/15_product_brief.md` | the concept in two pages |
+| `docs/13_business_plan.md` | who pays, for what, and why it stays free |
 | `docs/10_submission_draft.md` | submission text, slide outline |
 | `docs/07_si_usage_log.md` | statement of AI tool use |
-| `docs/01–12`, `docs/peer-review/` | research phase, design notes, reviews |
+| `docs/peer-review/` | reviews by external models, including the judges' critiques of this version |
 
 ## Data and acknowledgements
 
-NASA SPHEREx Level-2 spectral images and all-sky maps (NASA/IPAC Infrared Science Archive; a joint project of JPL
-and Caltech funded by NASA). unWISE time-domain catalogue (Meisner et al. 2023). NASA WISE / NEOWISE and AllWISE.
-ESA Gaia DR3. 2MASS. SIMBAD, VizieR and Aladin Lite (CDS, Strasbourg). JPL Horizons and SBDB; NASA DONKI, EPIC, SDO;
-NASA Exoplanet Archive; NED; Planck. UltracoolSheet (Best et al.). Photos on the landing page: Unsplash (credits in the footer).
+NASA SPHEREx Level-2 spectral images (NASA/IPAC Infrared Science Archive; a joint project of JPL and Caltech funded
+by NASA). unWISE time-domain catalogue (Meisner et al. 2023). NASA WISE / NEOWISE, AllWISE and CatWISE2020. ESA Gaia
+DR3 and Hipparcos. 2MASS. SIMBAD and VizieR (CDS, Strasbourg). JPL Horizons and SBDB; NASA Exoplanet Archive; NED;
+Planck. UltracoolSheet (Best et al.). Photos on the landing page: Unsplash (credits in the footer).
 
-Mira is a hackathon project and is not affiliated with or endorsed by NASA.
+MIRA is a hackathon project and is not affiliated with or endorsed by NASA.

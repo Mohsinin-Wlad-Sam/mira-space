@@ -101,6 +101,20 @@ def main():
             np.where(np.isfinite(c.bprp) & (c.bprp >= 1.8), "M dwarf", np.where(np.isfinite(c.bprp) & (c.bprp >= 0.9), "K dwarf", np.where(np.isfinite(c.bprp), "F/G star",
             np.where(np.isfinite(w12) & (w12 > 0.6), "red: brown dwarf?", np.where(np.isfinite(w12), "cool dwarf?", "unclassified")))))))
     c["kind"] = kind
+    # a spectral type or object type in SIMBAD outranks a guess from colours
+    def from_simbad(row):
+        sb = row.simbad or ""
+        if "(" not in sb: return "late M or L dwarf" if (np.isfinite(row.bprp) and row.bprp >= 4.3 and row.kind == "M dwarf") else row.kind
+        inside = sb[sb.rindex("(") + 1:].rstrip(")"); parts = [x.strip() for x in inside.split(",", 1)]; ot = parts[0]; sp = parts[1] if len(parts) > 1 else ""
+        t = sp.lstrip("d").lstrip("es").strip()
+        if sp.startswith("sd") or sp.startswith("esd") or sp.startswith("usd"): return "subdwarf"
+        if sp[:1] == "D" or ot.startswith("WD"): return "white dwarf"
+        for letter, name in (("Y", "Y dwarf"), ("T", "T dwarf"), ("L", "L dwarf"), ("M", "M dwarf"), ("K", "K dwarf")):
+            if t[:1] == letter: return name
+        if t[:1] in ("G", "F", "A"): return "F/G star"
+        if ot.startswith("BD"): return "brown dwarf"
+        return row.kind
+    c["kind"] = c.apply(from_simbad, axis=1)
     # ---------------- brightness changes against AllWISE (the census's own WISE fluxes turned out wrong for these lists)
     changes = []
     if (d / "cats.jsonl").exists():
@@ -134,7 +148,7 @@ def main():
             blend = max(own[0] / s1, own[1] / s2) < 0.7
             changes.append(dict(id=r["id"], ra=float(o.ra), dec=float(o.dec), allwise=own[3], w1_2010=s1, w2_2010=s2, w1_now=n1, w2_now=n2, r1=r1, r2=r2, z1=z1, z2=z2, k_1999=kq, k_now=(o.K if o.K and o.K > 0 else None),
                                 snr=float(o.ssnr), clean=bool(clean), blend=bool(blend), var=flags.split("|")[2], w2_var_chi2=float(o.w2_var_chi2) if pd.notna(o.w2_var_chi2) else None, lens=int(o.lens) if pd.notna(o.lens) else 0,
-                                d_pred=float(o.d_pred), J=o.J, H=o.H))
+                                d_pred=float(o.d_pred), J=o.J, H=o.H, simbad=(cone.get(r["id"]) or {}).get("simbad") or ""))
     ch = pd.DataFrame(changes)
     if len(ch):
         ok = ch.clean & ~ch.blend & (ch.snr >= 20)

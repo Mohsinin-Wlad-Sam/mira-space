@@ -13,6 +13,11 @@
 	@data path /data/* /live/* /validation.json
 	header @data Cache-Control "public, max-age=600"
 
+	# the assistant's proxy (optional; see deploy/assistant-proxy.mjs). Without it the panel says it is unavailable.
+	handle /api/* {
+		reverse_proxy 127.0.0.1:{$MIRA_PROXY_PORT:8787}
+	}
+
 	# two entry pages: the landing (/, client-side routes fall back to it) and the app (/explore/)
 	try_files {path} {path}/index.html /index.html
 	file_server

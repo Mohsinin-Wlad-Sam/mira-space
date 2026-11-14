@@ -150,6 +150,8 @@ export function mountLogbook(host: HTMLElement, ctx: LogCtx) {
       ctx.toast(`${n} entries imported`); render(); } catch { ctx.toast("That file is not a MIRA cases file"); }
     (ev.target as HTMLInputElement).value = ""; };
   render(); checkFresh();
-  fetch(`${BASE}data/candidates.json`).then((r) => (r.ok ? r.json() : null)).then((j) => { if (j?.items) { cases = j.items; $("#lgc").textContent = `(${j.items.length})`; } }).catch(() => {});
+  Promise.all([fetch(`${BASE}data/candidates.json`).then((r) => (r.ok ? r.json() : null)).catch(() => null), fetch(`${BASE}data/verified/candidates.json`).then((r) => (r.ok && !(r.headers.get("content-type") ?? "").includes("html") ? r.json() : null)).catch(() => null)]).then(([j, v]) => {
+    if (v?.items) checked = new Map((v.items as any[]).map((q) => [q.id, q]));
+    if (j?.items) { cases = j.items; $("#lgc").textContent = `(${j.items.length})`; if (tab === "cases") renderCases(); } });
   return { refresh: render };
 }

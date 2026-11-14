@@ -1,4 +1,4 @@
-# MIRA — product brief (v5, 14 Nov 2026)
+# MIRA — product brief (v5, 15 Nov 2026)
 
 *NASA Space Apps 2026 · challenge "Planet X and SPHEREx" · working document for reviewers*
 
@@ -51,9 +51,9 @@ Measured on reference fields (same code as the browser):
 | Field | MIRA (″/yr) | Reference (″/yr) |
 |---|---|---|
 | ε Indi B | +3.991, −2.496 ± 0.015 | Gaia DR3 +3.982, −2.467 |
-| Luhman 16 (no Gaia motion; linked to its 2010 position) | −2.775, +0.371 ± 0.026 | literature −2.75, +0.36 |
+| Luhman 16 (no Gaia motion; linked to its 2010 and 1999 positions) | −2.758, +0.364 ± 0.013 | literature −2.75, +0.36 |
 | Barnard's Star (saturated; wings) | −0.809, +10.432 ± 0.034 | Gaia DR3 −0.802, +10.362 |
-| census candidate 6661-325678 (not in Gaia) | −0.335, −0.006 ± 0.041 (8σ) | WISE-era fit −0.354, +0.016 |
+| census candidate 6661-325678 (not in Gaia) | −0.335, −0.006 ± 0.041 (8σ) | CatWISE2020 −0.357, +0.022 |
 | empty high-latitude field, 40 sources | no detections | — |
 
 Typical recovery of Gaia stars in a field: 0.01–0.02 ″/yr rms.
@@ -66,13 +66,17 @@ survey-level claims of change. On 14 Nov 2026 **202,548 of those claims were re-
 ratio), ~40 objects per second.
 
 - Motion ≥ 0.3″/yr: 177,221 claims → **17,017 confirmed** (9.6%; 29% of those brighter than 1 mJy), 43% not detected
-  at all, 40% only an unrelated source nearby, 4% saturated.
+  at all, 40% only an unrelated source nearby, 4% saturated. With a sample of slower claims: 17,604 confirmed movers.
+- Of those, **14,323 are known Gaia stars with the same motion** (81%): an independent check of the method. 1,348
+  have no Gaia source at all; 308 of these carry a SIMBAD name, and 42 of the unnamed ones are red (W1−W2 > 0.6).
+  SIMBAD spectral types identify 174 recovered L and T dwarfs.
 - "Brightened" / "vanished" lists: not real. For ordinary confirmed stars SPHEREx and WISE agree to 5%
   (ratio 0.943 ± 0.04 in W1, 0.944 ± 0.05 in W2), so the tool can see 30% changes; the survey-level lists were driven
-  by wrong WISE fluxes. They are being re-derived against AllWISE and are not shown as findings.
-- Methane list: 52 confirmed dips out of 1,635 measurable (49 of them in the colour-selected subset).
-- 22 unknown-neighbour candidates: 6 confirmed at the predicted place with the static position excluded, 2 not
-  detected, 14 too slow or faint for that test (being re-measured with the field detector, 15–27 year baseline).
+  by wrong WISE fluxes. Against AllWISE, 19 of 1,989 clean cases hold: blazars, a Seyfert galaxy, a young star and the
+  site of SN 2022gzi.
+- Methane list: 51 confirmed dips out of 1,635 measurable.
+- The 22 candidates, through the field detector and against other catalogues: see `web/public/data/verified/candidates.json`
+  and the Cases page. CatWISE2020 already lists most of them as moving sources; none has a spectral type in SIMBAD.
 
 The catalogue the app shows is the **verified** one, with the counts above stated as they are.
 
@@ -85,10 +89,12 @@ The catalogue the app shows is the **verified** one, with the counts above state
 
 ## 6. Who it is for, and money
 
-Free public tool (NASA data, near-zero marginal cost: the browser reads NASA's bucket). Paying users are
-institutions that need the same engine on their own terms: survey teams and observatories (candidate vetting as a
-service, private instances, new-release re-verification), space agencies and planetary-defence / space-domain
-awareness groups (moving-object detection on their imagery), education (classroom Lab). Grants first, services second.
+Free public tool (NASA data, near-zero marginal cost: the browser reads NASA's bucket). Institutions pay for what
+they already buy elsewhere at a price: measurements on their own terms. Grants first (open-science programmes with a
+partner as lead); then verification as a service for survey and citizen-science teams (hand over a candidate list,
+get each one re-measured on raw exposures); the engine adapted to other cloud-hosted archives; a teaching Lab for
+universities and planetariums. Demand for the paid offers is a hypothesis to test with free pilots
+(`docs/13_business_plan.md`).
 
 ## 7. Known limits
 

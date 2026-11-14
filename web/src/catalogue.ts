@@ -15,7 +15,8 @@ type Filter = "all" | "nogaia" | "red" | "methane" | "wd" | "fast" | "changes";
 const FILTERS: [Filter, string, string][] = [["all", "All confirmed movers", "Every motion claim that passed the raw-exposure test"], ["nogaia", "No Gaia motion", "Confirmed movers with no matching proper motion in Gaia DR3: too red or too faint for Gaia, or missed"],
   ["red", "Red (W1−W2 > 0.6)", "Brighter at 4.6 µm than at 3.4 µm: the colour of cold brown dwarfs"], ["methane", "Methane dip", "3.3 µm flux below 60% of the 4.0 µm flux, measured on the raw exposures"], ["wd", "White dwarfs", "Faint for their Gaia colour"],
   ["fast", "Faster than 1″/yr", ""], ["changes", "Brightness changed", "Sources whose brightness today differs from AllWISE 2010 by more than 50% in both WISE bands"]];
-const KIND_COLOR: Record<string, string> = { "M dwarf": "#ff9d4d", "K dwarf": "#f0d35b", "F/G star": "#f0f0fa", "white dwarf": "#6ea8ff", "methane dwarf": "#ff5d6c", "red: brown dwarf?": "#ff7ad9", "cool dwarf?": "#74dd8f", unclassified: "#8a8a96" };
+const KIND_COLOR: Record<string, string> = { "M dwarf": "#ff9d4d", "late M or L dwarf": "#ff7a3d", "K dwarf": "#f0d35b", "F/G star": "#f0f0fa", "white dwarf": "#6ea8ff", subdwarf: "#b9c4ff", "L dwarf": "#ff7ad9", "T dwarf": "#ff5d6c", "Y dwarf": "#c9a4ff",
+  "brown dwarf": "#ff7ad9", "methane dwarf": "#ff5d6c", "red: brown dwarf?": "#e58cff", "cool dwarf?": "#74dd8f", unclassified: "#8a8a96" };
 const esc = (s: string) => s.replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]!));
 const nf = (n: number) => n.toLocaleString("en-US");
 const w2mag = (mjy: number) => -2.5 * Math.log10(mjy / 171787);

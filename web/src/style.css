@@ -765,3 +765,11 @@ body.asst-on .blinkpage, body.asst-on .catpage, body.asst-on .logpage { right: m
 .as-note { margin: 0; padding: 0 14px 12px; font-size: 10.5px; line-height: 1.45; color: var(--faint); }
 @media (max-width: 760px) { body.asst-on .blinkpage, body.asst-on .catpage, body.asst-on .logpage { right: 0; } .asst { top: 0; z-index: 60; } }
 .lg-chk { display: block; margin-top: 4px; font-size: 12px; color: rgb(240 240 250 / .82); } .lg-chk .tag { margin-right: 4px; }
+/* the method page covers whatever section is open, the 3D view included */
+.about { z-index: 26; } body.about-on .top { z-index: 27; } body.about-on .asst { z-index: 31; }
+.ct-list { min-width: 0; }
+@media (max-width: 760px) {
+  .top .search { display: none; }      /* phones: the Lab's own input and the assistant take its place */
+  .ct { padding: 16px 12px 60px; } .ct-bar input[type=search] { flex: 1 1 100%; min-width: 0; } .ct-funnel > div { flex: 1 1 44%; max-width: none; }
+  .ct-obj h2 { font-size: 21px; }
+}
