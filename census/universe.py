@@ -57,7 +57,7 @@ def to_xyz(ra, dec, dpc):
 
 
 def main():
-    ap = argparse.ArgumentParser(); ap.add_argument("--web", default="~/skylens/web_data"); ap.add_argument("--cache", default="~/skylens/ai")
+    ap = argparse.ArgumentParser(); ap.add_argument("--web", default="~/skylens/web_data"); ap.add_argument("--cache", default="~/skylens/ai"); ap.add_argument("--no-qso", action="store_true")
     a = ap.parse_args(); web = pathlib.Path(a.web).expanduser() / "universe"; web.mkdir(parents=True, exist_ok=True); cache = pathlib.Path(a.cache).expanduser()
     from astropy.cosmology import Planck18
     import astropy.units as u
@@ -70,15 +70,22 @@ def main():
     xyz = to_xyz(ra, dec, d); np.c_[xyz, z.astype(np.float32)].astype(np.float32).tofile(web / "galaxies.bin")
     meta["galaxies"] = dict(n=int(len(z)), z_max=0.06, source="NED objdir, prefphytype G, spectroscopic z (zunc < 0.0005)")
     print("galaxies", len(z), flush=True)
-    # ---- quasars (1 in 8 by object id, any redshift)
-    txt = ned_chunked("prefphytype = 'QSO'", np.r_[np.linspace(0.05, 3.0, 60), np.linspace(3.05, 7.5, 10)], cache / "ned_qso.csv", top=2000)
-    R = list(csv.DictReader(io.StringIO(txt)))
-    ra = np.array([float(r["ra"]) for r in R]); dec = np.array([float(r["dec"]) for r in R]); z = np.array([float(r["z"]) for r in R])
-    ok = (z > 0.05) & (z < 7.6); ra, dec, z = ra[ok], dec[ok], z[ok]
-    d = Planck18.comoving_distance(z).to(u.pc).value
-    np.c_[to_xyz(ra, dec, d), z.astype(np.float32)].astype(np.float32).tofile(web / "quasars.bin")
-    meta["quasars"] = dict(n=int(len(z)), source="NED objdir, prefphytype QSO with redshift; up to 2,000 per Δz = 0.05 slice (a sample, not the full set)")
-    print("quasars", len(z), flush=True)
+    # ---- quasars (optional: NED's synchronous TAP times out on these slices; skipped with --no-qso)
+    if a.no_qso:
+        meta["quasars"] = dict(n=0, note="skipped"); a.skip_q = True
+    else: a.skip_q = False
+    if not a.skip_q:
+      pass
+    # (quasar block below runs only when requested)
+    if not a.skip_q:
+        txt = ned_chunked("prefphytype = 'QSO'", np.r_[np.linspace(0.05, 3.0, 60), np.linspace(3.05, 7.5, 10)], cache / "ned_qso.csv", top=2000)
+        R = list(csv.DictReader(io.StringIO(txt)))
+        ra = np.array([float(r["ra"]) for r in R]); dec = np.array([float(r["dec"]) for r in R]); z = np.array([float(r["z"]) for r in R])
+        ok = (z > 0.05) & (z < 7.6); ra, dec, z = ra[ok], dec[ok], z[ok]
+        d = Planck18.comoving_distance(z).to(u.pc).value
+        np.c_[to_xyz(ra, dec, d), z.astype(np.float32)].astype(np.float32).tofile(web / "quasars.bin")
+        meta["quasars"] = dict(n=int(len(z)), source="NED objdir, prefphytype QSO with redshift; up to 2,000 per Δz = 0.05 slice (a sample, not the full set)")
+        print("quasars", len(z), flush=True)
     # ---- CMB (Planck SMICA) -> Galactic equirectangular image (Planck's own map is in Galactic coordinates)
     fp = cache / "planck_smica_1024.fits"
     if not fp.exists(): urllib.request.urlretrieve(CMB, fp)

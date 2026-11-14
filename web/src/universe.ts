@@ -135,10 +135,14 @@ export class Universe {
     const g = await bin("galaxies.bin"), n = g.length / 4;
     this.web = cloud(n, (k, p, c) => { p.set(g[k * 4], g[k * 4 + 1], g[k * 4 + 2]); const z = g[k * 4 + 3]; c.setRGB(0.75 + 0.25 * (z / 0.06), 0.8, 1.0 - 0.35 * (z / 0.06)); return 120000; }, 1);
     this.group.add(this.web); this.counts.galaxies = n;
+    if (!meta.quasars?.n) { await this.loadCmb(meta); return; }
     const q = await bin("quasars.bin"), m = q.length / 4;
     this.qso = cloud(m, (k, p, c) => { p.set(q[k * 4], q[k * 4 + 1], q[k * 4 + 2]); const z = Math.min(1, q[k * 4 + 3] / 4); c.setRGB(0.6 + 0.4 * z, 0.75 - 0.3 * z, 1.0 - 0.5 * z); return 2.5e7; }, 1);
     this.group.add(this.qso); this.counts.quasars = m;
-    if (meta.cmb) {
+    await this.loadCmb(meta);
+  }
+  private async loadCmb(meta: any) {
+    if (meta.cmb && !this.cmb) {
       this.cmbR = meta.cmb.radius_pc;
       const t = await new THREE.TextureLoader().loadAsync(`${BASE}data/universe/cmb_2048.jpg`); t.colorSpace = THREE.NoColorSpace; t.wrapS = THREE.RepeatWrapping;
       this.cmb = new THREE.Mesh(new THREE.SphereGeometry(this.cmbR, 96, 48), new THREE.ShaderMaterial({ vertexShader: CMB_VERT, fragmentShader: CMB_FRAG, side: THREE.BackSide,
