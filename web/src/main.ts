@@ -48,8 +48,7 @@ document.body.classList.toggle("saver", set.saver);
 ui.innerHTML = `
 <header class="top">
   <a class="logo" href="/" aria-label="Mira home">
-    <svg viewBox="0 0 32 32" aria-hidden="true"><ellipse cx="16" cy="16" rx="13" ry="5.2" fill="none" stroke="currentColor" stroke-width="1.5" transform="rotate(-20 16 16)"/>
-      <circle cx="16" cy="16" r="3.4" fill="currentColor"/><circle cx="27.6" cy="11.3" r="1.7" fill="currentColor"/></svg>
+    <img src="/brand/mira-mark.png" width="59" height="32" alt="">
     <span>MIRA<small>Sky viewer · 16-year census</small></span></a>
   <form class="search" id="search"><input id="q" placeholder="Search a star, or RA Dec" autocomplete="off" enterkeyhint="search"></form>
   <nav class="topnav">
