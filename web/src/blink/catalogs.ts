@@ -27,7 +27,8 @@ async function text(url: string, ms = 12000): Promise<string> {
 }
 
 /** a catalogue source: position (deg) at `epoch`, proper motion in arcsec/yr, parallax in mas */
-export type CatSource = { ra: number; dec: number; pmra: number; pmdec: number; plx: number | null; mag: number | null; mag2?: number | null; epoch: number; id: string };
+export type CatSource = { ra: number; dec: number; pmra: number; pmdec: number; plx: number | null; mag: number | null; mag2?: number | null; epoch: number; id: string;
+  /** 1-sigma position error at `epoch` (arcsec), when the catalogue gives one */ epos?: number };
 export const catPos = (s: CatSource, year: number): [number, number] => {
   const dt = year - s.epoch; return [s.ra + (s.pmra / 3600) * dt / Math.cos(s.dec * D2R), s.dec + (s.pmdec / 3600) * dt];
 };
@@ -54,14 +55,17 @@ export async function gaia(ra: number, dec: number, radiusArcsec: number, max = 
 /** AllWISE sources: where NASA's WISE saw each source in 2010 (mean epoch 2010.5), brightest W2 first.
  *  Positions are NOT moved to the frame's date: a fast mover has left its 2010 marker behind, which is the point. */
 export async function allwise(ra: number, dec: number, radiusArcsec: number, max = 400): Promise<CatSource[]> {
-  const rows = await vizier("II/328/allwise", ra, dec, radiusArcsec, "AllWISE,RAJ2000,DEJ2000,W1mag,W2mag", "W2mag", max);
+  const rows = await vizier("II/328/allwise", ra, dec, radiusArcsec, "AllWISE,RAJ2000,DEJ2000,eeMaj,W1mag,W2mag", "W2mag", max);
   return rows.map((r) => ({ ra: num(r.RAJ2000), dec: num(r.DEJ2000), pmra: 0, pmdec: 0, plx: null,
-    mag: isFinite(num(r.W2mag)) ? num(r.W2mag) : null, mag2: isFinite(num(r.W1mag)) ? num(r.W1mag) : null, epoch: 2010.5, id: `WISEA ${r.AllWISE}` })).filter((s) => isFinite(s.ra) && isFinite(s.dec));
+    mag: isFinite(num(r.W2mag)) ? num(r.W2mag) : null, mag2: isFinite(num(r.W1mag)) ? num(r.W1mag) : null, epoch: 2010.5, id: `WISEA ${r.AllWISE}`,
+    epos: isFinite(num(r.eeMaj)) ? num(r.eeMaj) : undefined })).filter((s) => isFinite(s.ra) && isFinite(s.dec));
 }
 /** 2MASS point sources (1997–2001): J, H, Ks magnitudes — independent brightness anchors for the on-the-fly spectrum */
 export async function twomass(ra: number, dec: number, radiusArcsec: number, max = 300): Promise<(CatSource & { j: number; h: number; k: number })[]> {
-  const rows = await vizier("II/246/out", ra, dec, radiusArcsec, "2MASS,RAJ2000,DEJ2000,Jmag,Hmag,Kmag", "Kmag", max);
-  return rows.map((r) => ({ ra: num(r.RAJ2000), dec: num(r.DEJ2000), pmra: 0, pmdec: 0, plx: null, mag: num(r.Kmag), epoch: 1999.5, id: `2MASS J${r["2MASS"]}`, j: num(r.Jmag), h: num(r.Hmag), k: num(r.Kmag) })).filter((s) => isFinite(s.ra));
+  const rows = await vizier("II/246/out", ra, dec, radiusArcsec, "2MASS,RAJ2000,DEJ2000,errMaj,Jmag,Hmag,Kmag,JD", "Kmag", max);
+  // each 2MASS source carries the date it was observed (1997-2001): a third epoch, 25 years before SPHEREx
+  return rows.map((r) => ({ ra: num(r.RAJ2000), dec: num(r.DEJ2000), pmra: 0, pmdec: 0, plx: null, mag: num(r.Kmag), epoch: num(r.JD) > 2.4e6 ? 2000 + (num(r.JD) - 2451545) / 365.25 : 1999.5,
+    id: `2MASS J${r["2MASS"]}`, j: num(r.Jmag), h: num(r.Hmag), k: num(r.Kmag), epos: isFinite(num(r.errMaj)) ? num(r.errMaj) : undefined })).filter((s) => isFinite(s.ra));
 }
 /** catalogue magnitudes -> flux density (mJy) at the band's wavelength (Vega zero points: 2MASS Cohen+ 2003, WISE Jarrett+ 2011) */
 export const BANDS = { J: { um: 1.235, zp: 1594 }, H: { um: 1.662, zp: 1024 }, Ks: { um: 2.159, zp: 666.7 }, W1: { um: 3.353, zp: 309.54 }, W2: { um: 4.603, zp: 171.787 } } as const;

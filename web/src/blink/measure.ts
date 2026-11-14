@@ -121,19 +121,28 @@ function matchedLevels(P: Phot[], det: number, tol = 0.012): { V: LcVisit[]; pai
     return { visit: ids[i], mjd: L.reduce((t, p) => t + p.mjd, 0) / L.length, ratio: Math.exp(x[i]), err: Math.exp(x[i]) * Math.sqrt(Math.max(sol.inv[q][q] - 1 / (m * m), 1e-6)) * scale, n: cnt[i] }; }).sort((a, b) => a.mjd - b.mjd);
   return { V, pairs: list.length };
 }
+/** Repeatability of one exposure's flux on constant stars (ln units), by detector. SPHEREx's 6" pixels undersample the
+ *  image, most severely at the shortest wavelengths, so the measured flux depends on where the star falls inside a
+ *  pixel: field stars scatter by ~12% per exposure in detector 1 and ~5% beyond 2.4 µm, whatever their brightness.
+ *  A visit level averaged over n exposure pairs carries this floor divided by √n. (index 0: all detectors together) */
+const SYS = [0.08, 0.12, 0.1, 0.07, 0.05, 0.05, 0.05];
 function spread(det: number, V: LcVisit[]): LcSeries {
   if (V.length < 2) return { det, visits: V, amplitude: 1, chi2: 0, lo: null, hi: null };
   const lo = V.reduce((a, b) => (b.ratio < a.ratio ? b : a)), hi = V.reduce((a, b) => (b.ratio > a.ratio ? b : a));
-  // 3% floor: the repeatability measured on constant stars
-  const chi2 = V.reduce((q, v) => q + Math.pow(Math.log(v.ratio) / Math.hypot(v.err / v.ratio, 0.03), 2), 0) / (V.length - 1);
+  const chi2 = V.reduce((q, v) => q + Math.pow(Math.log(v.ratio) / Math.hypot(v.err / v.ratio, SYS[det] / Math.sqrt(Math.max(1, v.n))), 2), 0) / (V.length - 1);
   return { det, visits: V, amplitude: hi.ratio / Math.max(lo.ratio, 1e-3), chi2, lo, hi };
 }
 export function lightCurve(P: Phot[]): LightCurve {
   const all = matchedLevels(P, 0), series = [1, 2, 3, 4, 5, 6].map((d) => spread(d, matchedLevels(P, d).V)).filter((q) => q.visits.length >= 2);
   // a claim of variability needs several matched pairs in every visit: thin data easily fakes a trend
-  const A = spread(0, all.V), sig = (q: LcSeries) => q.visits.length >= 2 && q.visits.every((v) => v.n >= 3) && (q.det ? q.chi2 > 9 && q.amplitude > 1.2 : q.chi2 > 6 && q.amplitude > 1.15);
-  const best = series.filter(sig).sort((a, b) => b.amplitude - a.amplitude)[0] ?? null;
-  return { all: A, series, pairs: all.pairs, variable: !!best || sig(A), best };
+  const A = spread(0, all.V), sig = (q: LcSeries) => q.visits.length >= 2 && q.visits.every((v) => v.n >= 3) && (q.det ? q.chi2 > 9 && q.amplitude > 1.25 : q.chi2 > 6 && q.amplitude > 1.15);
+  const S = series.filter(sig).sort((a, b) => b.amplitude - a.amplitude);
+  // ... and it must not hang on one detector: a second detector has to show the same visit brighter than the same other
+  // visit (real variables change at every wavelength at once), unless the single detector's case is overwhelming
+  const at = (q: LcSeries, v: number) => q.visits.find((x) => x.visit === v)?.ratio;
+  const backed = (a: LcSeries) => series.some((b) => { if (b === a || !a.hi || !a.lo) return false; const h = at(b, a.hi.visit), l = at(b, a.lo.visit); return h !== undefined && l !== undefined && h > l * 1.08; });
+  const best = S.find((a) => backed(a) || (a.chi2 > 40 && a.visits.every((v) => v.n >= 5))) ?? null;
+  return { all: A, series, pairs: all.pairs, variable: !!best || (sig(A) && A.visits.every((v) => v.n >= 4)), best };
 }
 
 // ---------------------------------------------------------------- astrometry
