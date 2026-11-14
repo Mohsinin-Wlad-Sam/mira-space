@@ -151,7 +151,10 @@ def main():
                                 d_pred=float(o.d_pred), J=o.J, H=o.H, simbad=(cone.get(r["id"]) or {}).get("simbad") or ""))
     ch = pd.DataFrame(changes)
     if len(ch):
-        ok = ch.clean & ~ch.blend & (ch.snr >= 20)
+        # a fast-moving star has left its 2010 position: what AllWISE lists there is something else, not a brightness change
+        dm, _ = tree.query(unit(ch.ra.values, ch.dec.values), distance_upper_bound=2 * np.sin(np.radians(12 / 3600) / 2))
+        ch["mover"] = np.isfinite(dm) | ch.simbad.str.contains(r"\(PM\*", regex=True)
+        ok = ch.clean & ~ch.blend & (ch.snr >= 20) & ~ch.mover
         ch["verdict"] = np.where(ok & (ch.r2 > 1.5) & (ch.r1 > 1.3) & (ch.z1 > 5) & (ch.z2 > 5), "brighter", np.where(ok & (ch.r2 < 0.67) & (ch.r1 < 0.77) & (ch.z1 < -5) & (ch.z2 < -5), "fainter", "unchanged"))
         funnel["brightness_checked"] = {"tested": int(len(ch)), "clean": int(ok.sum()), "brighter": int((ch.verdict == "brighter").sum()), "fainter": int((ch.verdict == "fainter").sum()), "unchanged": int((ok & (ch.verdict == "unchanged")).sum())}
     # ---------------- methane
@@ -159,12 +162,18 @@ def main():
     funnel["methane"] = {"tested": int(((L & 2) > 0).sum()), "measurable": int(okr.sum()), "confirmed": int((okr & (me.CH4 / me.REF < 0.6) & (me.W2 > me.W1)).sum())}
     ch4ids = set(me[okr & (me.CH4 / me.REF < 0.6) & (me.W2 > me.W1)].id)
 
+    # ---------------- crowding: in the Galactic plane several stars share one SPHEREx pixel and the position test loses its meaning
+    ag, dg = np.radians(192.85948), np.radians(27.12825); rr, dd = np.radians(c.ra_now.values), np.radians(c.dec_now.values)
+    c["glat"] = np.degrees(np.arcsin(np.sin(dd) * np.sin(dg) + np.cos(dd) * np.cos(dg) * np.cos(rr - ag)))
+    hl = c[c.glat.abs() >= 10]
+    high = dict(n=int(len(hl)), known=int((hl.known == 1).sum()), gaia_other=int((hl.known == 2).sum()), gaia_nopm=int((hl.known == 3).sum()), no_gaia=int((hl.known == 0).sum()),
+                plane_n=int((c.glat.abs() < 10).sum()), plane_known=int(((c.glat.abs() < 10) & (c.known == 1)).sum()))
     # ---------------- write
     r3 = lambda v, n=3: [None if (x is None or not np.isfinite(x)) else float(np.format_float_positional(x, precision=n, unique=False, fractional=False, trim="-")) for x in v]  # noqa: E731
     c = c.sort_values("conf", ascending=False)
     cols = dict(id=list(c.id), ra=[round(x, 5) for x in c.ra_now], dec=[round(x, 5) for x in c.dec_now], pm=r3(c.pm_m), pmra=r3(c.pmra_m), pmdec=r3(c.pmdec_m), epm=r3(c.epm_m, 2), conf=r3(c.conf, 3), snr=r3(c.ssnr, 3),
                 J=r3(c.J), H=r3(c.H), K=r3(c.K), W1=r3(c.W1 / ZP["W1"]), W2=r3(c.W2 / ZP["W2"]), w12=r3(c.w12, 2), ch4=r3(c.ch4, 2), w2_wise=r3(c.w2_uJy / 1000), known=[int(x) for x in c.known], gaia=list(c.gaia.astype(str)),
-                G=r3(c.G, 4), gpm=r3(c.gpm), plx=r3(c.plx, 4), kind=list(c.kind), dp=r3(c.d_pred, 2), ds=r3(c.d_stat, 3), yr=r3(c.syr, 6), wpm=r3(c.pm), n=[int(x) for x in c.n], simbad=list(c.simbad.fillna("").astype(str)), slow=[int(x) for x in (((c.lens.astype(int) & 1) == 0))], methane=[int(i in ch4ids) for i in c.id])
+                G=r3(c.G, 4), gpm=r3(c.gpm), plx=r3(c.plx, 4), kind=list(c.kind), glat=[round(float(x), 1) for x in c.glat], dp=r3(c.d_pred, 2), ds=r3(c.d_stat, 3), yr=r3(c.syr, 6), wpm=r3(c.pm), n=[int(x) for x in c.n], simbad=list(c.simbad.fillna("").astype(str)), slow=[int(x) for x in (((c.lens.astype(int) & 1) == 0))], methane=[int(i in ch4ids) for i in c.id])
     (out / "objects.json").write_text(json.dumps(dict(n=len(c), cols=cols), separators=(",", ":")))
     if len(ch):
         cv = ch[ch.verdict != "unchanged"].sort_values("z2", key=lambda s: -s.abs())
@@ -173,7 +182,7 @@ def main():
     meta = dict(built=time.strftime("%Y-%m-%d %H:%M"), epoch_census=TREF, zp=ZP, claims=dict(motion_fast=177221, motion_slow=1014881, methane=70097, brightened=192074, vanished=112240, total=1564553),
                 remeasured=int(len(m)), funnel=funnel, confirmed_movers=int(len(c)), movers_known=int(known.get(1, 0)), movers_gaia_other=int(known.get(2, 0)), movers_gaia_nopm=int(known.get(3, 0)), movers_no_gaia=int(known.get(0, 0)),
                 gaia_list="Gaia DR3, proper motion > 100 mas/yr (499,359 of 506,589 sources retrieved)" + ("; cone searches for the rest" if len(cone) else ""),
-                kinds=c.kind.value_counts().to_dict(), cone_checked=len(cone),
+                kinds=c.kind.value_counts().to_dict(), cone_checked=len(cone), high_latitude=high,
                 rule="moved: the deep-stack centroid lies within 3 sigma of where the WISE-era motion predicts and more than 4 sigma (and twice as far) from where it would be if it had not moved")
     (out / "meta.json").write_text(json.dumps(meta, indent=1))
     print(json.dumps(meta, indent=1)[:3000])

@@ -58,6 +58,11 @@ Measured on reference fields (same code as the browser):
 
 Typical recovery of Gaia stars in a field: 0.01–0.02 ″/yr rms.
 
+Control run on 364 fields (193 known Gaia movers of 0.15–2.5″/yr, 171 empty high-latitude fields): 170 of the 173
+movers measured cleanly are flagged as moved (98%), 169 with the Gaia motion (median difference 0.010″/yr); none of
+4,665 stationary Gaia stars is flagged; 26 of ~11,500 sources without a Gaia motion are flagged (0.2%, an upper
+limit on false alarms); in the empty fields 1 brightness change and no new source are flagged.
+
 ## 4. The survey behind it, and what verification showed
 
 Cluster run (4 × 128-core nodes): 39.9 billion WISE/NEOWISE detections (2010–2020) linked into objects, 1.56 million
@@ -67,16 +72,20 @@ ratio), ~40 objects per second.
 
 - Motion ≥ 0.3″/yr: 177,221 claims → **17,017 confirmed** (9.6%; 29% of those brighter than 1 mJy), 43% not detected
   at all, 40% only an unrelated source nearby, 4% saturated. With a sample of slower claims: 17,604 confirmed movers.
-- Of those, **14,323 are known Gaia stars with the same motion** (81%): an independent check of the method. 1,348
-  have no Gaia source at all; 308 of these carry a SIMBAD name, and 42 of the unnamed ones are red (W1−W2 > 0.6).
-  SIMBAD spectral types identify 174 recovered L and T dwarfs.
+- Away from the crowded Galactic plane (|b| ≥ 10°): 15,065, of which **13,210 are known Gaia stars with the same
+  motion** (88%): an independent check of the method. 907 have no Gaia source at all; 272 of these carry a SIMBAD
+  name, and 41 of the unnamed ones are red (W1−W2 > 0.6). SIMBAD spectral types identify 174 recovered L and T dwarfs.
+  Within 10° of the plane only 44% of the 2,539 rows match Gaia: several stars share one SPHEREx pixel there and the
+  position test loses its meaning, so those rows are hidden by default.
 - "Brightened" / "vanished" lists: not real. For ordinary confirmed stars SPHEREx and WISE agree to 5%
   (ratio 0.943 ± 0.04 in W1, 0.944 ± 0.05 in W2), so the tool can see 30% changes; the survey-level lists were driven
-  by wrong WISE fluxes. Against AllWISE, 19 of 1,989 clean cases hold: blazars, a Seyfert galaxy, a young star and the
+  by wrong WISE fluxes. Against AllWISE, 17 of 1,981 clean cases hold: blazars, a Seyfert galaxy, a young star and the
   site of SN 2022gzi.
 - Methane list: 51 confirmed dips out of 1,635 measurable.
-- The 22 candidates, through the field detector and against other catalogues: see `web/public/data/verified/candidates.json`
-  and the Cases page. CatWISE2020 already lists most of them as moving sources; none has a spectral type in SIMBAD.
+- The 22 candidates, through the field detector and against other catalogues (`web/public/data/verified/candidates.json`,
+  Cases page): 19 detected, 8 moved at ≥ 5σ over 15–28 years; CatWISE2020 lists 19 of them with the same motion; 6 have
+  a SIMBAD entry (two as brown-dwarf candidates), none a spectral type. Eight of the ten with a measurable 3.3/4.0 µm
+  ratio are below 0.6 (methane-like).
 
 The catalogue the app shows is the **verified** one, with the counts above stated as they are.
 

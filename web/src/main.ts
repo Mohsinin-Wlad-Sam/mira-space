@@ -797,7 +797,9 @@ async function renderAbout() {
       <tr><td>… not detected at all</td><td class="m">${n(f.undetected)}</td><td>${pc(f.undetected, f.tested)}</td></tr>
       <tr><td>… only an unrelated source nearby</td><td class="m">${n(f.elsewhere)}</td><td>${pc(f.elsewhere, f.tested)}</td></tr>
       <tr><td>… saturated / unclear / found where it had been</td><td class="m">${n(f.saturated)} / ${n(f.unclear)} / ${n(f.static)}</td><td></td></tr>
-      <tr><td>Confirmed movers that are known Gaia stars with the same motion</td><td class="m">${n(m.movers_known)} of ${n(m.confirmed_movers)}</td><td>${pc(m.movers_known, m.confirmed_movers)}: an independent check of the method</td></tr>
+      ${m.high_latitude ? `<tr><td>Confirmed movers away from the crowded Galactic plane (|b| ≥ 10°)</td><td class="m">${n(m.high_latitude.n)} of ${n(m.confirmed_movers)}</td><td>the Catalogue hides the plane by default</td></tr>
+      <tr><td>… that are known Gaia stars with the same motion</td><td class="m">${n(m.high_latitude.known)}</td><td>${pc(m.high_latitude.known, m.high_latitude.n)}: an independent check of the method (in the plane: ${pc(m.high_latitude.plane_known, m.high_latitude.plane_n)}, crowding defeats the test)</td></tr>`
+        : `<tr><td>Confirmed movers that are known Gaia stars with the same motion</td><td class="m">${n(m.movers_known)} of ${n(m.confirmed_movers)}</td><td>${pc(m.movers_known, m.confirmed_movers)}: an independent check of the method</td></tr>`}
       <tr><td>Methane dips confirmed</td><td class="m">${m.funnel.methane?.confirmed ?? "–"} of ${n(m.funnel.methane?.measurable ?? 0)} measurable</td><td></td></tr>
       <tr><td>Brightness changes that hold against AllWISE</td><td class="m">${m.funnel.brightness_checked ? m.funnel.brightness_checked.brighter + m.funnel.brightness_checked.fainter : "–"} of ${n(m.funnel.brightness_checked?.clean ?? 0)} clean cases</td><td></td></tr></tbody></table>`;
   }).catch(() => {});

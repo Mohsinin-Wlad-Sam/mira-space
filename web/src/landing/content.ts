@@ -253,8 +253,9 @@ export const features: Feature[] = [
     title: 'Verified, not just claimed',
     body:
       'Sixteen years of WISE data gave 1.56 million claims of motion or change. We re-measured more than 200,000 ' +
-      'of them on raw SPHEREx exposures. About 17,600 motions are confirmed, four in five of them known Gaia ' +
-      'stars with the same motion; the rest are there to examine. The lists that did not survive are gone.',
+      'of them on raw SPHEREx exposures. About 17,600 motions pass; away from the crowded Milky Way, nearly ' +
+      'nine in ten are stars Gaia knows with the same motion, and the rest are there to examine. The lists that ' +
+      'did not survive are gone.',
     cta: { label: 'Open the catalogue', href: viewer.catalogue },
     image: images.starfield,
   },

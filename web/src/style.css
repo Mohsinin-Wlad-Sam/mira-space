@@ -773,3 +773,4 @@ body.asst-on .blinkpage, body.asst-on .catpage, body.asst-on .logpage { right: m
   .ct { padding: 16px 12px 60px; } .ct-bar input[type=search] { flex: 1 1 100%; min-width: 0; } .ct-funnel > div { flex: 1 1 44%; max-width: none; }
   .ct-obj h2 { font-size: 21px; }
 }
+.ct-plane { display: flex; align-items: center; gap: 8px; margin: 0 0 10px; font-size: 12px; color: var(--dim); cursor: pointer; } .ct-plane input { accent-color: #f0f0fa; } .ct-plane span { font-family: var(--mono); font-size: 10.5px; color: var(--faint); }

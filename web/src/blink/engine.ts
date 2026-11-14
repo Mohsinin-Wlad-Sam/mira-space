@@ -241,6 +241,8 @@ export let FLAG_DEFS: FlagDef[] = [
 ].map(([bit, name, desc]) => ({ bit: bit as number, name: name as string, desc: desc as string }));
 /** informational planes: they describe the pixel but do not mean the measurement is compromised */
 export const INFO_FLAGS = new Set(["SOURCE", "FULLSAMPLE"]);
+/** restore flag definitions that were read from a file's header in an earlier session (fields kept in the browser) */
+export function setFlagDefs(d: { bit: number; name: string; desc: string }[] | null | undefined) { if (d?.length) FLAG_DEFS = d; }
 export const badMask = () => FLAG_DEFS.filter((d) => !INFO_FLAGS.has(d.name)).reduce((m, d) => m | (1 << d.bit), 0);
 export const flagNames = (v: number, onlyBad = false) => (v < 0 ? [] : FLAG_DEFS.filter((d) => v & (1 << d.bit) && !(onlyBad && INFO_FLAGS.has(d.name))).map((d) => d.name));
 

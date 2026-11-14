@@ -7,8 +7,9 @@ import { plot, type Series } from "./blink/plots";
 
 type Cols = { id: string[]; ra: number[]; dec: number[]; pm: number[]; pmra: number[]; pmdec: number[]; epm: number[]; conf: number[]; snr: number[]; J: (number | null)[]; H: (number | null)[]; K: (number | null)[];
   W1: (number | null)[]; W2: (number | null)[]; w12: (number | null)[]; ch4: (number | null)[]; w2_wise: (number | null)[]; known: number[]; gaia: string[]; G: (number | null)[]; gpm: (number | null)[]; plx: (number | null)[];
-  kind: string[]; dp: number[]; ds: number[]; yr: number[]; wpm: number[]; n: number[]; simbad: string[]; slow: number[]; methane: number[] };
-type Meta = { built: string; remeasured: number; claims: Record<string, number>; funnel: Record<string, Record<string, number>>; confirmed_movers: number; movers_known: number; movers_gaia_other: number; movers_gaia_nopm: number; movers_no_gaia: number; kinds: Record<string, number>; cone_checked: number };
+  kind: string[]; glat: number[]; dp: number[]; ds: number[]; yr: number[]; wpm: number[]; n: number[]; simbad: string[]; slow: number[]; methane: number[] };
+type Meta = { built: string; remeasured: number; claims: Record<string, number>; funnel: Record<string, Record<string, number>>; confirmed_movers: number; movers_known: number; movers_gaia_other: number; movers_gaia_nopm: number; movers_no_gaia: number; kinds: Record<string, number>; cone_checked: number;
+  high_latitude?: { n: number; known: number; gaia_other: number; gaia_nopm: number; no_gaia: number; plane_n: number; plane_known: number } };
 type Change = { id: string; ra: number; dec: number; allwise: string; w1_2010: number; w2_2010: number; w1_now: number; w2_now: number; r1: number; r2: number; k_1999: number | null; k_now: number | null; verdict: string; simbad?: string };
 export type CatCtx = { onObserve: (t: { ra: number; dec: number; pmra?: number; pmdec?: number; epoch?: number; name?: string }) => void; toast?: (m: string) => void };
 type Filter = "all" | "nogaia" | "red" | "methane" | "wd" | "fast" | "changes";
@@ -31,6 +32,7 @@ export function mountCatalogue(host: HTMLElement, ctx: CatCtx) {
         <div class="ct-filters" id="ct-filters">${FILTERS.map(([k, t, tip]) => `<button data-f="${k}" title="${esc(tip)}">${t}<i></i></button>`).join("")}</div>
         <div class="ct-bar"><label>Motion from <input id="ct-min" type="number" min="0" step="0.1" value="" placeholder="0.15"> to <input id="ct-max" type="number" min="0" step="0.1" value="" placeholder="any"> ″/yr</label>
           <input id="ct-q" type="search" placeholder="Find an identifier (census, Gaia, SIMBAD name)" spellcheck="false"><span class="mono" id="ct-count"></span><button class="link" id="ct-csv">CSV</button></div>
+        <label class="ct-plane" title="Within 10° of the plane of the Milky Way several stars share one SPHEREx pixel: fewer than half of the motions that pass the test there match Gaia, against 88% elsewhere"><input type="checkbox" id="ct-plane"> include the crowded Galactic plane <span id="ct-planen"></span></label>
         <div class="ct-tw"><table class="ct-table" id="ct-table"></table></div>
         <div class="ct-pager" id="ct-pager"></div>
       </section>
@@ -42,10 +44,12 @@ export function mountCatalogue(host: HTMLElement, ctx: CatCtx) {
     </div></div>`;
   const $ = <T extends HTMLElement>(s: string) => host.querySelector(s) as T;
   let C: Cols | null = null, meta: Meta | null = null, changes: Change[] = [];
+  let plane = false;
   let rows: number[] = [], sel = -1, page = 0, filter: Filter = "all", sortKey: keyof Cols = "conf", sortDir = -1, view: "rpm" | "sky" = "rpm", q = "", minPm = NaN, maxPm = NaN, selChange: Change | null = null;
 
   const pass = (i: number): boolean => {
     const c = C!;
+    if (!plane && Math.abs(c.glat[i]) < 10 && !q) return false;
     if (filter === "nogaia" && c.known[i] === 1) return false;
     if (filter === "red" && !((c.w12[i] ?? -9) > 0.6)) return false;
     if (filter === "methane" && !c.methane[i]) return false;
@@ -76,7 +80,7 @@ export function mountCatalogue(host: HTMLElement, ctx: CatCtx) {
     if (!C || !meta) return;
     host.querySelectorAll<HTMLElement>("#ct-filters button").forEach((b) => { b.classList.toggle("on", b.dataset.f === filter); });
     const ch = filter === "changes";
-    $("#ct-count").textContent = ch ? `${changes.length} sources` : `${nf(rows.length)} of ${nf(C.id.length)}`;
+    $("#ct-count").textContent = ch ? `${changes.length} sources` : `${nf(rows.length)} rows`;
     const tb = $("#ct-table");
     if (ch) {
       tb.innerHTML = `<thead><tr><th>source</th><th>3.4 µm: 2010 → now (mJy)</th><th>4.6 µm: 2010 → now (mJy)</th><th>now ÷ 2010</th><th>name in SIMBAD</th></tr></thead><tbody>${changes.map((r, k) => `<tr data-c="${k}" class="${selChange === r ? "cur" : ""}">
@@ -128,7 +132,9 @@ export function mountCatalogue(host: HTMLElement, ctx: CatCtx) {
   }
   function renderView() {
     const el = $("#ct-view"), c = C!;
-    host.querySelectorAll<HTMLElement>(".ct-tabs button").forEach((b) => b.classList.toggle("on", b.dataset.v === view));
+    // the diagram is about motion: for the brightness changes only the sky chart applies
+    const hadView = view; if (filter === "changes") view = "sky";
+    host.querySelectorAll<HTMLElement>(".ct-tabs button").forEach((b) => { b.classList.toggle("on", b.dataset.v === view); b.style.display = filter === "changes" && b.dataset.v === "rpm" ? "none" : ""; });
     const list = filter === "changes" ? [] : rows;
     if (view === "rpm") {
       // reduced proper motion: brightness scaled by motion stands in for absolute brightness, so nearby faint objects
@@ -168,15 +174,23 @@ export function mountCatalogue(host: HTMLElement, ctx: CatCtx) {
         $("#ct-skynote").innerHTML = `Position <b class="mono">${sexa(sk[0], sk[1])}</b> · <button class="link" id="ct-here">measure this field in the Lab</button>`;
         ($("#ct-here") as HTMLElement).onclick = () => ctx.onObserve({ ra: sk[0], dec: sk[1] }); };
     }
+    view = hadView;
   }
   function renderFunnel() {
-    const m = meta!, f = m.funnel.motion_fast, b = m.funnel.brightness_checked, me = m.funnel.methane;
+    const m = meta!, f = m.funnel.motion_fast, b = m.funnel.brightness_checked, me = m.funnel.methane, h = m.high_latitude;
     const step = (n: string, t: string, cls = "") => `<div class="${cls}"><b>${n}</b><span>${t}</span></div>`;
     $("#ct-funnel").innerHTML = [step("39.9 billion", "WISE detections, 2010–2020, linked into objects"), step(nf(m.claims.total), "survey-level claims of motion or change"), step(nf(m.remeasured), "re-measured on raw SPHEREx exposures"),
-      step(nf(m.confirmed_movers), `motions confirmed · ${nf(f.undetected + f.elsewhere)} of ${nf(f.tested)} fast claims were not there`, "ok"), step(nf(m.movers_known), "of them are known Gaia stars with the same motion", "ok"),
-      step(nf(m.confirmed_movers - m.movers_known), "have no matching motion in Gaia", "hl"), step(`${me?.confirmed ?? 0} · ${b ? b.brighter + b.fainter : 0}`, "methane dips · real brightness changes", "hl")].join(`<i>→</i>`);
+      step(nf(m.confirmed_movers), `motions pass the test · ${nf(f.undetected + f.elsewhere)} of ${nf(f.tested)} fast claims were not there`, "ok"),
+      ...(h ? [step(nf(h.n), "of them away from the crowded Galactic plane", "ok"), step(`${nf(h.known)} · ${Math.round((100 * h.known) / h.n)}%`, "are known Gaia stars with the same motion", "ok"), step(nf(h.n - h.known), "have no matching motion in Gaia", "hl")]
+        : [step(nf(m.movers_known), "are known Gaia stars with the same motion", "ok"), step(nf(m.confirmed_movers - m.movers_known), "have no matching motion in Gaia", "hl")]),
+      step(`${me?.confirmed ?? 0} · ${b ? b.brighter + b.fainter : 0}`, "methane dips · real brightness changes", "hl")].join(`<i>→</i>`);
+    $("#ct-planen").textContent = h ? `(${nf(h.plane_n)} rows, ${Math.round((100 * h.plane_known) / Math.max(1, h.plane_n))}% match Gaia)` : "";
+    counts();
+  }
+  function counts() {
     host.querySelectorAll<HTMLElement>("#ct-filters button").forEach((bt) => { const k = bt.dataset.f as Filter, c = C!; let n = 0;
-      if (k === "changes") n = changes.length; else for (let i = 0; i < c.id.length; i++) { if (k === "all" || (k === "nogaia" && c.known[i] !== 1) || (k === "red" && (c.w12[i] ?? -9) > 0.6) || (k === "methane" && c.methane[i]) || (k === "wd" && c.kind[i] === "white dwarf") || (k === "fast" && c.pm[i] >= 1)) n++; }
+      if (k === "changes") n = changes.length; else for (let i = 0; i < c.id.length; i++) { if (!plane && Math.abs(c.glat[i]) < 10) continue;
+        if (k === "all" || (k === "nogaia" && c.known[i] !== 1) || (k === "red" && (c.w12[i] ?? -9) > 0.6) || (k === "methane" && c.methane[i]) || (k === "wd" && c.kind[i] === "white dwarf") || (k === "fast" && c.pm[i] >= 1)) n++; }
       (bt.querySelector("i") as HTMLElement).textContent = nf(n); });
   }
   // ---- events
@@ -185,8 +199,9 @@ export function mountCatalogue(host: HTMLElement, ctx: CatCtx) {
   ($("#ct-min") as HTMLInputElement).oninput = (e) => { minPm = parseFloat((e.target as HTMLInputElement).value); apply(); };
   ($("#ct-max") as HTMLInputElement).oninput = (e) => { maxPm = parseFloat((e.target as HTMLInputElement).value); apply(); };
   ($("#ct-q") as HTMLInputElement).oninput = (e) => { q = (e.target as HTMLInputElement).value.trim(); apply(); };
-  $("#ct-csv").onclick = () => { if (!C) return; const c = C, head = ["census_id", "ra_deg", "dec_deg", "epoch", "pm_arcsec_yr", "pmra", "pmdec", "pm_err", "confirmation_sigma", "kind", "gaia_dr3", "gaia_status", "G", "plx_mas", "J_mJy", "H_mJy", "K_mJy", "W1_mJy", "W2_mJy", "W1_W2_mag", "ch4_ratio", "simbad"];
-    const body = rows.map((i) => [c.id[i], c.ra[i], c.dec[i], c.yr[i], c.pm[i], c.pmra[i], c.pmdec[i], c.epm[i], c.conf[i], c.kind[i], c.gaia[i], c.known[i], c.G[i] ?? "", c.plx[i] ?? "", c.J[i] ?? "", c.H[i] ?? "", c.K[i] ?? "", c.W1[i] ?? "", c.W2[i] ?? "", c.w12[i] ?? "", c.ch4[i] ?? "", `"${c.simbad[i]}"`].join(","));
+  ($("#ct-plane") as HTMLInputElement).onchange = (e) => { plane = (e.target as HTMLInputElement).checked; counts(); apply(); };
+  $("#ct-csv").onclick = () => { if (!C) return; const c = C, head = ["census_id", "ra_deg", "dec_deg", "epoch", "pm_arcsec_yr", "pmra", "pmdec", "pm_err", "confirmation_sigma", "kind", "gaia_dr3", "gaia_status", "galactic_latitude_deg", "G", "plx_mas", "J_mJy", "H_mJy", "K_mJy", "W1_mJy", "W2_mJy", "W1_W2_mag", "ch4_ratio", "simbad"];
+    const body = rows.map((i) => [c.id[i], c.ra[i], c.dec[i], c.yr[i], c.pm[i], c.pmra[i], c.pmdec[i], c.epm[i], c.conf[i], c.kind[i], c.gaia[i], c.known[i], c.glat[i], c.G[i] ?? "", c.plx[i] ?? "", c.J[i] ?? "", c.H[i] ?? "", c.K[i] ?? "", c.W1[i] ?? "", c.W2[i] ?? "", c.w12[i] ?? "", c.ch4[i] ?? "", `"${c.simbad[i]}"`].join(","));
     const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([`# MIRA verified catalogue · built ${meta?.built} · gaia_status: 1 same motion, 2 different motion, 3 no Gaia motion, 0 no Gaia source\n${head.join(",")}\n${body.join("\n")}\n`], { type: "text/csv" })); a.download = `mira_verified_${filter}.csv`; a.click(); };
   // ---- data
   const get = (f: string) => fetch(`${BASE}data/verified/${f}`).then((r) => (r.ok && !(r.headers.get("content-type") ?? "").includes("html") ? r.json() : null)).catch(() => null);
@@ -202,14 +217,15 @@ export function mountCatalogue(host: HTMLElement, ctx: CatCtx) {
     context() {
       if (!C || !meta) return { loaded: false };
       const c = C, row = (i: number) => ({ id: c.id[i], ra: c.ra[i], dec: c.dec[i], motion_arcsec_yr: c.pm[i], confirmation_sigma: c.conf[i], kind: c.kind[i], gaia: c.known[i] === 1 ? `Gaia DR3 ${c.gaia[i]}` : knownTxt(i), w1_w2: c.w12[i], flux_4p6um_mJy: c.W2[i], methane_ratio: c.ch4[i], simbad: c.simbad[i] || null });
-      return { loaded: true, filter, sort: `${String(sortKey)} ${sortDir < 0 ? "descending" : "ascending"}`, motion_range: [isFinite(minPm) ? minPm : null, isFinite(maxPm) ? maxPm : null], matching: filter === "changes" ? changes.length : rows.length, total: c.id.length,
-        funnel: { claims: meta.claims.total, remeasured: meta.remeasured, confirmed_movers: meta.confirmed_movers, known_gaia: meta.movers_known, no_gaia_motion: meta.confirmed_movers - meta.movers_known, methane: meta.funnel.methane?.confirmed, brightness_changes: changes.length },
+      return { loaded: true, galactic_plane_included: plane, filter, sort: `${String(sortKey)} ${sortDir < 0 ? "descending" : "ascending"}`, motion_range: [isFinite(minPm) ? minPm : null, isFinite(maxPm) ? maxPm : null], matching: filter === "changes" ? changes.length : rows.length, total: c.id.length,
+        funnel: { claims: meta.claims.total, remeasured: meta.remeasured, passed_position_test: meta.confirmed_movers, away_from_galactic_plane: meta.high_latitude?.n, of_those_known_gaia_same_motion: meta.high_latitude?.known, of_those_no_matching_gaia_motion: meta.high_latitude ? meta.high_latitude.n - meta.high_latitude.known : null, methane: meta.funnel.methane?.confirmed, brightness_changes: changes.length },
         top_rows: filter === "changes" ? changes.slice(0, 12) : rows.slice(page * PAGE, page * PAGE + 12).map(row), selected: filter === "changes" ? selChange : sel >= 0 ? row(sel) : null };
     },
     /** let the assistant drive the table */
-    act(a: { filter?: string; min_motion?: number | null; max_motion?: number | null; search?: string; sort?: string; descending?: boolean; select?: string; view?: string; open?: boolean }) {
+    act(a: { filter?: string; include_plane?: boolean; min_motion?: number | null; max_motion?: number | null; search?: string; sort?: string; descending?: boolean; select?: string; view?: string; open?: boolean }) {
       if (!C) return "catalogue still loading";
       if (a.filter && FILTERS.some((f) => f[0] === a.filter)) filter = a.filter as Filter;
+      if (typeof a.include_plane === "boolean") { plane = a.include_plane; ($("#ct-plane") as HTMLInputElement).checked = plane; counts(); }
       if (a.min_motion !== undefined) { minPm = a.min_motion ?? NaN; ($("#ct-min") as HTMLInputElement).value = isFinite(minPm) ? String(minPm) : ""; }
       if (a.max_motion !== undefined) { maxPm = a.max_motion ?? NaN; ($("#ct-max") as HTMLInputElement).value = isFinite(maxPm) ? String(maxPm) : ""; }
       if (a.search !== undefined) { q = a.search; ($("#ct-q") as HTMLInputElement).value = q; }

@@ -6,7 +6,7 @@
 import "./blink.css";
 import { sexa } from "../data";
 import {
-  build, readMask, propagate, skyToStamp, stampToSky, flagNames, badMask, indexMeta, labelVisits, mjdToDate, mjdToYear,
+  build, readMask, propagate, skyToStamp, stampToSky, flagNames, badMask, indexMeta, labelVisits, mjdToDate, mjdToYear, loadLvf, setFlagDefs,
   DETECTORS, FLAG_DEFS, PIX_ARCSEC, type Frame, type Target, type IndexMeta,
 } from "./engine";
 import { PLX_SYS } from "./measure";
@@ -50,6 +50,22 @@ const yearToMjd = (y: number) => 51544.5 + (y - 2000) * 365.25;
 const median = (a: number[]) => { if (!a.length) return NaN; const s = [...a].sort((x, y) => x - y); return s[s.length >> 1]; };
 const fmtPm = (v: number) => `${v >= 0 ? "+" : "−"}${Math.abs(v).toFixed(Math.abs(v) < 1 ? 3 : 2)}`;
 const fmtBig = (v: number) => (v >= 1e6 ? `${(v / 1e6).toFixed(v >= 1e7 ? 0 : 1)} million` : v >= 1000 ? `${Math.round(v / 100) * 100}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",") : v >= 10 ? v.toFixed(0) : v.toFixed(1));
+
+// ---- fields already read are kept in this browser (IndexedDB), so reopening one is instant and needs no network.
+//      The ten most recent are kept; a cached field is used only while the exposure index has not changed.
+const FDB = "mira-fields", FSTORE = "fields", FLIST = "mira.fields.v1";
+const fdb = () => new Promise<IDBDatabase>((res, rej) => { const r = indexedDB.open(FDB, 1); r.onupgradeneeded = () => r.result.createObjectStore(FSTORE, { keyPath: "key" }); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+async function fieldGet(key: string): Promise<any | null> {
+  try { const db = await fdb(); return await new Promise((res) => { const q = db.transaction(FSTORE).objectStore(FSTORE).get(key); q.onsuccess = () => res(q.result ?? null); q.onerror = () => res(null); }); } catch { return null; }
+}
+async function fieldPut(v: { key: string; saved: number } & Record<string, unknown>) {
+  try {
+    const db = await fdb(); await new Promise<void>((res, rej) => { const tx = db.transaction(FSTORE, "readwrite"); tx.objectStore(FSTORE).put(v); tx.oncomplete = () => res(); tx.onerror = () => rej(tx.error); tx.onabort = () => rej(tx.error); });
+    let L: { key: string; saved: number }[] = []; try { L = JSON.parse(localStorage.getItem(FLIST) ?? "[]"); } catch { /* first use */ }
+    L = [{ key: v.key, saved: v.saved }, ...L.filter((x) => x.key !== v.key)]; const drop = L.slice(10); L = L.slice(0, 10); localStorage.setItem(FLIST, JSON.stringify(L));
+    if (drop.length) { const tx = db.transaction(FSTORE, "readwrite"); drop.forEach((x) => tx.objectStore(FSTORE).delete(x.key)); }
+  } catch { /* private mode or quota: the field is simply read again next time */ }
+}
 
 export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
   host.classList.toggle("embed", !!opts.embed);
@@ -141,6 +157,14 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
   // evolution player: a continuous clock (years) over the dated pictures and catalogue positions
   const evo = { t: 2026, range: "sx" as "sx" | "2010" | "1999", rate: 0.5, loop: false, raf: 0, last: 0, hold: 0 };
   let report: FieldReport | null = null, reportKey = "", detecting = false, masksDone = 0, masksAll = false;
+  let fromCache = 0, skipCache = false;                 // when the field on screen was read (ms), if it came from this browser's cache
+  const fieldKey = () => `${target.ra.toFixed(5)}|${target.dec.toFixed(5)}|${(target.pmra ?? 0).toFixed(3)}|${(target.pmdec ?? 0).toFixed(3)}|${target.epoch ?? ""}|${N}|${maxFrames}`;
+  /** keep what was read for this field: frames, catalogues and flag masks */
+  function saveField(my: number) {
+    if (my !== gen || building || !frames.length || fromCache) return;
+    fieldPut({ key: fieldKey(), saved: Date.now(), index: meta?.last ?? "", frames, plan, center, failed, flagDefs: FLAG_DEFS, catState: cat.state, gaia: cat.gaia, wise: cat.wise, tm: cat.tm,
+      masks: masksAll ? frames.map((f) => { const m = maskCache.get(f); return m && m !== "loading" ? m : null; }) : null });
+  }
   let probe: Probe = { dx: 0, dy: 0, follow: true }, logSpec = false;
   let tab: Tab = "changes", order: "time" | "lambda" = "time", explain = (() => { try { return localStorage.getItem("mira.explain") === "1"; } catch { return false; } })();
   const excluded = new Set<string>();                    // exposures the user has unticked: left out of pictures and measurements
@@ -170,7 +194,19 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
     frames = []; items = []; itemsKey = ""; imgCache.clear(); lockCache.clear(); maskCache.clear(); shiftCache = new WeakMap(); analysis = null; plan = null; failed = 0; errorMsg = "";
     idx = 0; building = true; playing = false; cancelAnimationFrame(evo.raf); report = null; reportKey = ""; masksDone = 0; masksAll = false; vsKey = ""; cat.gaia = []; cat.wise = []; cat.tm = []; cat.state = "idle"; center = [target.ra, target.dec];
     syncControls(); renderTarget(); renderReadouts(); renderPanel(); renderData(); paint(); setLoad("Finding the SPHEREx exposures that cover this place…", 0);
-    pushState(); indexMeta().then((m) => { meta = m; if (my === gen) renderData(); });
+    pushState(); fromCache = 0;
+    meta = await indexMeta().catch(() => null); if (my !== gen) return; renderData();
+    const hit = skipCache ? null : await fieldGet(fieldKey()); skipCache = false; if (my !== gen) return;
+    if (hit && hit.frames?.length && hit.index === (meta?.last ?? "")) {
+      await loadLvf().catch(() => {}); setFlagDefs(hit.flagDefs); if (my !== gen) return;      // the wavelength map and flag definitions a fresh read would have loaded
+      frames = hit.frames; plan = hit.plan; center = hit.center; failed = hit.failed ?? 0; building = false; fromCache = hit.saved;
+      cat.gaia = hit.gaia ?? []; cat.wise = hit.wise ?? []; cat.tm = hit.tm ?? []; cat.state = cat.gaia.length || cat.wise.length ? "ok" : "idle";
+      if (hit.masks) { frames.forEach((f, k) => maskCache.set(f, hit.masks[k])); masksAll = true; masksDone = frames.length; }
+      setLoad("", 1); const V0 = visitStacks(); if (V0.length) evo.t = V0[0].yr;
+      renderTarget(); refresh(); analyze(); runDetect();
+      if (cat.state !== "ok") loadCatalogs(my); if (!masksAll) loadAllMasks(my);
+      return;
+    }
     try {
       const b = await build(target, {
         size: N, maxFrames, signal: ac.signal, concurrency: 6,
@@ -198,7 +234,7 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
     Promise.allSettled([twice(() => gaia(ra, dec, r + pm * 12)), twice(() => allwise(ra, dec, r + pm * 18)), twice(() => twomass(ra, dec, wide))]).then(([g, w, t]) => {
       if (my !== gen) return;
       if (g.status === "fulfilled") cat.gaia = g.value; if (w.status === "fulfilled") cat.wise = w.value; if (t.status === "fulfilled") cat.tm = t.value as TwoMass[];
-      cat.state = g.status === "fulfilled" || w.status === "fulfilled" ? "ok" : "fail"; paint(); renderReadouts(); renderPanel(); if (!probe.follow) renderTarget(); runDetect();
+      cat.state = g.status === "fulfilled" || w.status === "fulfilled" ? "ok" : "fail"; paint(); renderReadouts(); renderPanel(); if (!probe.follow) renderTarget(); runDetect(); if (masksAll) saveField(my);
     });
   }
   function setLoad(msg: string, frac: number) {
@@ -487,7 +523,7 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
   async function loadAllMasks(my: number) {
     const q = frames.filter((f) => maskCache.get(f) === undefined); let k = 0;
     await Promise.all(Array.from({ length: 5 }, async () => { while (k < q.length && my === gen) { const f = q[k++]; maskCache.set(f, "loading"); try { maskCache.set(f, await readMask(f, N, ac?.signal)); } catch { maskCache.set(f, null); } masksDone++; } }));
-    if (my !== gen) return; masksAll = true; runDetect(); if (tab === "changes") renderPanel();
+    if (my !== gen) return; masksAll = true; runDetect(); if (tab === "changes") renderPanel(); saveField(my);
   }
   /** the detector's row for the source the instruments are reading */
   function selRow(): ChangeRow | null {
@@ -556,8 +592,10 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
     const used = live(), nv = used.length ? used[used.length - 1].visit + 1 : 0, el = $("#bk-data");
     el.innerHTML = !plan ? "" : `<span>${building ? "reading" : ""} <b>${frames.length}</b> / ${plan.covered} exposures${excluded.size ? ` · ${excluded.size} excluded` : ""}${failed ? ` · ${failed} unreadable` : ""}</span>
       ${frames.length ? `<span>${nv} visit${nv > 1 ? "s" : ""}</span><span>${mjdToDate(frames[0].mjd)} → ${mjdToDate(frames[frames.length - 1].mjd)}</span>` : ""}
-      ${meta ? `<span title="Date of the newest SPHEREx exposure in MIRA's index; the index is rebuilt after each NASA data release">archive through ${meta.last}</span>` : ""}${opts.embed ? `<a href="${shareUrl()}" target="_blank" rel="noopener">open in MIRA ↗</a>` : ""}`;
+      ${meta ? `<span title="Date of the newest SPHEREx exposure in MIRA's index; the index is rebuilt after each NASA data release">archive through ${meta.last}</span>` : ""}
+      ${fromCache ? `<span title="This field was read from NASA's archive on ${new Date(fromCache).toLocaleString()} and kept in this browser">from this browser's copy · <button class="link" id="bk-reread">read again</button></span>` : ""}${opts.embed ? `<a href="${shareUrl()}" target="_blank" rel="noopener">open in MIRA ↗</a>` : ""}`;
   }
+  host.addEventListener("click", (e) => { if ((e.target as HTMLElement).id === "bk-reread") { skipCache = true; start(); } });
   function syncControls() {
     host.querySelectorAll<HTMLElement>("#bk-views button").forEach((b) => b.classList.toggle("on", b.dataset.v === "frames" ? mode === "time" || mode === "lambda" : b.dataset.v === mode));
     host.querySelectorAll<HTMLElement>("#bk-order button").forEach((b) => b.classList.toggle("on", b.dataset.o === order));

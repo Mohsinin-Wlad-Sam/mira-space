@@ -37,6 +37,11 @@ Field detector, same code as the Lab (`web/scripts/test_detect.mts`):
 | Survey candidate 6661-325678 (not in Gaia) | −0.335, −0.006 ± 0.041 | −0.357, +0.022 (CatWISE2020) |
 | Empty high-latitude field, 40 sources | nothing flagged | — |
 
+Control run on 364 fields (`web/scripts/validate_detector.mts`, cluster): of 173 known Gaia movers measured cleanly,
+170 are flagged as moved (98%) and 169 with the right motion (median difference 0.010″/yr); of 4,665 stars that Gaia
+says are still, none is flagged; among about 11,500 sources without a Gaia motion, 26 are flagged (0.2%, an upper
+limit on false alarms).
+
 SPHEREx exposures alone, 1.5-year baseline (`web/scripts/validate_blink.mts`, run of 14 Nov 2026):
 
 | Target | Measured from SPHEREx alone | Reference |
@@ -61,11 +66,14 @@ resampled values to 0.005%, decoded flag masks bit for bit.
 | Motion above 0.3″/yr: confirmed / tested | 17,017 / 177,221 (9.6%; 29% of those brighter than 1 mJy) |
 | … not detected at all · only an unrelated source nearby | 43% · 40% |
 | Confirmed movers (including a sample of slower ones) | 17,604 |
-| … known Gaia stars with the same motion | 14,323 (81%: an independent check of the method) |
-| … no Gaia source at all · of which unnamed in SIMBAD and red (W1−W2 > 0.6) | 1,348 · 42 |
+| … away from the crowded Galactic plane (\|b\| ≥ 10°) | 15,065 |
+| … of those, known Gaia stars with the same motion | 13,210 (88%: an independent check of the method) |
+| … of those, no Gaia source at all · of which unnamed in SIMBAD and red (W1−W2 > 0.6) | 907 · 41 |
+| … within 10° of the plane (2,539 rows) that match Gaia | 44%: crowding defeats the test there, so these rows are hidden by default |
 | Known L and T dwarfs recovered (SIMBAD spectral types) | 174 |
+| The 22 survey candidates, through the Lab's detector | 19 detected · 8 moved at ≥ 5σ over 15–28 years · 19 listed by CatWISE2020 with the same motion · 6 with a SIMBAD entry, none with a spectral type |
 | Methane dips confirmed | 51 of 1,635 measurable |
-| Brightness changes that hold against AllWISE | 19 of 1,989 clean cases: blazars, a Seyfert galaxy, a young star, the site of SN 2022gzi |
+| Brightness changes that hold against AllWISE | 17 of 1,981 clean cases: blazars, a Seyfert galaxy, a young star, the site of SN 2022gzi |
 
 The survey-level "brightened", "vanished" and "methane" lists (hundreds of thousands of objects) did not survive
 this test and are not shown. Catalogue rows are confirmed motions, not discoveries.

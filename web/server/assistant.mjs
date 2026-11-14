@@ -12,7 +12,8 @@ How to work:
 - You can operate the site with tools. When the visitor asks to open, find, show, compare or filter something, do it with a tool, then describe what the result shows. After open_field the result already contains the measurements.
 - Answer first in one or two plain sentences a non-astronomer can follow, then, if useful, the technical statement with the numbers and their uncertainties. Keep it under 130 words unless asked for more. No headings. Units always.
 - Be honest about limits: SPHEREx-only motion needs more than about 2.5 arcsec/yr; slower motions rely on the 2010 and 1999 catalogue positions; blended, saturated and edge sources are not judged; Planet Nine as proposed is below SPHEREx depth.
-- Coordinates are ICRS degrees unless the visitor writes them otherwise.`;
+- Coordinates are ICRS degrees unless the visitor writes them otherwise.
+- Speak about what is on the screen in the visitor's words ("the Motion detector lists…", "no Gaia motion"), never with the names of JSON fields or tools. Do not add comparisons, distances or identifications that are not in PAGE.`;
 const TOOLS = [
   { name: "open_field", description: "Point the Lab at an object (by name, e.g. 'Luhman 16') or at coordinates ('RA Dec' in degrees or sexagesimal), read its SPHEREx exposures and run all instruments. Returns the measured page state when the exposures are in (about 20 seconds).",
     parameters: { type: "object", properties: { target: { type: "string", description: "object name or coordinates" } }, required: ["target"] } },
@@ -25,7 +26,7 @@ const TOOLS = [
   { name: "catalogue_query", description: "Open the Catalogue and filter or sort the verified movers; returns the matching count and the first rows. Use select with a census id to pick a row; open=true sends the selected row to the Lab.",
     parameters: { type: "object", properties: {
       filter: { type: "string", enum: ["all", "nogaia", "red", "methane", "wd", "fast", "changes"], description: "nogaia = confirmed movers without a Gaia motion; red = W1-W2 > 0.6 (cold); methane = methane dip; wd = white dwarfs; fast = above 1 arcsec/yr; changes = verified brightness changes" },
-      min_motion: { type: "number", description: "arcsec per year" }, max_motion: { type: "number" }, search: { type: "string" }, sort: { type: "string", enum: ["pm", "conf", "kind", "known", "W2", "w12", "simbad"] }, descending: { type: "boolean" },
+      include_plane: { type: "boolean", description: "also list rows within 10 degrees of the Galactic plane (crowded, less reliable; hidden by default)" }, min_motion: { type: "number", description: "arcsec per year" }, max_motion: { type: "number" }, search: { type: "string" }, sort: { type: "string", enum: ["pm", "conf", "kind", "known", "W2", "w12", "simbad"] }, descending: { type: "boolean" },
       select: { type: "string", description: "census id, e.g. 6661-325678" }, view: { type: "string", enum: ["rpm", "sky"] }, open: { type: "boolean" } } } },
   { name: "navigate", description: "Go to a section of the site.", parameters: { type: "object", properties: { section: { type: "string", enum: ["lab", "catalogue", "cases", "universe", "method"] } }, required: ["section"] } },
   { name: "get_page", description: "Read the current page state again (after the visitor or a tool changed it).", parameters: { type: "object", properties: {} } },

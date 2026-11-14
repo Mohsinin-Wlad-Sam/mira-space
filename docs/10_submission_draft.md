@@ -16,8 +16,8 @@ reads every SPHEREx exposure of that field from NASA's archive, builds one deep 
 stars, compares each source with where the surveys of 2010 and 1999 saw it, and lists what moved, how surely, and
 whether anyone knew — then gives its spectrum, its brightness history and what could still hide there. A time bar
 lets you watch it happen at your own pace. Behind the instruments stands a survey of 39.9 billion WISE detections
-whose 202,528 strongest claims we re-measured on raw SPHEREx exposures: 17,604 motions confirmed, four in five
-already known to Gaia — and the rest open to examine.
+whose 202,528 strongest claims we re-measured on raw SPHEREx exposures: 17,604 motions pass, and away from the
+crowded Milky Way nearly nine in ten are stars Gaia already knows with the same motion — the rest are open to examine.
 
 **Link to project / demo:** ⟨hosted URL⟩ · repo: github.com/Mohsinin-Wlad-Sam/assrar-dawla
 
@@ -39,11 +39,13 @@ already known to Gaia — and the rest open to examine.
    "moved" needs 5σ against the scatter with which those stars are recovered.
 4. *Does it work?* ε Indi B: +3.991, −2.496 ± 0.015″/yr (Gaia: +3.982, −2.467). Luhman 16, which has no Gaia
    motion, is linked to its 2010 and 1999 positions: −2.758, +0.364 (literature −2.75, +0.36). An empty field gives
-   no detection. Against Astropy on the same file: positions to 0.004 px, flag masks bit for bit.
+   no detection. On 364 control fields: 170 of 173 cleanly measured Gaia movers are flagged (98%), none of 4,665
+   stationary Gaia stars is. Against Astropy on the same file: positions to 0.004 px, flag masks bit for bit.
 5. *The survey, verified.* 39.9 billion WISE detections (2010–2020) linked on a university cluster gave 1.56 million
    claims of motion or change. We re-measured 202,528 of them on raw SPHEREx exposures with the Lab's own engine:
-   17,604 motions confirmed (14,323 are known Gaia stars with the same motion: an independent check), 174 known L
-   and T dwarfs recovered, 51 methane dips, and 19 brightness changes that hold against AllWISE — blazars, a Seyfert
+   17,604 motions pass (away from the crowded Galactic plane 88% are known Gaia stars with the same motion: an
+   independent check; in the plane the test fails and rows are hidden), 174 known L
+   and T dwarfs recovered, 51 methane dips, and 17 brightness changes that hold against AllWISE — blazars, a Seyfert
    galaxy, a young star and the site of supernova 2022gzi. The lists that failed the test are not shown.
 6. *An assistant that works the instruments.* "Open Luhman 16 and tell me how fast it moves": a language model
    (K2 Horizon) reads the numbers on the page and operates the Lab and the Catalogue through tool calls; the key
