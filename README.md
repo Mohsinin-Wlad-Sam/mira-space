@@ -5,8 +5,9 @@
 **NASA Space Apps Challenge 2026 · "Planet X and SPHEREx"** · team *assrar-dawla*
 
 Give MIRA a position on the sky. Its instruments read every NASA SPHEREx exposure of that field straight from the
-public archive and measure it: **which sources moved** since 1999 and 2010, how fast, how far away, what their
-spectrum says they are, whether they brightened or faded, and what could still hide there. No server, no sign-up,
+public archive and measure it: **which sources moved** since 1999 and 2010 and how fast; for the nearest ones, a
+parallax; a 0.75–5 µm spectrum with its molecular bands; whether they brightened or faded; and what could still
+hide there. No server, no sign-up,
 no telescope time.
 
 The motivating problem is Planet X: an unknown cold body near the Sun shows itself only by moving against the
@@ -18,7 +19,7 @@ stars. The same instruments serve any star, brown dwarf or variable source.
 
 | Section | What you do there | Built from |
 |---|---|---|
-| **Lab** (`/explore/`) | The working environment. One field, six instruments: **Evolution** (one deep image per SPHEREx visit on a time bar you steer, back to 1999), **Motion detector** (every source: moved / brighter / fainter / new / steady, with significance and its Gaia identity), **Astrometer** (position against time, proper motion, parallax), **Spectrograph** (0.75–5 µm spectrum, molecular bands, methane), **Photometer** (brightness against 1999 and 2010, and visit to visit), **Detection limits** (which planet or brown dwarf the field's depth would reveal). Plus every exposure with NASA's flags, and exports (CSV, FITS cube, Python, link, embed). | SPHEREx Level-2 exposures read by HTTP Range from `s3://nasa-irsa-spherex`; Gaia DR3, AllWISE, 2MASS from CDS mirrors |
+| **Lab** (`/explore/`) | The working environment. One field, six instruments: **Evolution** (one time bar you steer through three NASA pictures of the same field: 2MASS ~1999, WISE 2010, then one deep SPHEREx image per visit, so a mover walks across the frame), **Motion detector** (every source: moved / brighter / fainter / new / steady, with significance and its Gaia identity), **Astrometer** (position against time, proper motion, parallax), **Spectrograph** (0.75–5 µm spectrum, molecular bands, methane), **Photometer** (brightness against 1999 and 2010, and visit to visit), **Detection limits** (which planet or brown dwarf the field's depth would reveal). Plus every exposure with NASA's flags, and exports (CSV, FITS cube, Python, link, embed). | SPHEREx Level-2 exposures read by HTTP Range from `s3://nasa-irsa-spherex`; Gaia DR3, AllWISE, 2MASS from CDS mirrors |
 | **Catalogue** (`#catalogue`) | The survey, verified: filter and sort the confirmed movers, see them on a reduced proper-motion diagram and an all-sky chart, read the evidence for each, open it in the Lab | 39.9 billion WISE detections linked on a cluster, each claim re-measured on raw SPHEREx exposures |
 | **Cases** (`#cases`) | Your saved measurements, notes, target lists, exports; the survey's candidates with their verification | browser storage only |
 | **Universe** (`#universe`) | Where these objects are: the Sun's neighbourhood in 3D, out to the oldest light | Gaia, Hipparcos, census, NASA/ESA catalogues |
@@ -31,16 +32,30 @@ Field detector, same code as the Lab (`web/scripts/test_detect.mts`):
 
 | Field | MIRA: SPHEREx + AllWISE 2010 + 2MASS ~1999 (″/yr) | Reference (″/yr) |
 |---|---|---|
-| ε Indi B | +3.991, −2.496 ± 0.015 | +3.982, −2.467 (Gaia DR3) |
-| Luhman 16 (no Gaia motion; linked to its 2010 and 1999 positions) | −2.758, +0.364 ± 0.013 | −2.75, +0.36 (literature) |
-| Barnard's Star (saturated: image wings) | −0.809, +10.432 ± 0.034 | −0.802, +10.362 (Gaia DR3) |
-| Survey candidate 6661-325678 (not in Gaia) | −0.335, −0.006 ± 0.041 | −0.357, +0.022 (CatWISE2020) |
+| ε Indi B | +3.986, −2.486 ± 0.019 | +3.982, −2.467 (Gaia DR3) |
+| Luhman 16 (no Gaia motion; linked to its 2010 and 1999 positions) | −2.759, +0.362 ± 0.019 | −2.75, +0.36 (literature) |
+| Barnard's Star (saturated: measured on the wings of its image; confirms Gaia) | −0.797, +10.432 ± 0.047 | −0.802, +10.362 (Gaia DR3) |
+| WISE 0855−0714 (tracked with its published motion; today it shares a pixel with a star) | −8.17, +0.75 ± 0.05 | −8.12, +0.67 (Kirkpatrick et al. 2021) |
+| Survey candidate 6661-325678 (not in Gaia) | −0.352, −0.016 ± 0.048 (7.3σ) | −0.357, +0.022 (CatWISE2020) |
 | Empty high-latitude field, 40 sources | nothing flagged | — |
 
-Control run on 364 fields (`web/scripts/validate_detector.mts`, cluster): of 173 known Gaia movers measured cleanly,
-170 are flagged as moved (98%) and 169 with the right motion (median difference 0.010″/yr); of 4,665 stars that Gaia
-says are still, none is flagged; among about 11,500 sources without a Gaia motion, 26 are flagged (0.2%, an upper
-limit on false alarms).
+Control run (`web/scripts/validate_detector.mts` on the cluster, summarised by `census/validate_summary.py`): 459
+fields, 240 centred on known Gaia movers (0.15–2.5″/yr) and 219 empty ones. The detector normally uses Gaia (to
+predict where a known star was in 2010 and 1999, and to reject a motion that contradicts Gaia), so the test that
+counts is the **blind** one: the stars under test are removed from the Gaia list before the detector runs, as for
+an object Gaia does not list.
+
+| | Gaia known | Blind |
+|---|---|---|
+| Known movers measured cleanly (216 of 240; the others are blended, saturated or at the edge and are not judged) flagged "moved" | 213 (99%) | **199 (92%)** |
+| … with Gaia's motion (within 3σ or 0.03″/yr); median difference | 213; 0.010″/yr | 199; 0.011″/yr |
+| … blind, by motion: 0.15–0.25 · 0.25–0.4 · 0.4–0.7 · 0.7–2.5″/yr | | 53 of 61 · 61 of 64 · 52 of 53 · 33 of 38 |
+| Stars Gaia says are still (< 0.04″/yr) flagged "moved": false alarms | (0 of 5,964: by construction) | **0 of 5,757** (below 0.05% at 95% confidence) |
+
+In the same fields 35 of 8,865 sources without a Gaia motion are flagged "moved" (0.4%; real or false, not checked
+one by one). In the 219 empty fields (6,908 sources): 1 brightness change, no new source, 42 flagged as varying
+between visits (0.6%) and 16 sources of 2010 not seen today, none checked one by one. Per-field results:
+`web/public/data/verified/detector_validation_fields.jsonl`.
 
 SPHEREx exposures alone, 1.5-year baseline (`web/scripts/validate_blink.mts`, run of 14 Nov 2026):
 
@@ -72,7 +87,7 @@ resampled values to 0.005%, decoded flag masks bit for bit.
 | … within 10° of the plane (2,539 rows) that match Gaia | 44%: crowding defeats the test there, so these rows are hidden by default |
 | Known L and T dwarfs recovered (SIMBAD spectral types) | 174 |
 | The 22 survey candidates, through the Lab's detector | 19 detected · 8 moved at ≥ 5σ over 15–28 years · 19 listed by CatWISE2020 with the same motion · 6 with a SIMBAD entry, none with a spectral type |
-| Methane dips confirmed | 51 of 1,635 measurable |
+| Methane dips confirmed (3.3 µm flux below 60% of the 4.0 µm flux, and lower by at least 3σ) | 44 of 1,635 measurable |
 | Brightness changes that hold against AllWISE | 17 of 1,981 clean cases: blazars, a Seyfert galaxy, a young star, the site of SN 2022gzi |
 
 The survey-level "brightened", "vanished" and "methane" lists (hundreds of thousands of objects) did not survive
@@ -108,6 +123,13 @@ Links: `/explore/?ra=<deg>&dec=<deg>&fov=<arcmin>` or `/explore/?target=<name>` 
 
 The assistant needs a model key on the server side: in development put `MIRA_LLM_KEY=…` in `web/.env.local`
 (ignored by git); in production run `deploy/assistant-proxy.mjs`. Without a key the rest of the site works unchanged.
+
+**Reproducing the numbers.** Inputs: the survey tiles (`census/` pipeline, on the cluster), the exposure index
+(`census/sphx_index2.py`), Gaia DR3 sources with proper motion above 100 mas/yr (ESA archive), AllWISE / 2MASS /
+Gaia cone searches (VizieR) and SIMBAD. Steps and selection rules: `census/verify_select.py` → `verify_lists.py` →
+`web/scripts/verify_census.mts` → `census/verify_merge.py` (the rule for “moved” is in its header and in
+`meta.json`), `web/scripts/candidates_report.mts`, `web/scripts/validate_detector.mts`. Outputs:
+`web/public/data/verified/*.json`.
 
 The exposure index and the verified catalogue live in `web/public/data/` (not in git; `web/sync_data.sh` pulls them
 from the cluster). Deployment on a small instance, and how to re-index and re-verify after each SPHEREx release, are

@@ -95,8 +95,10 @@ def main():
     # ---------------- what kind of object: colours from SPHEREx itself, absolute magnitude from Gaia
     w12 = mag(c.W1.values / ZP["W1"], "W1") - mag(c.W2.values / ZP["W2"], "W2"); c["w12"] = w12
     ch4 = np.where((c.REF > 5 * c.eREF) & (c.REF > 0), c.CH4 / c.REF, np.nan); c["ch4"] = ch4
+    # a dip is claimed only when the 3.3 um flux is below the 4.0 um flux by 3 sigma of both measurements: a noisy 3.3 um point is not methane
+    dip = (c.REF - c.CH4) / np.hypot(c.eCH4, c.eREF) >= 3
     MG = c.G + 5 * np.log10(np.clip(c.plx, 0.1, None) / 100)
-    kind = np.where(np.isfinite(ch4) & (ch4 < 0.6) & (c.W2 > c.W1), "methane dwarf",
+    kind = np.where(np.isfinite(ch4) & (ch4 < 0.6) & dip & (c.W2 > c.W1), "methane dwarf",
             np.where(np.isfinite(MG) & (c.plx > 2) & (MG > 10 + 2.6 * c.bprp) & (c.bprp < 1.9), "white dwarf",
             np.where(np.isfinite(c.bprp) & (c.bprp >= 1.8), "M dwarf", np.where(np.isfinite(c.bprp) & (c.bprp >= 0.9), "K dwarf", np.where(np.isfinite(c.bprp), "F/G star",
             np.where(np.isfinite(w12) & (w12 > 0.6), "red: brown dwarf?", np.where(np.isfinite(w12), "cool dwarf?", "unclassified")))))))
@@ -159,8 +161,9 @@ def main():
         funnel["brightness_checked"] = {"tested": int(len(ch)), "clean": int(ok.sum()), "brighter": int((ch.verdict == "brighter").sum()), "fainter": int((ch.verdict == "fainter").sum()), "unchanged": int((ok & (ch.verdict == "unchanged")).sum())}
     # ---------------- methane
     me = m[((L & 2) > 0) & (m.ok == 1) & det & ~sat]; okr = me.REF > 5 * me.eREF
-    funnel["methane"] = {"tested": int(((L & 2) > 0).sum()), "measurable": int(okr.sum()), "confirmed": int((okr & (me.CH4 / me.REF < 0.6) & (me.W2 > me.W1)).sum())}
-    ch4ids = set(me[okr & (me.CH4 / me.REF < 0.6) & (me.W2 > me.W1)].id)
+    isdip = okr & (me.CH4 / me.REF < 0.6) & ((me.REF - me.CH4) / np.hypot(me.eCH4, me.eREF) >= 3) & (me.W2 > me.W1)
+    funnel["methane"] = {"tested": int(((L & 2) > 0).sum()), "measurable": int(okr.sum()), "confirmed": int(isdip.sum()), "ratio_only": int((okr & (me.CH4 / me.REF < 0.6) & (me.W2 > me.W1)).sum())}
+    ch4ids = set(me[isdip].id)
 
     # ---------------- crowding: in the Galactic plane several stars share one SPHEREx pixel and the position test loses its meaning
     ag, dg = np.radians(192.85948), np.radians(27.12825); rr, dd = np.radians(c.ra_now.values), np.radians(c.dec_now.values)

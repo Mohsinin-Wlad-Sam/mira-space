@@ -38,7 +38,7 @@ taken and returns calibrated numbers, plots and a verdict in under a minute.
 | Part | What it does | Why it is hard to copy |
 |---|---|---|
 | **The Lab** | For any field: a table of what moved or changed (calibrated on the Gaia stars of that same field, compared with 2010 and 1999), position against time, a 0.75–5 µm spectrum, a brightness history, the depth reached, a time view the user steers, exports (CSV, FITS, Python) | SPHEREx never images a place twice at the same wavelength: the engine has to know the wavelength of every pixel, decode NASA's compressed flag tables and register 6″ pixels to a tenth of a pixel, in the browser. Validated against Astropy and Gaia. |
-| **The verified catalogue** | 39.9 billion WISE detections → 1.56 million survey claims → 202,528 re-measured on raw SPHEREx exposures → 17,604 motions that pass (away from the Galactic plane 88% are known Gaia stars with the same motion, the rest to examine), 51 methane objects, 17 real brightness changes (blazars, a supernova, a young star) | Needs a cluster run and the engine above; refreshed after each data release |
+| **The verified catalogue** | 39.9 billion WISE detections → 1.56 million survey claims → 202,528 re-measured on raw SPHEREx exposures → 17,604 motions that pass (away from the Galactic plane 88% are known Gaia stars with the same motion, the rest to examine), 44 methane objects, 17 real brightness changes (blazars, a supernova, a young star) | Needs a cluster run and the engine above; refreshed after each data release |
 | **The assistant** | Reads the page and operates the instruments in plain language | Bound to the instruments' own numbers; runs behind a small proxy on any OpenAI-compatible model |
 | **Cases** | The user's measurements, notes, lists and exports, kept in their browser | — |
 
@@ -65,12 +65,14 @@ Individuals never pay and are never the product: no advertising, no tracking, no
 | | Offer | Buyer | Reference point for the price |
 |---|---|---|---|
 | **A. Grants** | The public site, new-release verification runs, training material | NASA ROSES open-science and citizen-science elements with a U.S. partner as lead [6]; European and regional programmes; foundations | comparable open-source elements have made awards of about US$100,000 [6] |
-| **B. Verification as a service** | A survey team hands over a candidate list; MIRA returns each one re-measured on raw exposures with a verdict and evidence (the run behind our own catalogue) | brown-dwarf, variable-star and transient groups; citizen-science projects with backlogs | the telescope time and analyst weeks it replaces: at US$250–450 per telescope hour [8], vetting 1,000 candidates by observation is out of reach; by MIRA it is a morning |
+| **B. Verification as a service** | A survey team hands over a candidate list; MIRA returns each one re-measured on raw exposures with a verdict and evidence (the run behind our own catalogue) | brown-dwarf, variable-star and transient groups; citizen-science projects with backlogs | the researcher weeks it replaces, not telescope time: no telescope sold by the hour observes at 3–5 µm from the ground (a 1-m optical telescope costs US$250–450 per hour [8] and cannot do this), so the real alternative is a student writing and validating a pipeline against the same archive. The code is open, so a group with its own cluster can run it; what is offered is the run, its upkeep at each data release and the validation behind it |
 | **C. The engine on other archives** | Adapting the zero-server cutout-and-measure engine to another archive that serves FITS over HTTP | archives and data centres with cloud-hosted surveys | integration and support contracts; each archive differs in format and access policy, so this is real engineering, priced per project |
 | **D. The Lab for teaching** | A site licence with exercises in Arabic, French and English built on real NASA data, kiosk mode for planetariums | universities, observatories, science centres in the region | Slooh's education tier: from US$30 per student per year [10] |
 
-Order matters: A keeps the public site alive; B is the first paid offer because it already exists (we ran it); C
-and D follow from requests. Revenue is optional for survival (the burn is near zero) and buys speed.
+Order matters: A keeps the public site alive. B already exists (we ran it), but because the pipeline is open and
+its users are research groups, we expect it to be paid for mostly as a work package inside a grant shared with the
+group that needs it, not as a standalone invoice. C and D follow from requests. Revenue is optional for survival
+(the burn is near zero) and buys speed.
 
 **What we have not done yet.** No customer has been interviewed and no contract exists: demand for B–D is a
 hypothesis. The first step after the hackathon is to offer the verification run, free, to two research groups and

@@ -23,7 +23,7 @@ export function analyzeFrames(frames: Frame[], N: number, center: [number, numbe
   return { P, bins: binSpectrum(P, 0.05), lc, halo, motion, motionFlagged, nFlagged, nSat, nFrames: frames.length, span: frames.length ? (frames[frames.length - 1].mjd - frames[0].mjd) / 365.25 : 0 };
 }
 
-const median = (a: number[]) => { const s = [...a].sort((x, y) => x - y); return s.length ? s[s.length >> 1] : NaN; };
+const median = (a: number[]) => { const s = a.filter(Number.isFinite).sort((x, y) => x - y); return s.length ? s[s.length >> 1] : NaN; };
 const COMPASS = ["north", "north-east", "east", "south-east", "south", "south-west", "west", "north-west"];
 export const compass = (pmra: number, pmdec: number) => COMPASS[Math.round((((Math.atan2(pmra, pmdec) * 180) / Math.PI + 360) % 360) / 45) % 8];
 export const monthYear = (mjd: number) => new Date((mjd - 40587) * 86400000).toLocaleDateString("en-GB", { month: "short", year: "numeric", timeZone: "UTC" });
@@ -46,7 +46,7 @@ export function answerMove(A: Analysis | null, cat?: { pmra?: number; pmdec?: nu
   if (!A) return { tone: "wait", chip: "Measuring", big: "…", unit: "", label: "locating it in every exposure", text: "" };
   const m = A.motion;
   if (!m) return { tone: "warn", chip: "No fix", big: "—", unit: "", label: "motion not measurable here",
-    text: `A motion needs the source to stand out clearly in two or more visits${A.nFlagged > 0.5 * A.P.length ? "; most exposures of it are flagged" : "; it is too faint or too crowded here"}.` };
+    text: `A motion needs the source to stand out clearly in two or more visits${A.nSat > 0.3 * A.nFrames ? `: this star overflows the camera in ${A.nSat} of ${A.nFrames} exposures, so its centre cannot be located` : A.nFlagged > 0.5 * A.P.length ? ": here most exposures of it are flagged by NASA, so its centre cannot be located" : "; it is too faint or too crowded here"}.` };
   const tot = Math.hypot(m.pmra, m.pmdec), etot = Math.hypot(m.epmra, m.epmdec) / Math.SQRT2, sig = tot / Math.max(etot, 1e-6);
   if (sig <= 4) return { tone: "neutral", chip: "At rest", big: `< ${(3 * etot).toFixed(2)}`, unit: "″/yr", label: "no motion detected (3σ limit)",
     text: `Nothing slower than this could be noticed over SPHEREx's first ${(m.span / 365.25).toFixed(1)} years of images.` };

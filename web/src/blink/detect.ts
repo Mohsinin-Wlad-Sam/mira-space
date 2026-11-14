@@ -18,7 +18,7 @@ export type MotionFit = { ra: number; dec: number; era: number; edec: number; to
 export type TM = CatSource & { j: number; h: number; k: number };
 export type ChangeRow = {
   n: number; x: number; y: number; ra: number; dec: number; snr: number; red: boolean; track: boolean;
-  gaia: CatSource | null; wise: CatSource | null; tm: TM | null; linked: boolean;
+  gaia: CatSource | null; wise: CatSource | null; tm: TM | null; linked: boolean; /** found at its older positions with the published motion of the visitor's target */ tracked?: boolean;
   J: Band; H: Band; K: Band; W1: Band; W2: Band;
   epochs: Epoch[]; pm: MotionFit | null; pmSx: MotionFit | null;
   dW1: Delta | null; dW2: Delta | null; dK: Delta | null;
@@ -85,7 +85,7 @@ function bandOf(P: Phot[], a: number, b: number): Band {
 const sn = (b: Band) => (b && b.e > 0 ? b.f / b.e : 0);
 
 export function detectChanges(frames: Frame[], N: number, center: [number, number], cat: { gaia: CatSource[] | null; wise: CatSource[] | null; tm: TM[] | null },
-  target: [number, number] | null, masks?: (Int32Array | null)[]): FieldReport | null {
+  target: [number, number] | null, masks?: (Int32Array | null)[], track?: { pmra: number; pmdec: number } | null): FieldReport | null {
   if (frames.length < 4) return null;
   const c = (N - 1) / 2, PIX = PIX_ARCSEC, proto = frames[0], psf = median(frames.map((f) => (Number.isFinite(f.psf) && f.psf > 2 ? f.psf : 7.5)));
   const tan = (x: number, y: number): [number, number] => [-(x - c) * PIX, -(y - c) * PIX];          // (east, north) arcsec about the field centre
@@ -149,9 +149,18 @@ export function detectChanges(frames: Frame[], N: number, center: [number, numbe
   const edge = (s: Src) => s.x < 6 || s.y < 6 || s.x > N - 7 || s.y > N - 7;
   const blend = (s: Src) => found.some((o) => o !== s && Math.hypot(o.x - s.x, o.y - s.y) < 2.4 && o.snr > 0.3 * s.snr);
   // stars that saturate SPHEREx: their own measurements are unusable and their halo spoils the neighbours
-  const zones: { xi: number; eta: number; r: number; id: string }[] = [];
-  W.forEach((w, k) => { const m = Math.min(w.mag2 ?? 99, (w.mag ?? 99) + 0.6); if (m < 7.8) zones.push({ xi: wPos[k][0], eta: wPos[k][1], r: 22 + 13 * (7.8 - m), id: w.id }); });
-  T.forEach((t, k) => { if (Number.isFinite(t.k) && t.k < 7.8 && !zones.some((z) => Math.hypot(z.xi - tPos[k][0], z.eta - tPos[k][1]) < 10)) zones.push({ xi: tPos[k][0], eta: tPos[k][1], r: 22 + 13 * (7.8 - t.k), id: t.id }); });
+  const zones: { xi: number; eta: number; r: number; id: string; yr: number; old?: boolean }[] = [];
+  W.forEach((w, k) => { const m = Math.min(w.mag2 ?? 99, (w.mag ?? 99) + 0.6); if (m < 7.8) zones.push({ xi: wPos[k][0], eta: wPos[k][1], r: 22 + 13 * (7.8 - m), id: w.id, yr: 2010.5 }); });
+  T.forEach((t, k) => { if (Number.isFinite(t.k) && t.k < 7.8 && !zones.some((z) => Math.hypot(z.xi - tPos[k][0], z.eta - tPos[k][1]) < 10)) zones.push({ xi: tPos[k][0], eta: tPos[k][1], r: 22 + 13 * (7.8 - t.k), id: t.id, yr: t.epoch }); });
+  // a bright star that moves floods today's exposures where it is now, not where the old surveys recorded it: its
+  // glare gets a second zone at today's position (from its Gaia motion), and the old one is remembered as old
+  for (const z of [...zones]) {
+    let bk = -1, bm = 99;
+    G.forEach((g, k) => { if (g.plx === null || Math.hypot(g.pmra, g.pmdec) * Math.abs(yrAll - z.yr) < 6) return; const [ra, dec] = catPos(g, z.yr), [x, y] = sky(ra, dec);
+      if (Math.hypot(x - z.xi, y - z.eta) < 4 && (g.mag ?? 30) < bm) { bm = g.mag ?? 30; bk = k; } });
+    if (bk < 0) continue; z.old = true;
+    if (!zones.some((q) => !q.old && Math.hypot(q.xi - gNow[bk][0], q.eta - gNow[bk][1]) < 10)) zones.push({ xi: gNow[bk][0], eta: gNow[bk][1], r: z.r, id: z.id, yr: yrAll });
+  }
   const zoneOf = (xi: number, eta: number) => zones.find((z) => Math.hypot(z.xi - xi, z.eta - eta) < z.r);
   // ---- tie every visit to Gaia: the median offset of the reference stars in that visit
   const refs = rows0.filter((r) => hasPm(r.g) && (r.g!.mag ?? 30) < 18.5 && r.s.snr >= 12 && !r.s.track && !edge(r.s) && !blend(r.s) && !r.crowd && !zoneOf(r.xi, r.eta));
@@ -205,34 +214,37 @@ export function detectChanges(frames: Frame[], N: number, center: [number, numbe
   const w1Of = (w: CatSource) => (w.mag2 != null ? magToMjy(w.mag2, "W1") : null), w2Of = (w: CatSource) => (w.mag != null ? magToMjy(w.mag, "W2") : null);
   const usedW = new Set<number>();
   const rows: ChangeRow[] = base.map((b, n) => {
-    const { s, xi, eta, g } = b;
-    const back = (yr: number): [number, number] => { if (hasPm(g)) { const [ra, dec] = catPos(g!, yr); return sky(ra, dec); } return [xi, eta]; };
+    const { s, xi, eta, g } = b, isT = !!target && Math.hypot(s.x - target[0], s.y - target[1]) < 2;
+    // the visitor's own target, when it has a published motion that Gaia does not list (a cold brown dwarf): its older
+    // positions are looked for where that motion says they were. This is tracking a known object, not a blind search.
+    const tp = isT && !hasPm(g) && track && Math.hypot(track.pmra, track.pmdec) > 0.05 ? track : null;
+    const back = (yr: number): [number, number] => { if (hasPm(g)) { const [ra, dec] = catPos(g!, yr); return sky(ra, dec); } return tp ? [xi - tp.pmra * (yrAll - yr), eta - tp.pmdec * (yrAll - yr)] : [xi, eta]; };
     // 2010: the nearest source within 3"; failing that (a slow mover has drifted a few arcsec), the nearest one within
     // 8" that has the same brightness, for sources bright enough for that comparison to mean something
-    const [wx, wy] = back(2010.5), wn = within(wPos, wx, wy, hasPm(g) ? 4 : 8);
-    const wc = wn.find((q) => q.d <= 3) ?? (s.snr >= 12 ? wn.find((q) => same(b.W1, w1Of(W[q.k]), 1.6) || same(b.W2, w2Of(W[q.k]), 1.6)) : undefined);
+    const [wx, wy] = back(2010.5), wn = within(wPos, wx, wy, hasPm(g) ? 4 : tp ? 6 : 8);
+    const wc = wn.find((q) => q.d <= 3) ?? (tp ? wn[0] : s.snr >= 12 ? wn.find((q) => same(b.W1, w1Of(W[q.k]), 1.6) || same(b.W2, w2Of(W[q.k]), 1.6)) : undefined);
     const w = wc ? W[wc.k] : null; if (wc) usedW.add(wc.k);
     // comparing with another survey adds the confusion error of this source once (it is common to all SPHEREx visits)
     const sys = sysPos(s.snr), ext: Epoch[] = [];
     if (w && wc) ext.push({ yr: w.epoch, xi: wPos[wc.k][0], eta: wPos[wc.k][1], err: Math.hypot(w.epos ?? 0.3, 0.1, sys), src: "WISE 2010" });
     // ~1999: with a Gaia motion, or once 2010 and today give a line, look where that line was; otherwise the same place
-    let [tx, ty] = back(1999.5), tr = 3;
+    let [tx, ty] = back(1999.5), tr = tp ? 6 : 3;
     const line = !hasPm(g) && ext.length && b.ep.length ? fitLine([...b.ep, ...ext], "") : null;
     if (line && line.base > 5) { tx = line.xi0 + line.ra * (1999.5 - line.t0); ty = line.eta0 + line.dec * (1999.5 - line.t0); tr = Math.min(6, Math.max(2.5, 1 + 3 * line.etot * (line.t0 - 1999.5))); }
     const tc = within(tPos, tx, ty, tr)[0], tm = tc ? T[tc.k] : null;
     if (tm && tc) ext.push({ yr: tm.epoch, xi: tPos[tc.k][0], eta: tPos[tc.k][1], err: Math.hypot(tm.epos ?? 0.2, 0.1, sys), src: "2MASS" });
-    const pm = b.ep.length && ext.length ? fitLine([...b.ep, ...ext], ["SPHEREx", ...ext.map((e) => e.src)].join(" + ")) : b.pmSx;
+    const pm = b.ep.length && ext.length ? fitLine([...b.ep, ...ext], ["SPHEREx", ...ext.map((e) => e.src)].join(" + ") + (tp ? ", found with its published motion" : "")) : b.pmSx;
     const tags: Tag[] = [], zone = zoneOf(xi, eta);
-    const self = zone && Math.hypot(zone.xi - xi, zone.eta - eta) < 9;
+    const self = zone && !zone.old && Math.hypot(zone.xi - xi, zone.eta - eta) < 9;
     const split = b.chr > Math.max(1.5, 4 * sysPos(s.snr));        // red and blue centres differ: two sources of different colour
     if (b.satMask || self) tags.push("SATURATED"); else if (zone || blend(s) || b.crowd || split) tags.push("BLENDED");
     if (edge(s)) tags.push("EDGE");
     const lcv = !tags.includes("SATURATED") && b.P.length >= 8 ? lightCurve(b.P) : null;
     const [ra, dec] = stampToSky(center[0], center[1], N, s.x, s.y);
-    return { n: n + 1, x: s.x, y: s.y, ra, dec, snr: s.snr, red: s.red, track: !!s.track, gaia: g, wise: w, tm, linked: false, J: b.J, H: b.H, K: b.K, W1: b.W1, W2: b.W2,
+    return { n: n + 1, x: s.x, y: s.y, ra, dec, snr: s.snr, red: s.red, track: !!s.track, gaia: g, wise: w, tm, linked: false, tracked: !!tp && ext.length > 0, J: b.J, H: b.H, K: b.K, W1: b.W1, W2: b.W2,
       epochs: [...ext, ...b.ep].sort((p, q) => p.yr - q.yr), pm, pmSx: b.pmSx, dW1: null, dW2: null, dK: null,
       lc: lcv ? { variable: lcv.variable, amp: (lcv.best ?? lcv.all).amplitude, pairs: lcv.pairs } : null,
-      tags, why: zone && !self ? `in the halo of ${zone.id}` : split ? `its red and blue light are centred ${b.chr.toFixed(1)}″ apart: two sources in one pixel` : "", known: "", isTarget: !!target && Math.hypot(s.x - target[0], s.y - target[1]) < 2, P: b.P };
+      tags, why: zone && !self ? (zone.old ? `where ${zone.id} stood in ${zone.yr.toFixed(0)}: the old surveys are flooded by it here` : `in the halo of ${zone.id}`) : split ? `its red and blue light are centred ${b.chr.toFixed(1)}″ apart: two sources in one pixel` : "", known: "", isTarget: isT, P: b.P };
   });
   const clean = (r: ChangeRow) => !r.tags.includes("SATURATED") && !r.tags.includes("BLENDED") && !r.tags.includes("EDGE");
   // ---- depth of this field in the two WISE bands (5 sigma, mJy)
@@ -303,7 +315,15 @@ export function detectChanges(frames: Frame[], N: number, center: [number, numbe
       // a star with a Gaia motion must agree with it: if not, the image is contaminated, not moving
       const agrees = !hasPm(r.gaia) || Math.hypot(r.pm.ra - r.gaia!.pmra, r.pm.dec - r.gaia!.pmdec) < Math.max(4 * e, 0.04);
       if (!agrees && ok) { r.tags.push("BLENDED"); r.why ||= "position disagrees with Gaia's motion: contaminated image"; }
-      else if ((ok || r.linked) && sig >= 5 && r.pm.tot >= 0.08 && ((long && r.snr >= 12) || alone || r.linked || (r.track && sig >= 6))) r.tags.unshift("MOVED");
+      // two dated positions always lie on a line: a claim needs a third one that could have contradicted it
+      else if ((ok || r.linked) && r.pm.n >= 3 && sig >= 5 && r.pm.tot >= 0.08 && ((long && r.snr >= 12) || alone || r.linked || (r.track && sig >= 6))) r.tags.unshift("MOVED");
+      // a saturated star is not judged on its own; but when Gaia says it moves and the wings of its image give the same motion, that is a confirmation
+      else if (r.tags.includes("SATURATED") && !r.tags.includes("BLENDED") && !r.tags.includes("EDGE") && hasPm(r.gaia) && Math.hypot(r.gaia!.pmra, r.gaia!.pmdec) >= 0.08 && r.pm.n >= 3 && long && sig >= 8 &&
+        Math.hypot(r.pm.ra - r.gaia!.pmra, r.pm.dec - r.gaia!.pmdec) < Math.max(3 * e, 0.04)) { r.tags.unshift("MOVED"); r.why = "saturated: measured on the wings of its image; the motion agrees with Gaia"; }
+      // the visitor's target tracked with its published motion: a measurement over the long baseline that agrees with it confirms it, blended or not
+      else if (r.tracked && track && !r.tags.includes("SATURATED") && !r.tags.includes("EDGE") && r.pm.n >= 3 && long && sig >= 8 &&
+        Math.hypot(r.pm.ra - track.pmra, r.pm.dec - track.pmdec) < Math.max(3 * e, 0.04, 0.03 * r.pm.tot)) { r.tags.unshift("MOVED"); r.why = `tracked with its published motion${r.tags.includes("BLENDED") ? "; today it shares a pixel with another source" : ""}`; }
+      else if (ok && r.pm.n < 3 && sig >= 5 && r.pm.tot >= 0.08) r.why ||= "only two dated positions: this motion cannot be tested yet";
     }
     const ok2 = clean(r), ds = [r.dW1, r.dW2].filter(Boolean) as Delta[], strong = ds.filter((d) => Math.abs(d.z) >= 5 && Math.abs(Math.log(d.ratio)) > 0.26);
     if (ok2 && r.snr >= 15 && strong.length && !ds.some((d) => Math.sign(Math.log(d.ratio)) !== Math.sign(Math.log(strong[0].ratio)) && Math.abs(d.z) > 2)) r.tags.unshift(strong[0].ratio > 1 ? "BRIGHTER" : "FAINTER");
@@ -315,7 +335,7 @@ export function detectChanges(frames: Frame[], N: number, center: [number, numbe
     r.known = r.gaia ? r.gaia.id : r.wise ? r.wise.id : r.tm ? r.tm.id : haveG || haveW ? "not in Gaia, AllWISE or 2MASS" : "catalogues unavailable";
   }
   for (const z of zones) {
-    if (Math.abs(z.xi) > (c - 2) * PIX || Math.abs(z.eta) > (c - 2) * PIX) continue;
+    if (z.old || Math.abs(z.xi) > (c - 2) * PIX || Math.abs(z.eta) > (c - 2) * PIX) continue;
     if (rows.some((r) => { const [xi, eta] = tan(r.x, r.y); return Math.hypot(xi - z.xi, eta - z.eta) < 9; })) continue;
     const [x, y] = pix(z.xi, z.eta), [ra, dec] = stampToSky(center[0], center[1], N, x, y), w = W.find((q) => q.id === z.id) ?? null, tm = T.find((q) => q.id === z.id) ?? null;
     rows.push({ n: 0, x, y, ra, dec, snr: 0, red: false, track: false, gaia: null, wise: w, tm, linked: false, J: null, H: null, K: null, W1: null, W2: null, epochs: [], pm: null, pmSx: null,

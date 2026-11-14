@@ -157,7 +157,7 @@ export function drawTrack(el: HTMLElement, pts: TrackPoint[], fit: TrackFit | nu
       pts: pts.filter((p) => p.src === kd).map((p) => ({ x: p.yr, y: p[key] - o, ey: p.err, title: `${kd} ${p.yr.toFixed(2)}: ${(p[key] - o).toFixed(2)} ± ${p.err.toFixed(2)}″` })) }));
     if (slope !== undefined) series.unshift({ name: q === 0 ? "fitted motion" : undefined, color: "#f0f0fa", line: true, marks: false, width: 1.5, pts: [{ x: ta, y: slope * (ta - t0) }, { x: tb, y: slope * (tb - t0) }] });
     if (rs !== undefined && ref) series.unshift({ name: q === 0 ? ref.name : undefined, color: "#78dcff", line: "dash", marks: false, width: 1.2, pts: [{ x: ta, y: rs * (ta - t0) }, { x: tb, y: rs * (tb - t0) }] });
-    plot(hosts[q], { h: q === 0 ? 232 : 196, x: { lo: ta, hi: tb, label: q === 1 ? "Year of observation" : "", fmt: yearFmt }, y: { lo, hi, label }, series,
+    plot(hosts[q], { h: q === 0 ? 246 : 212, x: { lo: ta, hi: tb, label: "Year of observation", fmt: yearFmt }, y: { lo, hi, label }, series,
       ribbons: slope !== undefined && fit ? [{ x: [ta, t0, tb], y0: [slope * (ta - t0) - fit.etot * Math.abs(ta - t0), 0, slope * (tb - t0) - fit.etot * Math.abs(tb - t0)], y1: [slope * (ta - t0) + fit.etot * Math.abs(ta - t0), 0, slope * (tb - t0) + fit.etot * Math.abs(tb - t0)], color: "#f0f0fa" }] : [] });
   });
 }
@@ -171,7 +171,7 @@ export function drawMotion(el: HTMLElement, m: Motion, o: { current?: number; on
   const hosts = el.querySelectorAll<HTMLElement>(".pl-pair > div");
   (["xi", "eta"] as const).forEach((key, q) => {
     const idx = q, v = used.map((p) => p[key] - (q ? m.eta0 : m.xi0)), mv = grid.map((g) => model(g)[idx] - (q ? m.eta0 : m.xi0)), [lo, hi] = pad(Math.min(...v, ...mv), Math.max(...v, ...mv), 0.12);
-    plot(hosts[q], { h: q === 0 ? 226 : 196, x: { lo: ta, hi: tb, label: q ? "Date (year)" : "", fmt: (t) => t.toFixed(1) }, y: { lo, hi, label: q ? "North offset Δδ (″)" : "East offset Δα cos δ (″)" }, current: o.current,
+    plot(hosts[q], { h: q === 0 ? 240 : 212, x: { lo: ta, hi: tb, label: "Date (year)", fmt: (t) => t.toFixed(1) }, y: { lo, hi, label: q ? "North offset Δδ (″)" : "East offset Δα cos δ (″)" }, current: o.current,
       series: [{ name: q ? undefined : m.plx !== null ? "model: motion + parallax" : "model: straight-line motion", color: "#f0f0fa", line: true, marks: false, width: 1.5, pts: grid.map((g, k) => ({ x: yr(g), y: mv[k] })) },
         { name: q ? undefined : "one exposure", color: "#7df0a6", size: 2.4, pts: used.map((p) => ({ x: yr(p.mjd), y: p[key] - (q ? m.eta0 : m.xi0), ey: p.err, k: p.k })) },
         ...(m.pts.some((p) => !p.used) ? [{ name: q ? undefined : "rejected", color: "#ff5d6c", shape: "cross" as const, size: 2.6, pts: m.pts.filter((p) => !p.used).map((p) => ({ x: yr(p.mjd), y: p[key] - (q ? m.eta0 : m.xi0), k: p.k })) }] : [])] }, { pick: o.onPick });

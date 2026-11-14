@@ -26,7 +26,7 @@ on an HPC cluster. Every instrument serves the chain *find → measure → ident
 | Instrument | Question it answers | Output |
 |---|---|---|
 | Finder (sky chart + verified catalogue) | Where should I point? | target or field |
-| Epoch imager | What does this field look like through time? | deep image per visit, continuous time slider 1999 → 2010 → 2025–26, playback control |
+| Epoch imager | What does this field look like through time? | three NASA pictures of the same field on one time bar: 2MASS (~1999), WISE (2010), one deep SPHEREx image per visit (2025–26); playback control |
 | Motion detector | Which sources in this field moved? | table: motion, significance, known/unknown; vectors on the image |
 | Astrometer | How fast and how far? | RA/Dec against time with fit, proper motion, parallax → distance |
 | Spectrograph | What is it? | 0.75–5 µm spectrum with molecular bands, temperature class |
@@ -38,7 +38,8 @@ on an HPC cluster. Every instrument serves the chain *find → measure → ident
 ## 3. How the motion detector works (new)
 
 1. Deep signal-to-noise stacks of the whole run and of each visit (white light, red 2.4–5 µm, blue 0.75–2.4 µm).
-2. Sources detected at 5σ; each located at every visit by a windowed centroid on that visit's stack.
+2. Sources detected at 5σ; each located at every visit by a windowed centroid on that visit's stack. A motion claim
+   needs at least three dated positions (two always fit a line).
 3. Each visit tied to Gaia: median offset of the field's own reference stars (with their Gaia motion and parallax).
 4. Position error model measured on the same Gaia stars: floor + confusion term ∝ 1/SNR.
 5. Counterparts in AllWISE (2010.5) and 2MASS (dated per source); a counterpart more than 3″ away must also match
@@ -50,23 +51,32 @@ Measured on reference fields (same code as the browser):
 
 | Field | MIRA (″/yr) | Reference (″/yr) |
 |---|---|---|
-| ε Indi B | +3.991, −2.496 ± 0.015 | Gaia DR3 +3.982, −2.467 |
-| Luhman 16 (no Gaia motion; linked to its 2010 and 1999 positions) | −2.758, +0.364 ± 0.013 | literature −2.75, +0.36 |
-| Barnard's Star (saturated; wings) | −0.809, +10.432 ± 0.034 | Gaia DR3 −0.802, +10.362 |
-| census candidate 6661-325678 (not in Gaia) | −0.335, −0.006 ± 0.041 (8σ) | CatWISE2020 −0.357, +0.022 |
+| ε Indi B | +3.986, −2.486 ± 0.019 | Gaia DR3 +3.982, −2.467 |
+| Luhman 16 (no Gaia motion; linked to its 2010 and 1999 positions) | −2.759, +0.362 ± 0.019 | literature −2.75, +0.36 |
+| Barnard's Star (saturated; wings; confirms Gaia) | −0.797, +10.432 ± 0.047 | Gaia DR3 −0.802, +10.362 |
+| WISE 0855−0714 (tracked with its published motion; blended today) | −8.17, +0.75 ± 0.05 | Kirkpatrick et al. 2021 −8.12, +0.67 |
+| census candidate 6661-325678 (not in Gaia) | −0.352, −0.016 ± 0.048 (7.3σ) | CatWISE2020 −0.357, +0.022 |
 | empty high-latitude field, 40 sources | no detections | — |
 
 Typical recovery of Gaia stars in a field: 0.01–0.02 ″/yr rms.
 
-Control run on 364 fields (193 known Gaia movers of 0.15–2.5″/yr, 171 empty high-latitude fields): 170 of the 173
-movers measured cleanly are flagged as moved (98%), 169 with the Gaia motion (median difference 0.010″/yr); none of
-4,665 stationary Gaia stars is flagged; 26 of ~11,500 sources without a Gaia motion are flagged (0.2%, an upper
-limit on false alarms); in the empty fields 1 brightness change and no new source are flagged.
+Control run: 459 fields (240 known Gaia movers of 0.15–2.5″/yr, 219 empty high-latitude fields). Because the
+detector uses Gaia (to predict a known star's 2010 and 1999 positions and to reject a motion that contradicts
+Gaia), the run was made twice per field: as the Lab runs, and **blind**, with the stars under test removed from the
+Gaia list first, as for an object Gaia does not list.
+
+- Known movers measured cleanly (216 of 240): flagged with Gaia known 213 (99%); **blind 199 (92%)**, every one with
+  Gaia's motion (median difference 0.011″/yr). Blind recovery by motion: 53 of 61 at 0.15–0.25″/yr, 61 of 64 at
+  0.25–0.4, 52 of 53 at 0.4–0.7, 33 of 38 at 0.7–2.5.
+- False alarms, blind: of 5,757 stars that Gaia says are still, **none** is flagged (below 0.05% at 95% confidence).
+- Not checked one by one: 35 of 8,865 sources without a Gaia motion flagged in these fields (0.4%); in the empty
+  fields, 42 of 6,908 sources flagged as varying between visits, 16 sources of 2010 not seen today, 1 brightness
+  change, no new source.
 
 ## 4. The survey behind it, and what verification showed
 
 Cluster run (4 × 128-core nodes): 39.9 billion WISE/NEOWISE detections (2010–2020) linked into objects, 1.56 million
-survey-level claims of change. On 14 Nov 2026 **202,548 of those claims were re-measured on raw SPHEREx exposures**
+survey-level claims of change. On 14 Nov 2026 **202,528 of those claims were re-measured on raw SPHEREx exposures**
 (position on a tracked deep stack against the predicted and the "never moved" positions; WISE-band fluxes; methane
 ratio), ~40 objects per second.
 
@@ -81,7 +91,8 @@ ratio), ~40 objects per second.
   (ratio 0.943 ± 0.04 in W1, 0.944 ± 0.05 in W2), so the tool can see 30% changes; the survey-level lists were driven
   by wrong WISE fluxes. Against AllWISE, 17 of 1,981 clean cases hold: blazars, a Seyfert galaxy, a young star and the
   site of SN 2022gzi.
-- Methane list: 51 confirmed dips out of 1,635 measurable.
+- Methane list: 44 confirmed dips out of 1,635 measurable (3.3 µm flux below 60% of the 4.0 µm flux and lower by at
+  least 3σ; 51 on the ratio alone).
 - The 22 candidates, through the field detector and against other catalogues (`web/public/data/verified/candidates.json`,
   Cases page): 19 detected, 8 moved at ≥ 5σ over 15–28 years; CatWISE2020 lists 19 of them with the same motion; 6 have
   a SIMBAD entry (two as brown-dwarf candidates), none a spectral type. Eight of the ten with a measurable 3.3/4.0 µm

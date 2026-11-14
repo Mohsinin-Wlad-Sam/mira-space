@@ -9,7 +9,7 @@ Updated 15 Nov 2026 for the instrument-based observatory. Numbers come from `web
 **Project name:** MIRA — a research observatory in the browser
 
 **High-level summary (≈150 words)**
-Planet X, if it exists, will be found the way Pluto was: as a faint dot that moved. NASA's SPHEREx photographs the
+Planet X, if it exists, would give itself away the way Pluto did: as a faint dot that moved. NASA's SPHEREx photographs the
 whole infrared sky every six months, but never twice at the same wavelength, so simply flipping its images shows
 colour flicker, not motion. MIRA is a set of instruments that does the measuring. Type a position: your browser
 reads every SPHEREx exposure of that field from NASA's archive, builds one deep image per visit, ties it to Gaia's
@@ -37,15 +37,17 @@ crowded Milky Way nearly nine in ten are stars Gaia already knows with the same 
    rows it needs from NASA's public bucket by HTTP Range (under 1 MB of a 65 MB file), registers them (TAN-SIP),
    decodes NASA's Rice-compressed flag table, and measures. Each visit is tied to Gaia with the field's own stars;
    "moved" needs 5σ against the scatter with which those stars are recovered.
-4. *Does it work?* ε Indi B: +3.991, −2.496 ± 0.015″/yr (Gaia: +3.982, −2.467). Luhman 16, which has no Gaia
-   motion, is linked to its 2010 and 1999 positions: −2.758, +0.364 (literature −2.75, +0.36). An empty field gives
-   no detection. On 364 control fields: 170 of 173 cleanly measured Gaia movers are flagged (98%), none of 4,665
-   stationary Gaia stars is. Against Astropy on the same file: positions to 0.004 px, flag masks bit for bit.
+4. *Does it work?* ε Indi B: +3.986, −2.486 ± 0.019″/yr (Gaia: +3.982, −2.467). Luhman 16, which has no Gaia
+   motion, is linked to its 2010 and 1999 positions: −2.759, +0.362 (literature −2.75, +0.36). WISE 0855, tracked:
+   −8.17, +0.75 ± 0.05 (published −8.12, +0.67). An empty field gives no detection. Blind test on 459 control fields
+   (the stars under test removed from Gaia first, as for an object Gaia does not list): 199 of 216 known movers are
+   flagged (92%), every one with the right motion, and none of 5,757 stationary stars is (false alarms below 0.05%).
+   Against Astropy on the same file: positions to 0.004 px, flag masks bit for bit.
 5. *The survey, verified.* 39.9 billion WISE detections (2010–2020) linked on a university cluster gave 1.56 million
    claims of motion or change. We re-measured 202,528 of them on raw SPHEREx exposures with the Lab's own engine:
    17,604 motions pass (away from the crowded Galactic plane 88% are known Gaia stars with the same motion: an
    independent check; in the plane the test fails and rows are hidden), 174 known L
-   and T dwarfs recovered, 51 methane dips, and 17 brightness changes that hold against AllWISE — blazars, a Seyfert
+   and T dwarfs recovered, 44 methane dips, and 17 brightness changes that hold against AllWISE — blazars, a Seyfert
    galaxy, a young star and the site of supernova 2022gzi. The lists that failed the test are not shown.
 6. *An assistant that works the instruments.* "Open Luhman 16 and tell me how fast it moves": a language model
    (K2 Horizon) reads the numbers on the page and operates the Lab and the Catalogue through tool calls; the key
@@ -78,12 +80,14 @@ data and checked against independent references; the assistant is told to use on
 1. **Find what moves.** The Lab's start screen. One line: "Point at a field; the instruments tell you what moved."
 2. **The problem.** A new sky every six months, 102 colours, 6″ pixels, never the same wavelength twice: flipping
    images shows flicker, not motion.
-3. **The Lab.** ε Indi B: the Evolution view with the dated track from 1999 to 2026, and the Motion detector's
-   table ("13 sources measured, 1 moved"). "Read live from NASA's archive. No server."
+3. **The Lab.** ε Indi B: press play on the time bar. Three NASA pictures of the same field (2MASS 1999, WISE
+   2010, SPHEREx 2025–26) follow one another and the brown dwarf walks along its dated track; the Motion detector's
+   table says "12 sources measured, 1 moved". "Read live from NASA's archives. No server."
 4. **Instruments.** Astrometer plot (27 years, +3.99, −2.50″/yr against Gaia's +3.98, −2.47); Spectrograph with the
    methane band; Detection limits.
-5. **Verified, not just claimed.** The funnel: 39.9 billion → 1.56 million → 202,528 → 17,604; 81% known to Gaia;
-   what failed the test is gone.
+5. **Verified, not just claimed.** The funnel: 39.9 billion → 1.56 million → 202,528 → 17,604; away from the
+   Galactic plane 88% are known Gaia stars with the same motion; what failed the test is gone. Blind control run:
+   92% of known movers found without Gaia, no false alarm among 5,757 still stars.
 6. **An assistant that operates it.** One question, the Lab opens Luhman 16 and answers with the measured motion.
 7. **Built to last.** Static, free, embeddable; one script per data release; who pays (grants, verification as a
    service, teaching); limits; team.

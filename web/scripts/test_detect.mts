@@ -16,7 +16,7 @@ for (const t of list as any[]) {
   const [g, w, m] = await Promise.all([gaia(b.center[0], b.center[1], R, 600).catch(() => null), allwise(b.center[0], b.center[1], R + 160, 600).catch(() => null), twomass(b.center[0], b.center[1], R + 200, 600).catch(() => null)]);
   const masks = process.env.MASKS ? await Promise.all(b.frames.map((f) => E.readMask(f, N).catch(() => null))) : undefined;
   const tgt = b.frames.length ? [b.frames[b.frames.length >> 1].tx, b.frames[b.frames.length >> 1].ty] as [number, number] : null;
-  const t1 = Date.now(), rep = detectChanges(b.frames, N, b.center, { gaia: g, wise: w, tm: m as any }, tgt, masks as any);
+  const t1 = Date.now(), rep = detectChanges(b.frames, N, b.center, { gaia: g, wise: w, tm: m as any }, tgt, masks as any, process.env.TRACK && t.pmra !== undefined ? { pmra: t.pmra, pmdec: t.pmdec } : null);
   console.log(`\n=== ${t.name}  frames ${b.frames.length}  visits ${b.visits}  cats G${g?.length} W${w?.length} 2M${m?.length}  build ${((t1 - t0) / 1000).toFixed(0)} s  detect ${Date.now() - t1} ms`);
   if (!rep) { console.log("no report"); continue; }
   console.log("cal:", JSON.stringify({ nRef: rep.cal.nRef, astroRms: rep.cal.astroRms?.toFixed(2), pmRms: rep.cal.pmRms?.toFixed(3), zp: Object.fromEntries(Object.entries(rep.cal.zp).map(([k, v]) => [k, `${v.zp.toFixed(2)}±${v.sc.toFixed(2)} n${v.n}`])) }), "counts:", JSON.stringify(rep.counts), "pos:", rep.cal.posA.toFixed(2), rep.cal.posB.toFixed(1), "limits:", rep.limits.pm?.toFixed(3), rep.limits.w1?.toFixed(3), rep.limits.w2?.toFixed(3), "visits", rep.visits.map((v) => v.yr.toFixed(2) + ":" + v.n).join(" "));

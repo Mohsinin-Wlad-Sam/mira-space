@@ -29,7 +29,7 @@ export function mountCatalogue(host: HTMLElement, ctx: CatCtx) {
     <header class="ct-head"><div><div class="eyebrow">Catalogue · survey claims re-measured on raw SPHEREx exposures</div><h1 class="display">What moved, verified.</h1></div><div class="ct-funnel" id="ct-funnel"></div></header>
     <div class="ct-body">
       <section class="ct-list">
-        <div class="ct-filters" id="ct-filters">${FILTERS.map(([k, t, tip]) => `<button data-f="${k}" title="${esc(tip)}">${t}<i></i></button>`).join("")}</div>
+        <div class="ct-filters" id="ct-filters" title="Properties combine: a row must have every one that is switched on">${FILTERS.map(([k, t, tip]) => `<button data-f="${k}" title="${esc(tip)}">${t}<i></i></button>`).join("")}</div>
         <div class="ct-bar"><label>Motion from <input id="ct-min" type="number" min="0" step="0.1" value="" placeholder="0.15"> to <input id="ct-max" type="number" min="0" step="0.1" value="" placeholder="any"> ″/yr</label>
           <input id="ct-q" type="search" placeholder="Find an identifier (census, Gaia, SIMBAD name)" spellcheck="false"><span class="mono" id="ct-count"></span><button class="link" id="ct-csv">CSV</button></div>
         <label class="ct-plane" title="Within 10° of the plane of the Milky Way several stars share one SPHEREx pixel: fewer than half of the motions that pass the test there match Gaia, against 88% elsewhere"><input type="checkbox" id="ct-plane"> include the crowded Galactic plane <span id="ct-planen"></span></label>
@@ -45,16 +45,18 @@ export function mountCatalogue(host: HTMLElement, ctx: CatCtx) {
   const $ = <T extends HTMLElement>(s: string) => host.querySelector(s) as T;
   let C: Cols | null = null, meta: Meta | null = null, changes: Change[] = [];
   let plane = false;
-  let rows: number[] = [], sel = -1, page = 0, filter: Filter = "all", sortKey: keyof Cols = "conf", sortDir = -1, view: "rpm" | "sky" = "rpm", q = "", minPm = NaN, maxPm = NaN, selChange: Change | null = null;
+  let rows: number[] = [], sel = -1, page = 0, filter: "all" | "changes" = "all", sortKey: keyof Cols = "conf", sortDir = -1, view: "rpm" | "sky" = "rpm", q = "", minPm = NaN, maxPm = NaN, selChange: Change | null = null;
 
+  /** properties a row must have, all of them (the chips above the table combine) */
+  const props = new Set<Filter>();
   const pass = (i: number): boolean => {
     const c = C!;
     if (!plane && Math.abs(c.glat[i]) < 10 && !q) return false;
-    if (filter === "nogaia" && c.known[i] === 1) return false;
-    if (filter === "red" && !((c.w12[i] ?? -9) > 0.6)) return false;
-    if (filter === "methane" && !c.methane[i]) return false;
-    if (filter === "wd" && c.kind[i] !== "white dwarf") return false;
-    if (filter === "fast" && !(c.pm[i] >= 1)) return false;
+    if (props.has("nogaia") && c.known[i] === 1) return false;
+    if (props.has("red") && !((c.w12[i] ?? -9) > 0.6)) return false;
+    if (props.has("methane") && !c.methane[i]) return false;
+    if (props.has("wd") && c.kind[i] !== "white dwarf") return false;
+    if (props.has("fast") && !(c.pm[i] >= 1)) return false;
     if (isFinite(minPm) && c.pm[i] < minPm) return false; if (isFinite(maxPm) && c.pm[i] > maxPm) return false;
     if (q && !(c.id[i].includes(q) || c.gaia[i].includes(q) || c.simbad[i].toLowerCase().includes(q.toLowerCase()))) return false;
     return true;
@@ -78,7 +80,7 @@ export function mountCatalogue(host: HTMLElement, ctx: CatCtx) {
     { k: "simbad", t: "name in SIMBAD", tip: "Identification in the SIMBAD database, when one lies at the position", f: (i) => esc(C!.simbad[i].replace(/^NAME /, "")) || "–", cls: "nm" }];
   function render() {
     if (!C || !meta) return;
-    host.querySelectorAll<HTMLElement>("#ct-filters button").forEach((b) => { b.classList.toggle("on", b.dataset.f === filter); });
+    host.querySelectorAll<HTMLElement>("#ct-filters button").forEach((b) => { const f = b.dataset.f as Filter; b.classList.toggle("on", f === "all" ? filter === "all" && !props.size : f === "changes" ? filter === "changes" : filter === "all" && props.has(f)); });
     const ch = filter === "changes";
     $("#ct-count").textContent = ch ? `${changes.length} sources` : `${nf(rows.length)} rows`;
     const tb = $("#ct-table");
@@ -145,7 +147,7 @@ export function mountCatalogue(host: HTMLElement, ctx: CatCtx) {
       if (sel >= 0 && c.W2[sel] && c.w12[sel] !== null) series.push({ name: "selected", color: "#fff", shape: "square", hollow: true, size: 6, pts: [{ x: c.w12[sel]!, y: w2mag(c.W2[sel]!) + 5 * Math.log10(c.pm[sel]) + 5 }] });
       el.innerHTML = `<div id="ct-rpm"></div><p class="ct-note">Each point is a row of the table${step > 1 ? ` (1 in ${step} drawn)` : ""}. Left to right: redder between 3.4 and 4.6 µm, that is colder. Top to bottom: fainter for its motion, that is intrinsically fainter. Cold brown dwarfs sit at the right; white dwarfs low on the left. Click a point to select it.</p>`;
       plot($("#ct-rpm"), { h: 400, x: { lo: -0.6, hi: 3.2, label: "Colour W1 − W2 (mag)" }, y: { lo: 6, hi: 24, label: "Reduced proper motion H(W2) = W2 + 5 log μ + 5", invert: true, ticks: [8, 12, 16, 20, 24] }, series, vlines: [{ x: 0.6, label: "colder →" }] },
-        { pick: (k) => { sel = k; if (!rows.includes(k)) { filter = "all"; apply(true); } else { page = Math.floor(rows.indexOf(k) / PAGE); render(); } } });
+        { pick: (k) => { sel = k; if (!rows.includes(k)) { filter = "all"; props.clear(); apply(true); } else { page = Math.floor(rows.indexOf(k) / PAGE); render(); } } });
     } else {
       el.innerHTML = `<canvas id="ct-sky" width="1120" height="600"></canvas><p class="ct-note" id="ct-skynote">All-sky chart in equatorial coordinates (right ascension increases to the left); the dotted line is the plane of the Milky Way. Click a point to select it, or anywhere else to measure that field in the Lab.</p>`;
       const cvs = $("#ct-sky") as HTMLCanvasElement, g = cvs.getContext("2d")!, W = cvs.width, H = cvs.height, sx = (W - 40) / (4 * Math.SQRT2), sy = (H - 40) / (2 * Math.SQRT2), S = Math.min(sx, sy);
@@ -194,7 +196,9 @@ export function mountCatalogue(host: HTMLElement, ctx: CatCtx) {
       (bt.querySelector("i") as HTMLElement).textContent = nf(n); });
   }
   // ---- events
-  host.querySelectorAll<HTMLButtonElement>("#ct-filters button").forEach((b) => (b.onclick = () => { filter = b.dataset.f as Filter; selChange = null; apply(); }));
+  host.querySelectorAll<HTMLButtonElement>("#ct-filters button").forEach((b) => (b.onclick = () => { const f = b.dataset.f as Filter; selChange = null;
+    if (f === "all" || f === "changes") { filter = f; props.clear(); } else { filter = "all"; if (props.has(f)) props.delete(f); else props.add(f); }
+    apply(); }));
   host.querySelectorAll<HTMLButtonElement>(".ct-tabs button").forEach((b) => (b.onclick = () => { view = b.dataset.v as "rpm" | "sky"; renderView(); }));
   ($("#ct-min") as HTMLInputElement).oninput = (e) => { minPm = parseFloat((e.target as HTMLInputElement).value); apply(); };
   ($("#ct-max") as HTMLInputElement).oninput = (e) => { maxPm = parseFloat((e.target as HTMLInputElement).value); apply(); };
@@ -217,14 +221,15 @@ export function mountCatalogue(host: HTMLElement, ctx: CatCtx) {
     context() {
       if (!C || !meta) return { loaded: false };
       const c = C, row = (i: number) => ({ id: c.id[i], ra: c.ra[i], dec: c.dec[i], motion_arcsec_yr: c.pm[i], confirmation_sigma: c.conf[i], kind: c.kind[i], gaia: c.known[i] === 1 ? `Gaia DR3 ${c.gaia[i]}` : knownTxt(i), w1_w2: c.w12[i], flux_4p6um_mJy: c.W2[i], methane_ratio: c.ch4[i], simbad: c.simbad[i] || null });
-      return { loaded: true, galactic_plane_included: plane, filter, sort: `${String(sortKey)} ${sortDir < 0 ? "descending" : "ascending"}`, motion_range: [isFinite(minPm) ? minPm : null, isFinite(maxPm) ? maxPm : null], matching: filter === "changes" ? changes.length : rows.length, total: c.id.length,
+      return { loaded: true, galactic_plane_included: plane, filters: filter === "changes" ? ["changes"] : props.size ? [...props] : ["all"], sort: `${String(sortKey)} ${sortDir < 0 ? "descending" : "ascending"}`, motion_range: [isFinite(minPm) ? minPm : null, isFinite(maxPm) ? maxPm : null], matching: filter === "changes" ? changes.length : rows.length, total: c.id.length,
         funnel: { claims: meta.claims.total, remeasured: meta.remeasured, passed_position_test: meta.confirmed_movers, away_from_galactic_plane: meta.high_latitude?.n, of_those_known_gaia_same_motion: meta.high_latitude?.known, of_those_no_matching_gaia_motion: meta.high_latitude ? meta.high_latitude.n - meta.high_latitude.known : null, methane: meta.funnel.methane?.confirmed, brightness_changes: changes.length },
         top_rows: filter === "changes" ? changes.slice(0, 12) : rows.slice(page * PAGE, page * PAGE + 12).map(row), selected: filter === "changes" ? selChange : sel >= 0 ? row(sel) : null };
     },
     /** let the assistant drive the table */
-    act(a: { filter?: string; include_plane?: boolean; min_motion?: number | null; max_motion?: number | null; search?: string; sort?: string; descending?: boolean; select?: string; view?: string; open?: boolean }) {
+    act(a: { filter?: string; filters?: string[]; include_plane?: boolean; min_motion?: number | null; max_motion?: number | null; search?: string; sort?: string; descending?: boolean; select?: string; view?: string; open?: boolean }) {
       if (!C) return "catalogue still loading";
-      if (a.filter && FILTERS.some((f) => f[0] === a.filter)) filter = a.filter as Filter;
+      const want = (Array.isArray(a.filters) ? a.filters : a.filter ? [a.filter] : []).filter((f) => FILTERS.some((x) => x[0] === f)) as Filter[];
+      if (want.length) { props.clear(); if (want.includes("changes")) filter = "changes"; else { filter = "all"; want.forEach((f) => { if (f !== "all") props.add(f); }); } selChange = null; }
       if (typeof a.include_plane === "boolean") { plane = a.include_plane; ($("#ct-plane") as HTMLInputElement).checked = plane; counts(); }
       if (a.min_motion !== undefined) { minPm = a.min_motion ?? NaN; ($("#ct-min") as HTMLInputElement).value = isFinite(minPm) ? String(minPm) : ""; }
       if (a.max_motion !== undefined) { maxPm = a.max_motion ?? NaN; ($("#ct-max") as HTMLInputElement).value = isFinite(maxPm) ? String(maxPm) : ""; }
@@ -232,7 +237,7 @@ export function mountCatalogue(host: HTMLElement, ctx: CatCtx) {
       if (a.sort && COLS.some((x) => x.k === a.sort)) { sortKey = a.sort as keyof Cols; sortDir = a.descending === false ? 1 : -1; }
       if (a.view === "rpm" || a.view === "sky") view = a.view;
       apply();
-      if (a.select) { const i = C.id.indexOf(a.select); if (i >= 0) { sel = i; if (!rows.includes(i)) { filter = "all"; apply(true); } else { page = Math.floor(rows.indexOf(i) / PAGE); render(); } } }
+      if (a.select) { const i = C.id.indexOf(a.select); if (i >= 0) { sel = i; if (!rows.includes(i)) { filter = "all"; props.clear(); apply(true); } else { page = Math.floor(rows.indexOf(i) / PAGE); render(); } } }
       if (a.open && sel >= 0) ($("#ct-open") as HTMLElement | null)?.click();
       return `${filter === "changes" ? changes.length : rows.length} rows match`;
     },

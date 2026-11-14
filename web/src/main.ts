@@ -719,7 +719,7 @@ function closeAbout() { if (!$("#about").classList.contains("open")) return; $("
 async function renderAbout() {
   await loadBasics();
   const check: [string, string][] = [
-    ["Enter RA and Dec, get a series of images “like a little video”", "The <b>Lab</b> takes coordinates in any common notation, or a name. <b>Evolution</b> shows one deep image per SPHEREx visit on a time bar you steer (drag, step from date to date, choose the speed); <b>Exposures</b> shows every single 2-minute exposure, in time or wavelength order."],
+    ["Enter RA and Dec, get a series of images “like a little video”", "The <b>Lab</b> takes coordinates in any common notation, or a name. <b>Evolution</b> shows one deep image per SPHEREx visit on a time bar you steer (drag, step from date to date, choose the speed), preceded by the pictures NASA's WISE (2010) and 2MASS (~1999) took of the same field, so that 27 years pass in a few seconds and a moving object walks across the frame; <b>Exposures</b> shows every single 2-minute exposure, in time or wavelength order."],
     ["Make moving objects easy to spot", "The <b>Motion detector</b> measures every source of the field and lists the ones that moved, with their significance and whether Gaia knows them; their dated positions since 1999 are drawn on the image. <b>Follow target</b>, Gaia positions at each date and <b>Difference</b> are there for the eye."],
     ["Test on Barnard's Star, ε Indi B, WISE 0855, RW Aur, R Dra", "One click each on the Lab's start screen; results in the tables below. Typing the challenge's 2010 coordinates for WISE 0855 is recognised and followed to where it is now."],
     ["Easy to update with new data releases", "Pixels are never copied: the browser reads them from NASA's archive. Only a small index of exposure footprints is hosted, rebuilt from IRSA's inventory by one script in about a minute; the Lab shows the date of the newest exposure indexed, and saved cases are flagged when newer data exists."],
@@ -744,19 +744,20 @@ async function renderAbout() {
       <li><b>Register.</b> Using each exposure's astrometric solution (tangent projection with distortion terms), every frame is resampled north-up onto the same sky grid; the wavelength each pixel saw comes from the filter map of its detector.</li>
       <li><b>One deep image per visit.</b> A visit's exposures are combined with outlier rejection. A position does not depend on wavelength, so all six detectors add up, reaching sources too faint for a single exposure.</li>
       <li><b>Detect and tie to Gaia.</b> Sources above 5σ are located at every visit. The Gaia stars of the same field, moved to each date with their own motion and parallax, fix the reference frame visit by visit and measure how good the positions are at each brightness.</li>
-      <li><b>Compare with the past.</b> Each source is matched to AllWISE (2010) and 2MASS (~1999); a counterpart more than 3″ away must also match in brightness. A straight line through all dated positions gives the motion over 15–27 years; brightness is compared on the field's own zero point.</li>
-      <li><b>Judge carefully.</b> “Moved” needs 5σ against the scatter with which Gaia stars are recovered in that same field. Saturated, blended and edge sources are listed but not judged; a star whose position disagrees with its Gaia motion is flagged as contaminated, not moving.</li>
+      <li><b>Compare with the past.</b> Each source is matched to AllWISE (2010) and 2MASS (~1999); a counterpart more than 3″ away must also match in brightness. A straight line through all dated positions gives the motion over 15–27 years; brightness is compared on the field's own zero point. The time bar shows the pictures those two NASA surveys took of the same field (WISE at 4.6 µm, 2MASS at 2.2 µm, read from NASA's infrared archive), so a mover can be seen as well as measured; the numbers always come from the catalogues, not from those pictures.</li>
+      <li><b>Judge carefully.</b> “Moved” needs 5σ against the scatter with which Gaia stars are recovered in that same field, and at least three dated positions (two always lie on a line). Saturated, blended and edge sources are listed but not judged, with two stated exceptions: a saturated star whose motion, measured on the wings of its image, confirms Gaia's, and your own target when it is tracked with a published motion. A star whose position disagrees with its Gaia motion is flagged as contaminated, not moving.</li>
     </ol>
 
     <div class="eyebrow sec">How well it works</div>
     <div class="tablewrap"><table><thead><tr><th>Field</th><th>MIRA, SPHEREx + 2010 + 1999 (″/yr)</th><th>Reference (″/yr)</th></tr></thead><tbody>
-      <tr><td>ε Indi B</td><td class="m">+3.991, −2.496 ± 0.015</td><td class="m">+3.982, −2.467 (Gaia DR3)</td></tr>
-      <tr><td>Luhman 16 <small>no Gaia motion; linked to its 2010 and 1999 positions</small></td><td class="m">−2.758, +0.364 ± 0.013</td><td class="m">−2.75, +0.36 (literature)</td></tr>
-      <tr><td>Barnard's Star <small>saturated: from the image wings</small></td><td class="m">−0.809, +10.432 ± 0.034</td><td class="m">−0.802, +10.362 (Gaia DR3)</td></tr>
-      <tr><td>Survey candidate 6661-325678 <small>not in Gaia</small></td><td class="m">−0.335, −0.006 ± 0.041 (8σ)</td><td class="m">−0.357, +0.022 (CatWISE2020)</td></tr>
+      <tr><td>ε Indi B</td><td class="m">+3.986, −2.486 ± 0.019</td><td class="m">+3.982, −2.467 (Gaia DR3)</td></tr>
+      <tr><td>Luhman 16 <small>no Gaia motion; linked to its 2010 and 1999 positions</small></td><td class="m">−2.759, +0.362 ± 0.019</td><td class="m">−2.75, +0.36 (literature)</td></tr>
+      <tr><td>Barnard's Star <small>saturated: measured on the wings of its image; confirms Gaia</small></td><td class="m">−0.797, +10.432 ± 0.047</td><td class="m">−0.802, +10.362 (Gaia DR3)</td></tr>
+      <tr><td>WISE 0855−0714 <small>tracked with its published motion; today it shares a pixel with a star</small></td><td class="m">−8.17, +0.75 ± 0.05</td><td class="m">−8.12, +0.67 (Kirkpatrick et al. 2021)</td></tr>
+      <tr><td>Survey candidate 6661-325678 <small>not in Gaia</small></td><td class="m">−0.352, −0.016 ± 0.048 (7.3σ)</td><td class="m">−0.357, +0.022 (CatWISE2020)</td></tr>
       <tr><td>Empty high-latitude field, 40 sources</td><td class="m">nothing flagged</td><td class="m">—</td></tr></tbody></table></div>
     <div id="valdet"></div>
-    <p class="note">Same code as the Lab, run with <span class="mono">npx tsx scripts/test_detect.mts</span>. In a typical field the motions of Gaia stars are recovered to 0.01–0.02″ per year; that figure is measured in every field and shown under the detector's table.</p>
+    <p class="note">Same code as the Lab, run with <span class="mono">npx tsx scripts/test_detect.mts</span>. In a typical field the motions of Gaia stars are recovered to 0.01–0.02″ per year; that figure is measured in every field and shown under the detector's table. Why a blind pass: the detector uses Gaia to predict where a known star was in 2010 and 1999 and to reject a motion that contradicts Gaia, so testing it on Gaia stars with Gaia switched on would flatter it. In the blind pass the stars under test are removed from the Gaia list before the detector runs, which is the situation of an object Gaia does not list. Sources the detector flags that have no Gaia motion were not checked one by one: some are real, some may be galaxies whose centre shifts with wavelength.</p>
     <div class="eyebrow sec">SPHEREx exposures alone · the five challenge targets</div>
     <div class="tablewrap" id="valtable"><p class="note">Loading the validation run…</p></div>
     <p class="note">Engine checks against Astropy on the same NASA file: pixel positions agree to 0.004 px, resampled pixel values to 0.005%, and decoded flag masks bit for bit. Reproduce with <span class="mono">npx tsx scripts/validate_blink.mts</span>.</p>
@@ -805,7 +806,7 @@ async function renderAbout() {
   }).catch(() => {});
   fetch(`${import.meta.env.BASE_URL}data/verified/detector_validation.json`).then((r) => (r.ok && !(r.headers.get("content-type") ?? "").includes("html") ? r.json() : null)).then((v) => {
     const el = document.getElementById("valdet"); if (!el || !v) return;
-    el.innerHTML = `<div class="tablewrap"><table><thead><tr><th>Control run on ${v.fields} fields</th><th>Result</th></tr></thead><tbody>${(v.rows as [string, string][]).map(([a, b]) => `<tr><td>${a}</td><td class="m">${b}</td></tr>`).join("")}</tbody></table></div>`;
+    el.innerHTML = `<div class="tablewrap"><table><thead><tr><th>Control run on ${v.fields} fields, same code as the Lab</th><th>Result</th></tr></thead><tbody>${(v.rows as [string, string][]).map(([a, b]) => `<tr><td>${a}</td><td class="m">${b}</td></tr>`).join("")}</tbody></table></div>`;
   }).catch(() => {});
   $("#about").classList.add("open"); document.body.classList.add("about-on"); $("#aboutbtn").classList.add("on"); $("#about").scrollTop = 0; $("#aclose").onclick = closeAbout;
   fetch(`${import.meta.env.BASE_URL}validation.json`).then((r) => (r.ok ? r.json() : null)).then((v) => {

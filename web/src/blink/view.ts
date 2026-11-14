@@ -12,6 +12,7 @@ import {
 import { PLX_SYS } from "./measure";
 import { analyzeFrames, answerMove, answerChange, answerMade, plxError, type Analysis, type Answer } from "./answers";
 import { levels, shiftImage, robustStack, asinhT } from "./imaging";
+import { SURVEYS, pastImage, type PastKey } from "./hips";
 import { gaia, allwise, twomass, catPos, magToMjy, angSep, BANDS, CHALLENGE, parseCoords, resolveName, knownMoverNear, type CatSource } from "./catalogs";
 import { drawSpectrum, drawLightCurve, drawMotion, drawHistory, drawTrack, drawLimits, detColor, lamColor, type HistPoint } from "./plots";
 import { detectChanges, type FieldReport, type ChangeRow } from "./detect";
@@ -47,14 +48,16 @@ const EXPLAIN: Record<Mode, string> = {
 const MAGMA = [[0, 0, 4], [28, 16, 68], [79, 18, 123], [129, 37, 129], [181, 54, 122], [229, 80, 100], [251, 135, 97], [254, 194, 135], [252, 253, 191]];
 const esc = (s: string) => s.replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]!));
 const yearToMjd = (y: number) => 51544.5 + (y - 2000) * 365.25;
-const median = (a: number[]) => { if (!a.length) return NaN; const s = [...a].sort((x, y) => x - y); return s[s.length >> 1]; };
+const median = (a: number[]) => { const s = a.filter(Number.isFinite).sort((x, y) => x - y); return s.length ? s[s.length >> 1] : NaN; };
 const fmtPm = (v: number) => `${v >= 0 ? "+" : "−"}${Math.abs(v).toFixed(Math.abs(v) < 1 ? 3 : 2)}`;
 const fmtBig = (v: number) => (v >= 1e6 ? `${(v / 1e6).toFixed(v >= 1e7 ? 0 : 1)} million` : v >= 1000 ? `${Math.round(v / 100) * 100}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",") : v >= 10 ? v.toFixed(0) : v.toFixed(1));
 
 // ---- fields already read are kept in this browser (IndexedDB), so reopening one is instant and needs no network.
 //      The ten most recent are kept; a cached field is used only while the exposure index has not changed.
 const FDB = "mira-fields", FSTORE = "fields", FLIST = "mira.fields.v1";
-const fdb = () => new Promise<IDBDatabase>((res, rej) => { const r = indexedDB.open(FDB, 1); r.onupgradeneeded = () => r.result.createObjectStore(FSTORE, { keyPath: "key" }); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+let fdbOpen: Promise<IDBDatabase> | null = null;   // one connection for the page, opened at first use
+const fdb = () => (fdbOpen ??= new Promise<IDBDatabase>((res, rej) => { const r = indexedDB.open(FDB, 1); r.onupgradeneeded = () => r.result.createObjectStore(FSTORE, { keyPath: "key" });
+  r.onsuccess = () => { r.result.onclose = r.result.onversionchange = () => { r.result.close(); fdbOpen = null; }; res(r.result); }; r.onerror = () => { fdbOpen = null; rej(r.error); }; }));
 async function fieldGet(key: string): Promise<any | null> {
   try { const db = await fdb(); return await new Promise((res) => { const q = db.transaction(FSTORE).objectStore(FSTORE).get(key); q.onsuccess = () => res(q.result ?? null); q.onerror = () => res(null); }); } catch { return null; }
 }
@@ -100,7 +103,7 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
       </header>
       <section class="bk-main">
         <div class="bk-viewbar"><div class="seg" id="bk-views" role="tablist" aria-label="How to show the exposures">${VIEWS.map((v, k) => `<button role="tab" data-v="${v.k}" title="${v.tip} (key ${k + 1})">${v.t}</button>`).join("")}</div>
-          <div class="seg" id="bk-range" title="How far back the time bar reaches. Before 2025 there is no SPHEREx image: the picture stays on the first visit and the markers show the positions catalogued at that date">
+          <div class="seg" id="bk-range" title="How far back the time bar reaches. SPHEREx began in 2025; further back the Lab shows the pictures two earlier NASA surveys took of the same field: WISE at 4.6 µm (2010) and 2MASS at 2.2 µm (about 1999). Positions and brightness of those dates are taken from their catalogues">
             <button data-r="sx">SPHEREx visits</button><button data-r="2010">since 2010</button><button data-r="1999">since 1999</button></div></div>
         <div class="bk-stage" id="bk-stage">
           <canvas id="bk-cv" aria-label="SPHEREx frames of this position"></canvas>
@@ -163,8 +166,12 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
   function saveField(my: number) {
     if (my !== gen || building || !frames.length || fromCache) return;
     fieldPut({ key: fieldKey(), saved: Date.now(), index: meta?.last ?? "", frames, plan, center, failed, flagDefs: FLAG_DEFS, catState: cat.state, gaia: cat.gaia, wise: cat.wise, tm: cat.tm,
+      past: pastState === "done" ? { tm: past.tm?.img ?? null, wise: past.wise?.img ?? null } : null,
       masks: masksAll ? frames.map((f) => { const m = maskCache.get(f); return m && m !== "loading" ? m : null; }) : null });
   }
+  // pictures of the field from two earlier NASA surveys (2MASS ~1999, WISE 2010), read in the background once the field is in
+  type PastImg = { key: PastKey; name: string; band: string; img: Float32Array; disp: Float32Array; pct: number };
+  let past: Partial<Record<PastKey, PastImg | null>> = {}, pastState: "idle" | "loading" | "done" = "idle";
   let probe: Probe = { dx: 0, dy: 0, follow: true }, logSpec = false;
   let tab: Tab = "changes", order: "time" | "lambda" = "time", explain = (() => { try { return localStorage.getItem("mira.explain") === "1"; } catch { return false; } })();
   const excluded = new Set<string>();                    // exposures the user has unticked: left out of pictures and measurements
@@ -185,14 +192,14 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
     opened = true; target = { ...t }; probe = { dx: 0, dy: 0, follow: true };
     N = o.size && SIZES.includes(o.size) ? o.size : N; maxFrames = o.frames ?? maxFrames;
     dets = new Set([1, 2, 3, 4, 5, 6]); view.track = false; mode = o.mode ?? "evolve"; order = "time";
-    tab = o.tab ?? "changes"; excluded.clear(); evo.range = "sx"; evo.rate = 0.5;
+    tab = o.tab ?? "changes"; excluded.clear(); evo.range = "1999"; evo.rate = 5;
     if (t.key === "wise-0855") dets = new Set([5, 6]);   // only visible at 4–5 µm
     start();
   }
   async function start() {
     ac?.abort(); ac = new AbortController(); const my = ++gen;
     frames = []; items = []; itemsKey = ""; imgCache.clear(); lockCache.clear(); maskCache.clear(); shiftCache = new WeakMap(); analysis = null; plan = null; failed = 0; errorMsg = "";
-    idx = 0; building = true; playing = false; cancelAnimationFrame(evo.raf); report = null; reportKey = ""; masksDone = 0; masksAll = false; vsKey = ""; cat.gaia = []; cat.wise = []; cat.tm = []; cat.state = "idle"; center = [target.ra, target.dec];
+    idx = 0; building = true; playing = false; cancelAnimationFrame(evo.raf); report = null; reportKey = ""; masksDone = 0; masksAll = false; vsKey = ""; past = {}; pastState = "idle"; cat.gaia = []; cat.wise = []; cat.tm = []; cat.state = "idle"; center = [target.ra, target.dec];
     syncControls(); renderTarget(); renderReadouts(); renderPanel(); renderData(); paint(); setLoad("Finding the SPHEREx exposures that cover this place…", 0);
     pushState(); fromCache = 0;
     meta = await indexMeta().catch(() => null); if (my !== gen) return; renderData();
@@ -202,9 +209,9 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
       frames = hit.frames; plan = hit.plan; center = hit.center; failed = hit.failed ?? 0; building = false; fromCache = hit.saved;
       cat.gaia = hit.gaia ?? []; cat.wise = hit.wise ?? []; cat.tm = hit.tm ?? []; cat.state = cat.gaia.length || cat.wise.length ? "ok" : "idle";
       if (hit.masks) { frames.forEach((f, k) => maskCache.set(f, hit.masks[k])); masksAll = true; masksDone = frames.length; }
-      setLoad("", 1); const V0 = visitStacks(); if (V0.length) evo.t = V0[0].yr;
+      setLoad("", 1); const V0 = visitStacks(); if (V0.length) evo.t = V0[V0.length - 1].yr;
       renderTarget(); refresh(); analyze(); runDetect();
-      if (cat.state !== "ok") loadCatalogs(my); if (!masksAll) loadAllMasks(my);
+      if (cat.state !== "ok") loadCatalogs(my); if (!masksAll) loadAllMasks(my); loadPast(my, hit.past);
       return;
     }
     try {
@@ -220,12 +227,23 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
       frames = b.frames; failed = b.failed; building = false; setLoad("", 1);
       if (!frames.length) errorMsg = b.covered ? "The exposures that cover this place could not be read just now. NASA's archive may be busy — try again in a moment."
         : b.listed ? "SPHEREx has not observed this exact position yet in the indexed releases (it falls in a gap between detector footprints)." : "No SPHEREx exposures are indexed for this part of the sky yet.";
-      const V = visitStacks(); if (V.length) evo.t = V[0].yr;
-      refresh(); analyze(); runDetect(); loadAllMasks(my);
+      const V = visitStacks(); if (V.length) evo.t = V[V.length - 1].yr;
+      refresh(); analyze(); runDetect(); loadAllMasks(my); loadPast(my);
     } catch (e) {
       if ((e as Error).name === "AbortError" || my !== gen) return;
       building = false; errorMsg = `Could not read the exposures: ${(e as Error).message}.`; setLoad("", 1); refresh(); renderReadouts(); renderPanel();
     }
+  }
+  /** the 1999 and 2010 pictures of this field, from NASA's archive (or from this browser's copy of the field) */
+  async function loadPast(my: number, saved?: Partial<Record<PastKey, Float32Array | null>> | null) {
+    if (pastState !== "idle" || !frames.length) return; pastState = "loading";
+    await Promise.all(SURVEYS.map(async (sv) => {
+      const img = saved ? saved[sv.key] ?? null : await pastImage(sv, center[0], center[1], N, ac?.signal).catch(() => null);
+      if (my !== gen) return;
+      past[sv.key] = img && img.length === N * N ? { key: sv.key, name: sv.name, band: sv.band, img, disp: new Float32Array(0), pct: NaN } : null;
+      if (mode === "evolve") { paint(); syncControls(); }
+    }));
+    if (my !== gen) return; pastState = "done"; if (mode === "evolve") { paint(); syncControls(); } if (masksAll && cat.state !== "loading") saveField(my);
   }
   function loadCatalogs(my: number) {
     cat.state = "loading"; const r = (N * PIX_ARCSEC) / 2 * 1.45, [ra, dec] = center, pm = Math.hypot(target.pmra ?? 0, target.pmdec ?? 0);
@@ -275,18 +293,34 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
       return { yr: mjdToYear(L.reduce((q, f) => q + f.mjd, 0) / L.length), img, disp, n: L.length, d0: L[0].mjd, d1: L[L.length - 1].mjd }; });
     vsKey = key; return vsList;
   }
-  /** the two visits around the clock and how far between them it stands (eased, so each real picture rests a moment) */
-  function evoAt(): { a: VS; b: VS; f: number; i: number } | null {
-    const V = visitStacks(); if (!V.length) return null;
+  /** every dated picture of the field within the reach of the time bar: the SPHEREx visits and, further back, the
+   *  WISE (2010) and 2MASS (~1999) pictures */
+  type EI = { yr: number; img: Float32Array; disp: Float32Array; kind: "sx" | "wise" | "tm"; vs?: VS; past?: PastImg };
+  const tmYear = () => selRow()?.tm?.epoch ?? (cat.tm.length ? median(cat.tm.map((q) => q.epoch)) : 1999.5);
+  function pastDisp(p: PastImg) {
+    if (p.pct !== view.pct || p.disp.length !== p.img.length) { const [lo, hi] = levels(p.img, view.pct); p.disp = new Float32Array(p.img.length); p.pct = view.pct;
+      for (let k = 0; k < p.disp.length; k++) p.disp[k] = Number.isFinite(p.img[k]) ? asinhT(p.img[k], lo, hi) : NaN; }
+    return p.disp;
+  }
+  function evoImages(): EI[] {
+    const out: EI[] = visitStacks().map((v) => ({ yr: v.yr, img: v.img, disp: v.disp, kind: "sx" as const, vs: v }));
+    if (!out.length) return out;
+    if (evo.range !== "sx" && past.wise) out.push({ yr: 2010.5, img: past.wise.img, disp: pastDisp(past.wise), kind: "wise", past: past.wise });
+    if (evo.range === "1999" && past.tm) out.push({ yr: tmYear(), img: past.tm.img, disp: pastDisp(past.tm), kind: "tm", past: past.tm });
+    return out.sort((p, q) => p.yr - q.yr);
+  }
+  /** the two pictures around the clock and how far between them it stands (eased, so each real picture rests a moment) */
+  function evoAt(): { a: EI; b: EI; f: number; i: number } | null {
+    const V = evoImages(); if (!V.length) return null;
     if (evo.t <= V[0].yr) return { a: V[0], b: V[0], f: 0, i: 0 };
     for (let i = 0; i < V.length - 1; i++) if (evo.t <= V[i + 1].yr) { const u = (evo.t - V[i].yr) / (V[i + 1].yr - V[i].yr); return { a: V[i], b: V[i + 1], f: u * u * (3 - 2 * u), i }; }
     return { a: V[V.length - 1], b: V[V.length - 1], f: 0, i: V.length - 1 };
   }
-  function evoSpan(): [number, number] { const V = visitStacks(), a = V[0]?.yr ?? 2025.3, b = V[V.length - 1]?.yr ?? 2026.8; return evo.range === "sx" ? [a - 0.06, b + 0.06] : [evo.range === "2010" ? 2009.6 : 1997.6, b + 0.3]; }
+  function evoSpan(): [number, number] { const V = visitStacks(), a = V[0]?.yr ?? 2025.3, b = V[V.length - 1]?.yr ?? 2026.8; return evo.range === "sx" ? [a - 0.06, b + 0.06] : [evo.range === "2010" ? 2010.1 : Math.min(tmYear(), 2001.5) - 0.4, b + 0.3]; }
   /** the dates that carry data: SPHEREx visits, and the catalogue epochs when the bar reaches back to them */
   function evoStops(): { yr: number; kind: "sx" | "wise" | "tm"; n?: number }[] {
     const out: { yr: number; kind: "sx" | "wise" | "tm"; n?: number }[] = visitStacks().map((v) => ({ yr: v.yr, kind: "sx" as const, n: v.n }));
-    if (evo.range !== "sx") out.push({ yr: 2010.5, kind: "wise" }); if (evo.range === "1999") out.push({ yr: selRow()?.tm?.epoch ?? 1999.5, kind: "tm" });
+    if (evo.range !== "sx") out.push({ yr: 2010.5, kind: "wise" }); if (evo.range === "1999") out.push({ yr: tmYear(), kind: "tm" });
     return out.sort((p, q) => p.yr - q.yr);
   }
   const shifted = (f: Frame) => { if (!view.track) return f.img; let s = shiftCache.get(f); if (!s) { s = shiftImage(f.img, N, f.tx - c(), f.ty - c()); shiftCache.set(f, s); } return s; };
@@ -339,7 +373,7 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
         if (u >= 0) { d[k * 4] = 255 * q; d[k * 4 + 1] = 160 * q; d[k * 4 + 2] = 50 * q; } else { d[k * 4] = 40 * q; d[k * 4 + 1] = 150 * q; d[k * 4 + 2] = 255 * q; }
         d[k * 4 + 3] = 255; }
     } else if (it.key === "evo") {
-      const e = evoAt(), A = e?.a.disp, B = e?.b.disp, f = e?.f ?? 0, dim = e && evo.t < e.a.yr - 0.05 ? 0.55 : 1;     // before the first SPHEREx picture: dimmed
+      const e = evoAt(), A = e?.a.disp, B = e?.b.disp, f = e?.f ?? 0, dim = e && evo.t < e.a.yr - 0.05 ? 0.55 : 1;     // before the earliest picture there is: dimmed
       for (let k = 0; k < N * N; k++) { const va = A ? A[k] : NaN, vb = B ? B[k] : NaN, v = Number.isFinite(va) && Number.isFinite(vb) ? va + (vb - va) * f : Number.isFinite(va) ? va : vb;
         if (!Number.isFinite(v)) { d[k * 4] = 22; d[k * 4 + 1] = 22; d[k * 4 + 2] = 28; d[k * 4 + 3] = 255; continue; }
         const [r, g, b] = tone(v * dim); d[k * 4] = r; d[k * 4 + 1] = g; d[k * 4 + 2] = b; d[k * 4 + 3] = 255; }
@@ -431,8 +465,11 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
     } else if (it.key === "evo") {
       const e = evoAt(), V = visitStacks(), when = new Date((yearToMjd(evo.t) - 40587) * 86400000).toLocaleDateString("en-GB", { month: "short", year: "numeric", timeZone: "UTC" });
       const on = e && Math.abs(evo.t - (e.f < 0.5 ? e.a : e.b).yr) < 0.012 ? (e.f < 0.5 ? e.a : e.b) : null;
-      const what = !e ? "" : evo.t < V[0].yr - 0.05 ? `no SPHEREx picture exists for this date: the first visit (${mjdToDate(V[0].d0).slice(0, 7)}) is shown dimmed · markers at their ${evo.t.toFixed(0)} positions`
-        : on ? `SPHEREx visit ${V.indexOf(on) + 1} of ${V.length} · ${on.n} exposures combined · ${mjdToDate(on.d0)} → ${mjdToDate(on.d1)}` : `between visit ${e.i + 1} and ${e.i + 2} · blend ${Math.round(e.f * 100)}%`;
+      const nm = (q: EI) => (q.kind === "sx" ? `SPHEREx visit ${V.indexOf(q.vs!) + 1}` : q.kind === "wise" ? "WISE 2010" : `2MASS ${q.yr.toFixed(1)}`);
+      const what = !e ? "" : evo.t < e.a.yr - 0.05 ? `${pastState === "loading" && evo.range !== "sx" ? "reading the earlier pictures from NASA's archive… meanwhile " : "no picture of this date: "}${nm(e.a)} is shown dimmed · markers at their ${evo.t.toFixed(0)} positions`
+        : on ? (on.kind === "sx" ? `SPHEREx visit ${V.indexOf(on.vs!) + 1} of ${V.length} · ${on.vs!.n} exposures combined, 0.75–5 µm · ${mjdToDate(on.vs!.d0)} → ${mjdToDate(on.vs!.d1)}`
+          : on.kind === "wise" ? "NASA WISE picture of this field, 4.6 µm, 2010–11 · another wavelength: compare positions, not brightness" : `2MASS picture of this field, 2.2 µm, ${on.yr.toFixed(1)} · another wavelength: compare positions, not brightness`)
+        : `between ${nm(e.a)} and ${nm(e.b)} · blend ${Math.round(e.f * 100)}%`;
       h.innerHTML = `<b>${when} <small>${evo.t.toFixed(2)}</small></b><span>${what}</span>`; fl.innerHTML = "";
     } else {
       const L = it.list!, t0 = Math.min(...L.map((f) => f.mjd)), t1 = Math.max(...L.map((f) => f.mjd)), lams = L.map((f) => f.lam);
@@ -511,14 +548,18 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
   // ------------------------------------------------------------ motion detector: every source of the field, measured
   function runDetect() {
     if (building || frames.length < 4) return;
-    const used = live().filter((f) => dets.has(f.det)), key = `${used.length}|${detsKey()}|${cat.state}|${cat.gaia.length}|${cat.wise.length}|${cat.tm.length}|${masksAll ? 1 : 0}`;
+    const used = live().filter((f) => dets.has(f.det)), which = used.reduce((h, f) => (h * 31 + frames.indexOf(f)) >>> 0, 7);
+    const key = `${used.length}|${which}|${detsKey()}|${cat.state}|${cat.gaia.length}|${cat.wise.length}|${cat.tm.length}|${masksAll ? 1 : 0}`;
     if (key === reportKey) return; reportKey = key;
     const mid = used[used.length >> 1]; if (!mid) { report = null; return; }
     const masks = masksAll ? used.map((f) => { const m = maskCache.get(f); return m && m !== "loading" ? m : null; }) : undefined;
     detecting = true;
-    try { report = detectChanges(used, N, center, { gaia: cat.gaia.length ? cat.gaia : null, wise: cat.wise.length ? cat.wise : null, tm: cat.tm.length ? cat.tm : null }, targetXY(mid.mjd), masks); } catch { report = null; }
+    try { report = detectChanges(used, N, center, { gaia: cat.gaia.length ? cat.gaia : null, wise: cat.wise.length ? cat.wise : null, tm: cat.tm.length ? cat.tm : null }, targetXY(mid.mjd), masks, hasPm() ? { pmra: target.pmra!, pmdec: target.pmdec! } : null); } catch { report = null; }
     detecting = false; renderReadouts(); renderPanel(); paint();
   }
+  /** after the visitor changes which exposures or detectors are in use: measure the field again, once they stop clicking */
+  let detectTimer = 0;
+  function detectSoon() { clearTimeout(detectTimer); detectTimer = window.setTimeout(runDetect, 350); }
   /** NASA's per-pixel flags for every exposure, so that flagged measurements of any source in the field can be set aside */
   async function loadAllMasks(my: number) {
     const q = frames.filter((f) => maskCache.get(f) === undefined); let k = 0;
@@ -540,7 +581,7 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
   /** one word and one phrase on what happened to a source */
   function verdict(r: ChangeRow): { chip: string; cls: string; text: string } {
     const m = r.pm, d = [r.dW2, r.dW1].find((x) => x && Math.abs(x.z) >= 5 && Math.abs(Math.log(x.ratio)) > 0.26) ?? null;
-    if (r.tags.includes("MOVED") && m) return { chip: "moved", cls: "pos", text: `${m.tot.toFixed(m.tot < 1 ? 2 : 1)}″ per year toward ${dirOf(m.ra, m.dec)}` };
+    if (r.tags.includes("MOVED") && m) return { chip: "moved", cls: "pos", text: `${m.tot.toFixed(m.tot < 1 ? 2 : 1)}″ per year toward ${dirOf(m.ra, m.dec)}${r.tags.includes("SATURATED") ? " · saturated: measured on the wings of its image, agrees with Gaia" : r.tracked ? ` · ${r.why}` : ""}` };
     if (r.tags.includes("BRIGHTER") && d) return { chip: "brighter", cls: "warn", text: `${d.ratio.toFixed(1)}× its ${d.year.toFixed(0)} brightness` };
     if (r.tags.includes("FAINTER") && d) return { chip: "fainter", cls: "warn", text: `${Math.round((1 - d.ratio) * 100)}% fainter than in ${d.year.toFixed(0)}` };
     if (r.tags.includes("NEW")) return { chip: "new", cls: "pos", text: "nothing here in the 2010 and 1999 surveys" };
@@ -704,7 +745,7 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
         ${res.length ? tbl(["", "μα cos δ (″/yr)", "μδ (″/yr)", "parallax (″)"], res, "num") : ""}
         ${m ? `<h3 class="bk-h sec">Every SPHEREx exposure${m.withParallax ? ": motion and parallax" : ""}</h3>${A.motionFlagged ? `<div class="bk-warn">Every exposure is flagged (saturated): centres come from the wings of the image. Indicative only.</div>` : ""}<div class="bk-plot-host" id="bk-sx"></div>
         <div class="bk-bar2"><span class="mono">${m.n} of ${m.pts.length} centroids used · rms ${m.rms.toFixed(2)}″</span><span><button class="link" id="bk-csv">CSV</button></span></div>` : `<p class="bk-cap show">A fit to single exposures needs the source above 8σ in six or more clean exposures over two visits (here: ${A.P.length} exposures, ${A.nFlagged} flagged). The visit-by-visit positions above do not need that.</p>`}
-        <p class="bk-cap">Top: one position per SPHEREx visit (centroid on that visit's deep image, tied to Gaia with the field's reference stars) and the catalogue positions of 2010 and ~1999; straight-line fit with its 1σ band. Bottom: Gaussian-windowed centroid in every clean exposure; least-squares fit of position, proper motion${m?.withParallax ? " and parallax" : ""} with outlier rejection. A SPHEREx pixel is 6.15″.${m?.withParallax ? ` The parallax error includes ${PLX_SYS}″ systematic.` : ""}</p>`;
+        <p class="bk-cap">Top: one position per SPHEREx visit (centroid on that visit's deep image, tied to Gaia with the field's reference stars) and the catalogue positions of 2010 and ~1999; straight-line fit with its 1σ band. Bottom: Gaussian-windowed centroid in every clean exposure; least-squares fit of position, proper motion${m?.withParallax ? " and parallax" : ""} with outlier rejection. The two fits answer different questions: the first row of the table (15 to 27 years of baseline, tied to Gaia) is the motion; the fit to SPHEREx exposures alone covers little more than a year, is not tied to Gaia visit by visit, and is there for the parallax, so its motion can differ. A SPHEREx pixel is 6.15″.${m?.withParallax ? ` The parallax error includes ${PLX_SYS}″ systematic.` : ""}</p>`;
       const th = el.querySelector("#bk-track") as HTMLElement | null;
       if (th && r) drawTrack(th, r.epochs.map((q) => ({ yr: q.yr, xi: q.xi, eta: q.eta, err: q.err, src: q.src })), r.pm, refPm);
       const sh = el.querySelector("#bk-sx") as HTMLElement | null;
@@ -728,7 +769,10 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
     const calib = [R.catalogs.gaia ? `Reference frame: ${plural(R.cal.nRef, "Gaia star")}${R.cal.astroRms ? `, ${R.cal.astroRms.toFixed(2)}″ scatter per visit` : ""}` : "Gaia not reachable: positions are uncalibrated",
       R.cal.pmRms ? `motions of Gaia stars recovered to ${R.cal.pmRms.toFixed(3)}″/yr` : "", R.catalogs.wise ? "" : "AllWISE not reachable: no 2010 comparison",
       masksAll ? "NASA's pixel flags applied" : `reading NASA's pixel flags (${masksDone}/${frames.length})`].filter(Boolean).join(" · ");
-    const mo = (r: ChangeRow) => { const m = r.pm; if (!m || !(m.base > 5 || r.track)) return "–"; const e = Math.hypot(m.etot, R.cal.pmRms ?? 0.03); return `${m.tot.toFixed(m.tot < 1 ? 3 : 2)} <small>± ${e.toFixed(3)}</small>`; };
+    // a number is shown only where it means something: a source that could be judged, or a motion that was confirmed
+    const judged = (r: ChangeRow) => r.tags.includes("MOVED") || !r.tags.some((t) => t === "SATURATED" || t === "BLENDED" || t === "EDGE") || (r.tags.includes("SATURATED") && !!r.gaia && r.gaia.plx !== null && !!r.pm && r.pm.base > 5);
+    const mo = (r: ChangeRow) => { const m = r.pm; if (!m || !(m.base > 5 || r.track)) return "–"; if (!judged(r)) return `<span class="dim" title="Not measured: this source is blended, saturated or at the edge of the field">–</span>`;
+      const e = Math.hypot(m.etot, R.cal.pmRms ?? 0.03); return `${m.tot.toFixed(m.tot < 1 ? 3 : 2)} <small>± ${e.toFixed(3)}</small>`; };
     const br = (r: ChangeRow) => { const d = r.dW2 ?? r.dW1; return d ? `${d.ratio.toFixed(2)}× <small>${d.band === "W2" ? "4.6" : "3.4"} µm</small>` : "–"; };
     el.innerHTML = `<h3 class="bk-h">What moved or changed in this field</h3><p class="bk-reading">${lead}</p>
       <div class="bk-tw tall"><table class="bk-table rows" id="bk-ctab"><thead><tr><th title="The number of the box on the image">#</th><th>what happened · which object</th><th title="Measured from the SPHEREx visits and the 2010 / ~1999 catalogue positions">motion (″/yr)</th><th title="The proper motion ESA's Gaia catalogue gives for the same star">Gaia (″/yr)</th><th title="Brightness today divided by the 2010 AllWISE brightness in the same band, on this field's zero point">now ÷ 2010</th></tr></thead><tbody>
@@ -736,7 +780,7 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
         <td class="res"><em class="tag ${v.cls}">${v.chip}</em> <span class="vt">${esc(v.text)}</span><small>${esc(identity(r))}${r.isTarget ? " · your target" : ""}${r.linked ? " · linked to its 2010 position" : ""}</small></td><td class="num">${mo(r)}</td><td class="num">${g === null ? "–" : g.toFixed(3)}</td><td class="num">${br(r)}</td></tr>`; }).join("")}
       ${R.gone.map((q) => `<tr class="dim"><td>–</td><td class="res"><em class="tag warn">gone?</em> <span class="vt">in the 2010 survey, not seen today</span><small>${esc(q.wise.id)}</small></td><td class="num">–</td><td class="num">–</td><td class="num">–</td></tr>`).join("")}</tbody></table></div>
       <div class="bk-bar2"><span class="mono">${calib}</span><span><button class="link" id="bk-csv">CSV</button></span></div>
-      <p class="bk-cap">Sources above 5σ on the combined exposures; one position per visit, tied to Gaia by the field's own stars; counterparts in AllWISE (2010) and 2MASS (~1999); a straight-line fit through all dates. “Moved” needs 5σ against the scatter with which Gaia stars are recovered in this same field. Saturated, blended and edge sources are listed but not judged. Click a row, or a box on the image, to point the other instruments at that source.</p>`;
+      <p class="bk-cap">Sources above 5σ on the combined exposures; one position per visit, tied to Gaia by the field's own stars; counterparts in AllWISE (2010) and 2MASS (~1999); a straight-line fit through all dates. “Moved” needs 5σ against the scatter with which Gaia stars are recovered in this same field. Saturated, blended and edge sources are listed but not judged. “New” means no counterpart in Gaia, AllWISE (2010) or 2MASS (~1999) for a source bright enough to have been in them; “gone?” means a bright 2010 source with nothing at its place today: both are statements about catalogues, not about objects appearing or vanishing. The 90 brightest sources are measured; a source must stay within 9″ of its mean position between visits (faster ones are picked up as single-visit tracks). Click a row, or a box on the image, to point the other instruments at that source.</p>`;
     el.querySelectorAll<HTMLTableRowElement>("#bk-ctab tbody tr[data-n]").forEach((tr) => (tr.onclick = () => { const q = R.rows.find((x) => x.n === +tr.dataset.n!); if (q) selectRow(q); }));
     (el.querySelector("#bk-csv") as HTMLElement).onclick = () => csv("field_changes", ["n", "ra_deg", "dec_deg", "result", "pm_ra_arcsec_yr", "pm_dec_arcsec_yr", "pm_err", "pm_sigma", "baseline_yr", "gaia_pm_ra", "gaia_pm_dec", "ratio_W1", "z_W1", "ratio_W2", "z_W2", "snr", "identity", "tags"],
       R.rows.map((r) => [r.n, r.ra.toFixed(6), r.dec.toFixed(6), verdict(r).chip, r.pm?.ra.toFixed(4) ?? "", r.pm?.dec.toFixed(4) ?? "", r.pm ? Math.hypot(r.pm.etot, R.cal.pmRms ?? 0.03).toFixed(4) : "", r.pm?.sig.toFixed(1) ?? "", r.pm?.base.toFixed(1) ?? "",
@@ -765,7 +809,7 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
       ${frames.map((f, k) => { const fl = flagNames(f.flags, true); return `<tr data-k="${k}" class="${f === cur ? "cur" : ""}${excluded.has(f.exp.id) ? " off" : ""}"><td><input type="checkbox" ${excluded.has(f.exp.id) ? "" : "checked"} aria-label="Use this exposure"></td><td>${esc(f.dateObs.slice(0, 16).replace("T", " "))}</td>
         <td><i class="sw" style="background:${detColor(f.det)}"></i>${f.det}</td><td>${f.lam.toFixed(3)}</td><td class="${f.flags > 0 && f.flags & bad ? "bad" : ""}">${f.flags < 0 ? "?" : fl.length ? fl.join(" ") : "–"}</td><td>${f.noise.toFixed(3)}</td><td><a href="${f.exp.url}" target="_blank" rel="noopener" title="Download this exposure from NASA's archive (FITS, 65 MB)">FITS</a></td></tr>`; }).join("")}</tbody></table></div>
       <p class="bk-cap">Flags are NASA's, read from each exposure's FLAGS extension within 1.5 px of the target (SOURCE and FULLSAMPLE are informational and not listed). Noise: robust pixel scatter in MJy/sr after removing the sky background. Click a row to open that exposure; “NASA flags” above the image paints its full mask.</p>`;
-    const again = () => { imgCache.clear(); itemsKey = ""; refresh(); analyze(); renderFrames($("#bk-panel")); };
+    const again = () => { imgCache.clear(); itemsKey = ""; refresh(); analyze(); renderFrames($("#bk-panel")); detectSoon(); };
     el.querySelectorAll<HTMLTableRowElement>("#bk-ftab tbody tr").forEach((tr) => { const f = frames[+tr.dataset.k!];
       tr.onclick = (e) => { if ((e.target as HTMLElement).tagName === "INPUT" || (e.target as HTMLElement).tagName === "A") return; seekFrame(+tr.dataset.k!); };
       (tr.querySelector("input") as HTMLInputElement).onchange = (e) => { if ((e.target as HTMLInputElement).checked) excluded.delete(f.exp.id); else excluded.add(f.exp.id); again(); }; });
@@ -781,7 +825,7 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
     const url = shareUrl(), iframe = `<iframe src="${shareUrl(true)}" width="960" height="680" style="border:0" loading="lazy" allowfullscreen></iframe>`, used = live();
     el.innerHTML = `<div class="eyebrow">Data</div>
       <div class="bk-actions"><button class="btn sm" id="bk-fits" title="The registered frames as a FITS cube with WCS, plus a table of the exposures">Registered cube (FITS)</button><button class="btn sm ghost" data-x="spectrum">Spectrum</button><button class="btn sm ghost" data-x="light">Light curve</button>
-        <button class="btn sm ghost" data-x="motion">Astrometry</button><button class="btn sm ghost" data-x="sources">Sources</button><button class="btn sm ghost" data-x="frames">Exposures</button></div>
+        <button class="btn sm ghost" data-x="motion">Astrometry</button><button class="btn sm ghost" data-x="changes" title="The Motion detector's table: every measured source of the field">Field sources</button><button class="btn sm ghost" data-x="frames">Exposures</button></div>
       <p class="bk-cap show">CSV tables carry their units in the column names; the FITS cube is in MJy/sr, north up, ${N} × ${N} px at 6.15″, one plane per exposure in use (${used.length}).</p>
       <div class="eyebrow sec">Pictures</div><div class="bk-actions"><button class="btn sm ghost" id="bk-png">This frame (PNG)</button><button class="btn sm ghost" id="bk-webm">Movie (WebM)</button></div>
       <div class="eyebrow sec">Link to this observation</div><div class="bk-copy"><input readonly value="${esc(url)}" id="bk-url"><button class="btn sm" data-copy="bk-url">Copy</button></div>
@@ -869,7 +913,7 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
   host.querySelectorAll<HTMLButtonElement>("#bk-n button").forEach((b) => (b.onclick = () => { if (+b.dataset.n! !== maxFrames) { maxFrames = +b.dataset.n!; if (opened) start(); else syncControls(); } }));
   host.querySelectorAll<HTMLButtonElement>("#bk-dets button").forEach((b) => (b.onclick = (e) => { const d = +b.dataset.d!;
     if ((e as MouseEvent).shiftKey || (e as MouseEvent).altKey) dets = new Set([d]); else if (dets.has(d)) { if (dets.size > 1) dets.delete(d); } else dets.add(d);
-    idx = 0; refresh(); analyze(); }));
+    idx = 0; refresh(); analyze(); detectSoon(); }));
   host.querySelectorAll<HTMLButtonElement>("#bk-toggles button[data-v], #bk-pic button[data-v]").forEach((b) => (b.onclick = () => toggle(b.dataset.v!)));
   function toggle(k: string) {
     if (k === "lock") lock[mode] = !lock[mode]; else (view as any)[k] = !(view as any)[k];
@@ -883,7 +927,7 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
   $("#bk-help").onclick = () => { explain = !explain; try { localStorage.setItem("mira.explain", explain ? "1" : "0"); } catch { /* private mode */ } syncControls(); };
   const sv = host.querySelector<HTMLButtonElement>("#bk-save");
   if (sv) sv.onclick = () => { if (!frames.length) return; opts.onSave?.(snapshot()); sv.textContent = "Saved ✓"; setTimeout(() => (sv.textContent = "Save as a case"), 1800); };
-  const togglePlay = () => { playing = !playing; if (playing && mode === "evolve") { const [a, z] = evoSpan(); if (evo.t >= z - 1e-3) evo.t = a; evo.hold = 0; } syncControls(); tick(); };
+  const togglePlay = () => { playing = !playing; if (playing && mode === "evolve") { const [a, z] = evoSpan(), last = Math.max(a, ...evoStops().map((q) => q.yr)); if (evo.t >= Math.min(z, last) - 1e-3) evo.t = a; evo.hold = 0; } syncControls(); tick(); };
   $("#bk-play").onclick = togglePlay;
   $("#bk-prev").onclick = () => seek(idx - 1); $("#bk-next").onclick = () => seek(idx + 1);
   const scrub = (e: PointerEvent) => { const r = strip.getBoundingClientRect(), n = items.length;

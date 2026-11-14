@@ -94,7 +94,7 @@ python census/verify_merge.py --dir <dir with verified_raw.parquet, gaia_hpm_uni
 npx tsx scripts/candidates_report.mts                              # the candidates through the Lab's own detector
 ```
 
-On 14 Nov 2026 the full run (202,548 objects, 30 exposures each) took about 50 minutes on three 128-core nodes, at
+On 14 Nov 2026 the full run (202,528 objects, 30 exposures each) took about 50 minutes on three 128-core nodes, at
 up to 60 objects per second; it is limited by the network, not by computing.
 
 ## Checking that it still works
