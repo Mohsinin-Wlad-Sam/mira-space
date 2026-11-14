@@ -1,3 +1,5 @@
+<p align="center"><img src="web/public/brand/mira-emblem.png" width="160" alt="Mira logo"></p>
+
 # Mira — the infrared sky has moved
 
 **NASA Space Apps Challenge 2026 · "Planet X and SPHEREx"** · team *assrar-dawla*

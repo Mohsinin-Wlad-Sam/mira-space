@@ -8,20 +8,8 @@ import './Header.css'
 export function Wordmark() {
   return (
     <span className="wordmark" aria-label="Mira">
-      <svg className="wordmark__mark" viewBox="0 0 32 32" aria-hidden="true">
-        <ellipse
-          cx="16"
-          cy="16"
-          rx="13"
-          ry="5.2"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.5"
-          transform="rotate(-20 16 16)"
-        />
-        <circle cx="16" cy="16" r="3.4" fill="currentColor" />
-        <circle cx="27.6" cy="11.3" r="1.7" fill="currentColor" />
-      </svg>
+      {/* Transparent PNG (black keyed out), so it sits on any photo. */}
+      <img className="wordmark__mark" src="/brand/mira-mark.png" width={59} height={32} alt="" />
       <span className="wordmark__text" aria-hidden="true">
         MIRA
       </span>

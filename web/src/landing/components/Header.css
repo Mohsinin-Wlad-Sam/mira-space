@@ -47,8 +47,9 @@
 }
 
 .wordmark__mark {
-  width: 26px;
-  height: 26px;
+  width: auto;
+  height: 32px;
+  flex: none;
 }
 
 .wordmark__text {
