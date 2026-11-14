@@ -1,0 +1,10 @@
+.playwright-mcp/
+__pycache__/
+*.pyc
+.DS_Store
+*.fits
+bundles/cache/
+.env
+web/public/data/
+web/node_modules/
+web/dist/

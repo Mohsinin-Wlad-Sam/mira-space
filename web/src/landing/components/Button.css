@@ -1,0 +1,40 @@
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  height: var(--btn-h);
+  padding: 0 20px;
+  border: 0.8px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-button-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-decoration: none;
+  white-space: nowrap;
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  transition:
+    background-color 0.25s ease,
+    color 0.25s ease,
+    border-color 0.25s ease;
+}
+
+.btn:hover,
+.btn:focus-visible {
+  background: var(--color-text);
+  border-color: var(--color-text);
+  color: #000;
+}
+
+.btn__arrow {
+  flex: none;
+  transition: transform 0.25s var(--ease-out);
+}
+
+.btn:hover .btn__arrow {
+  transform: translateX(3px);
+}
