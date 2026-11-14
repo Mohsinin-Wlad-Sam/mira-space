@@ -253,7 +253,7 @@ export const features: Feature[] = [
     eyebrow: 'The atlas',
     title: 'Sixteen years of change',
     body:
-      'Behind the tool is a census: 43 billion WISE detections from 2010–2020 linked into objects, each measured ' +
+      'Behind the tool is a census: 40 billion WISE detections from 2010–2020 linked into objects, each measured ' +
       'again by SPHEREx. Light up what moved, what vanished and what is made of methane across the whole sky, ' +
       'fly among them in 3D, then blink any one of them.',
     cta: { label: 'Open the sky atlas', href: viewer.atlas },

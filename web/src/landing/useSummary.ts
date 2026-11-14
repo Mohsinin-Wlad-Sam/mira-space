@@ -49,4 +49,4 @@ export function useSummary(): CensusSummary | null {
 }
 
 export const tilesLabel = (s: CensusSummary): string =>
-  `${s.tiles_done.toLocaleString()} / ${s.tiles_total.toLocaleString()} tiles`
+  s.tiles_done >= s.tiles_total - 5 ? 'whole-sky census complete' : `census: ${s.tiles_done.toLocaleString()} / ${s.tiles_total.toLocaleString()} sky tiles`

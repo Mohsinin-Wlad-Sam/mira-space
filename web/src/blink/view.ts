@@ -295,7 +295,8 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
         for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) if (m[j * N + i] & bad) ctx.fillRect((i + ox) * s, (j + oy) * s, s, s); }
     }
     if (view.wise) { ctx.strokeStyle = "rgba(255,186,92,.95)";
-      for (const w of cat.wise) { const [ra, dec] = catPos(w, year), [x, y] = P(...skyToStamp(center[0], center[1], N, ra, dec)); if (!inside(x, y)) continue;
+      let shownW = 0;
+      for (const w of cat.wise) { const [ra, dec] = catPos(w, year), [x, y] = P(...skyToStamp(center[0], center[1], N, ra, dec)); if (!inside(x, y) || ++shownW > 90) continue;
         const r = 6 * u; ctx.beginPath(); ctx.moveTo(x, y - r); ctx.lineTo(x + r, y); ctx.lineTo(x, y + r); ctx.lineTo(x - r, y); ctx.closePath(); ctx.stroke(); } }
     if (view.gaia) { ctx.strokeStyle = "rgba(120,220,255,.95)"; ctx.fillStyle = "rgba(120,220,255,.95)";
       let shown = 0;
@@ -346,9 +347,9 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
         if (it.f.flags > 0 && it.f.flags & bad) { g.fillStyle = "#ff5d6c"; g.globalAlpha = 0.95; g.fillRect(x - 1.5 * dpr, 9 * dpr, 3 * dpr, 3 * dpr); }
         g.globalAlpha = 1;
         const newVisit = mode === "time" && (k === 0 || items[k - 1].f!.visit !== it.f.visit);
-        if (newVisit && x - lastLabel > 62 * dpr) { g.fillStyle = "rgba(240,240,250,.7)"; g.fillText(mjdToDate(it.f.mjd).slice(0, 7), Math.min(x, w - 50 * dpr), h - 3 * dpr); lastLabel = x; g.fillStyle = "rgba(240,240,250,.25)"; g.fillRect(x - 3 * dpr, 6 * dpr, dpr, 26 * dpr); }
+        if (newVisit && x - lastLabel > 78 * dpr) { g.fillStyle = "rgba(240,240,250,.7)"; g.fillText(mjdToDate(it.f.mjd).slice(0, 7), Math.min(x, w - 50 * dpr), h - 3 * dpr); lastLabel = x; g.fillStyle = "rgba(240,240,250,.25)"; g.fillRect(x - 3 * dpr, 6 * dpr, dpr, 26 * dpr); }
       } else { g.fillStyle = cur ? "#fff" : "rgba(240,240,250,.45)"; g.fillRect(x - 3 * dpr, (cur ? 8 : 12) * dpr, 6 * dpr, (cur ? 24 : 16) * dpr);
-        g.fillStyle = "rgba(240,240,250,.7)"; const t = it.key.includes("all") ? "all visits" : mjdToDate(it.mjd).slice(0, 7), tw = g.measureText(t).width; g.fillText(t, Math.max(0, Math.min(x - tw / 2, w - tw)), h - 3 * dpr); }
+        g.fillStyle = "rgba(240,240,250,.7)"; const t = it.key.includes("all") ? "all" : mjdToDate(it.mjd).slice(2, 7), tw = g.measureText(t).width; g.fillText(t, Math.max(0, Math.min(x - tw / 2, w - tw)), h - 3 * dpr); }
       if (cur) { g.fillStyle = "#fff"; g.fillRect(x - dpr, 2 * dpr, 2 * dpr, 4 * dpr); }
     });
     if (mode === "lambda" && n > 1) { g.fillStyle = "rgba(240,240,250,.7)"; g.fillText(`${items[0].f!.lam.toFixed(2)} µm`, pad, h - 3 * dpr); const t = `${items[n - 1].f!.lam.toFixed(2)} µm`; g.fillText(t, w - pad - g.measureText(t).width, h - 3 * dpr); }
@@ -563,11 +564,11 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
   function pushState() { opts.onState?.(stateParams()); }
 
   // ------------------------------------------------------------ search
-  async function go(q: string) {
+  async function go(q: string, size?: number) {
     q = q.trim(); if (!q) return;
     const norm = (s: string) => s.toLowerCase().replace(/\bepsilon\b/g, "eps").replace(/[^a-z0-9]/g, "");
     const ch = CHALLENGE.find((t) => norm(t.name) === norm(q) || (norm(q).length > 4 && norm(t.name).includes(norm(q))) || t.key === q);
-    if (ch) return open({ ...ch }, { size: ch.fov, frames: ch.frames ?? Math.min(maxFrames, 72), tab: ch.tab });
+    if (ch) return open({ ...ch }, { size: size ?? ch.fov, frames: ch.frames ?? Math.min(maxFrames, 72), tab: ch.tab });
     const xy = parseCoords(q);
     if (xy) {
       // a typed position may be where a fast-moving neighbour WAS (catalogue epochs differ): check before reading frames
@@ -649,7 +650,7 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
     openFromParams(p: URLSearchParams): boolean {
       const ra = parseFloat(p.get("ra") ?? ""), dec = parseFloat(p.get("dec") ?? ""), name = p.get("name") ?? undefined;
       const fov = parseFloat(p.get("fov") ?? ""), size = isFinite(fov) ? SIZES.reduce((b, s) => (Math.abs((s * PIX_ARCSEC) / 60 - fov) < Math.abs((b * PIX_ARCSEC) / 60 - fov) ? s : b), 32) : undefined;
-      if (!isFinite(ra) || !isFinite(dec)) { const t = p.get("target") ?? name; if (t) { if (size) N = size; go(t); return true; } return false; }
+      if (!isFinite(ra) || !isFinite(dec)) { const t = p.get("target") ?? name; if (t) { if (size) N = size; go(t, size); return true; } return false; }
       const ch = name ? CHALLENGE.find((t) => t.name === name) : undefined;
       const pmra = parseFloat(p.get("pmra") ?? ""), pmdec = parseFloat(p.get("pmdec") ?? "");
       open(ch ? { ...ch } : { ra, dec, name, pmra: isFinite(pmra) ? pmra : undefined, pmdec: isFinite(pmdec) ? pmdec : undefined, epoch: parseFloat(p.get("epoch") ?? "") || undefined }, { size, frames: ch?.frames, tab: ch?.tab });

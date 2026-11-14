@@ -8,7 +8,7 @@ Type a position on the sky. Mira finds every NASA SPHEREx exposure that covers i
 NASA's public archive, lines them up on the sky and plays them as a movie — then measures the spectrum, the light
 curve and the motion of anything you click. No server, no sign-up: it all happens in the browser.
 
-Behind the tool is a 16-year census: 43 billion WISE/NEOWISE detections (2010–2020) linked into moving objects and
+Behind the tool is a 16-year census: 40 billion WISE/NEOWISE detections (2010–2020) linked into moving objects and
 measured again in SPHEREx's 102-colour all-sky map, browsable as an atlas and in 3D.
 
 *Mira was called **SKYLENS** during development; older docs, HPC paths (`~/skylens`) and some identifiers keep that name.*
@@ -30,8 +30,8 @@ From `web/scripts/validate_blink.mts`, run of 14 Nov 2026 (index through 5 Oct 2
 
 | Target | Measured by Mira from SPHEREx alone | Reference |
 |---|---|---|
-| Barnard's Star | saturated in 121 of 121 exposures (OVERFLOW flag shown); motion from the image wings −2.7 ± 0.4, +10.2 ± 0.4 ″/yr (indicative); halo brightness steady to 8% | −0.80, +10.36 ″/yr (Gaia DR3) |
-| ε Indi B | motion +4.10 ± 0.17, −2.58 ± 0.17 ″/yr; parallax 0.36 ± 0.12″; 82% fainter at 3.3 µm than at 4.0 µm (methane); steady | +3.98, −2.47 ″/yr; 0.271″ |
+| Barnard's Star | saturated in 121 of 121 exposures (OVERFLOW flag shown); motion from the image wings −2.5 ± 0.4, +10.2 ± 0.4 ″/yr (indicative); halo brightness steady to 8% | −0.80, +10.36 ″/yr (Gaia DR3) |
+| ε Indi B | motion +4.11 ± 0.17, −2.57 ± 0.17 ″/yr; parallax 0.36 ± 0.12″; 82% fainter at 3.3 µm than at 4.0 µm (methane); steady | +3.98, −2.47 ″/yr; 0.271″ |
 | WISE 0855−0714 | seen only at 3.8–5 µm: 0.57 mJy at 4.6 µm; motion −8.4 ± 0.8, +2.7 ± 0.8 ″/yr from 7 exposures; its 2010 coordinates are recognised and followed | 0.57 mJy (WISE W2); −8.12, +0.67 ″/yr |
 | RW Aurigae | saturated; halo photometry: 1.9× brighter at 3.8–4.4 µm in Sep 2025 than in Sep 2026 | T Tauri star with dimming events |
 | R Draconis | saturated; halo photometry: 10× brighter at 0.75–1.1 µm in Sep 2026 than in Sep 2025, 1.2× at 2.4–3.9 µm | Mira variable, 246 d |

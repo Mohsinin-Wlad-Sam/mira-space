@@ -1,46 +1,99 @@
 # 10 · Submission draft (project page, 7 slides, 30-second video)
 
-Numbers marked ⟨…⟩ are filled from the final census export before submission.
+Updated 14 Nov 2026 for the rebuilt product. Numbers come from `web/public/validation.json` (engine validation run)
+and `web/public/data/summary.json` (census); re-run `npx tsx web/scripts/validate_blink.mts` before submitting if the
+index has been refreshed.
 
 ## Project page fields
 
-**Project name:** SKYLENS — The infrared sky has moved
+**Project name:** MIRA — Watch the sky move
 
-**High-level summary (≈150 words):**
-In 1930 Pluto was found by blinking two photographs of the same sky. SKYLENS does it for the whole infrared sky, sixteen years apart. We linked ⟨43 billion⟩ NASA WISE detections (2010–2020) into ⟨N⟩ moving objects and measured every one again in NASA SPHEREx's 102-colour all-sky map (2025–26). The result is a public, map-first web app: blink the whole sky between 2010 and 2025, switch on lenses that light up what moved, what vanished, what is made of methane, or what our AI cannot explain, and open the evidence for any object — every individual SPHEREx exposure in a wavelength-aware flipbook, its 102-colour spectrum, its 16-year light curve and its spectral twins. Our blind census recovers the Sun's fastest neighbours (Barnard's Star, WISE 0855, Lacaille 9352, ε Indi A/B) and confirms each with SPHEREx at its predicted 2025 position. It runs as static files and needs no servers.
+**High-level summary (≈150 words)**
+Pluto was found by blinking two photographs of the same sky. MIRA lets anyone do that with NASA's SPHEREx. Type a
+position or a name: in about fifteen seconds your browser finds every SPHEREx exposure that covers it, reads just
+those pixels from NASA's public archive, lines the frames up on the sky and plays them as a movie. Because each
+SPHEREx exposure sees a different wavelength, MIRA also turns the same frames into a spectrum, a light curve and a
+measured motion for anything you click, with NASA's quality flags on every frame. There is no server and no sign-up,
+so it costs almost nothing to run and stays current with each data release. Behind it sits a census linking 40 billion
+WISE detections (2010–2020) to SPHEREx, shown as an all-sky atlas, a 3D map and a lab of experiments — from
+"Could SPHEREx see Planet X?" to vetting brown-dwarf candidates no catalogue knows.
 
 **Link to project / demo:** ⟨hosted URL⟩ · repo: github.com/Mohsinin-Wlad-Sam/assrar-dawla
 
-**Project details — what it does, how it works, benefits, tools:**
-1. *The problem.* SPHEREx sees every source at a different wavelength in each exposure (linear variable filters), so naïvely blinking it makes constant stars flicker; and one year of SPHEREx is too short to see most stars move.
-2. *The idea.* Join SPHEREx to WISE: 16 years of baseline, two independent missions, 102 colours.
-3. *How.* For each of 12,288 sky tiles we stream the unWISE time-domain catalog (16 epochs) and the SPHEREx DR1 102-channel cube from NASA's public cloud into memory, link detections across epochs into moving objects (fast-mover trajectory search), propagate each object to the SPHEREx epoch and measure it in 102 channels with deblended forced photometry. Quality gates: isolation, saturation, per-tile calibration (SPHEREx/WISE scatter ≈7%), empirical error scaling. Per-object products: flipbooks from byte-range reads of individual L2 exposures, light curves along the moving track, and a GPU-trained autoencoder fingerprint for spectral twins and anomalies.
-4. *Benefits.* Discovery without coordinates for anyone (students to Backyard Worlds volunteers); professional-grade evidence for every candidate; continues WISE's motion science past the end of NEOWISE; free to host.
-5. *Tools.* Python (numpy, scipy, astropy, astropy-healpix, pyarrow, PyTorch), TypeScript (Vite, Aladin Lite v3, uPlot), MBZUAI GPU cluster (CPU census, 1 GPU for AI).
+**Project details**
 
-**NASA data:** SPHEREx DR1 spectral images (L2) and all-sky 102-channel cube (IRSA); NEOWISE/WISE via the unWISE time-domain catalog (IRSA); AllWISE W2 HiPS (IRSA).
+1. *The problem.* SPHEREx re-images the sky every six months in 102 infrared bands; nobody can look at it all.
+   Existing blink tools stop at WISE; existing SPHEREx tools are built for experts and show one product at a time.
+   And SPHEREx is hard to blink: it rolls between visits, and every exposure sees a different colour, so a constant
+   star flickers.
+2. *What we built.* **Blink**: RA/Dec or a name in, a sky-registered movie out. Five ways to play it — in time order,
+   in wavelength order, as deep stacks per visit (shift-and-add when following a known mover), as a colour composite
+   of the six detectors, and as differences between visits. Gaia DR3 and AllWISE overlays at each frame's date.
+   Field of view and number of exposures are the user's choice, with the download size stated. Every view is a URL
+   and can be embedded.
+3. *How it works.* A small index built from IRSA's inventory (1.6 million exposures) tells the browser which files
+   cover a position. For each, two HTTP Range requests fetch the FITS header and only the detector rows needed
+   (≈0.4 MB of a 65 MB file) from `s3://nasa-irsa-spherex`. The frames are resampled north-up using each exposure's
+   TAN-SIP astrometry; the wavelength at each pixel comes from the linear-variable-filter map; the Rice-compressed
+   FLAGS extension is decoded in the browser for the rows that matter.
+4. *Measurements.* PSF-weighted photometry → spectrum on the fly (with 2MASS and WISE anchors; methane detected
+   automatically). Brightness compared only between exposures of different visits at the same wavelength → light
+   curves that do not confuse colour with change. Centroids → proper motion and, for the nearest objects, parallax.
+   Stars that saturate are followed by their halo.
+5. *Validated on the five challenge targets* (same code as the browser): ε Indi B moves +4.11 ± 0.17, −2.57 ± 0.17 ″/yr
+   (Gaia: +3.98, −2.47) and is 82% fainter at 3.3 µm than at 4.0 µm (methane); WISE 0855 is seen only at 3.8–5 µm at
+   0.57 mJy (WISE: 0.57 mJy), and typing its 2010 coordinates is recognised and followed to where it is now;
+   Barnard's Star saturates in 121 of 121 exposures and is reported as such, moving +10.2 ± 0.4 ″/yr north
+   (Gaia: +10.36); R Draconis brightened 10× at 0.75–1.1 µm in a year but only 1.2× at 2.4–3.9 µm; RW Aurigae faded
+   1.9× at 4 µm. Against Astropy on the same file: positions to 0.004 pixel, flag masks bit for bit.
+6. *The census and the atlas.* 40 billion WISE detections linked into objects with motions (4.0 million reliable),
+   448 million measured again in SPHEREx's 102 colours; an AI ensemble estimates distance, temperature and kind
+   (distance error 27% on held-out Gaia stars). A selection of cold, nearby, moving or methane-bearing objects
+   recovers 125 known brown dwarfs and leaves 22 that are in no catalogue: candidates, for people to check in Blink.
+7. *Benefits.* Students and volunteers get the method that found Pluto, on the newest NASA data; researchers get a
+   15-second quick look, a batch tool for target lists, and exports; educators get a live demonstration. Limits are
+   stated next to the claims.
+8. *Tools.* TypeScript, Vite, Aladin Lite, three.js, uPlot (app); Python with Astropy, astropy-healpix, NumPy, SciPy,
+   PyArrow, PyTorch (census, index); a university GPU cluster for the one-off census.
 
-**Space agency partner data:** none required (CSA NEOSSat considered; out of scope).
+**NASA data:** SPHEREx Level-2 spectral images (NASA/IPAC IRSA, public cloud bucket) and all-sky maps (HiPS);
+WISE/NEOWISE via the unWISE time-domain catalogue and AllWISE; JPL Horizons and SBDB; DONKI; EPIC; SDO; NASA
+Exoplanet Archive; NED.
 
-**References:** see `docs/03_literature.md` (Bock+2025 SPHEREx mission 2511.02985; Akeson+2025 pipeline 2511.15823; Meisner+2023 unTimely 2209.14327; Gagné+2026 SPIFF 2604.22012; Rustamkulov+2026 2607.00543; Luhman+2024 2311.17316; Kuchner+2017 1705.02919; TractorJAX 2610.16007; Saydjari+2026 2611.12846), software (astropy, Aladin Lite, uPlot, PyTorch, pyarrow), data DOIs above.
+**Space agency partner data:** ESA Gaia DR3 (overlays, validation, 3D distances); ESA/Planck CMB map (3D view).
 
-**Use of SI (AI) tools:** see `docs/07_si_usage_log.md`.
+**Sustainability (business plan):** `docs/13_business_plan.md` — a static site with near-zero running cost; free for
+users; funded by open-science and citizen-science grants with partner institutions, then by services to
+observatories, planetariums and other surveys. No advertising, no tracking.
+
+**References:** `docs/03_literature.md`; SPHEREx Explanatory Supplement (IRSA); Astropy Collaboration (2022);
+Boch & Fernique, Aladin Lite; Gaia Collaboration (2023); Meisner et al. (2023); Cutri et al. (2013, AllWISE);
+Skrutskie et al. (2006, 2MASS); Wenger et al. (2000, SIMBAD); Brown & Batygin (2021); Kirkpatrick et al. (2021);
+CFITSIO Rice compression (Pence et al.). Photos on the landing page: Unsplash (credited in the footer).
+
+**Use of AI tools:** `docs/07_si_usage_log.md` — AI coding assistants were used for development and review; every
+scientific number shown was produced by our own code on NASA data and checked against independent references.
 
 ## 7 slides
-1. **The infrared sky has moved.** Hero image (magma SPHEREx globe) + one line + URL.
-2. **The problem.** Pluto found by blinking · SPHEREx's 102 colours make naïve blinking lie (flipbook GIF: raw vs de-flashed) · one SPHEREx year is too short for motion.
-3. **The idea: a 16-year census.** WISE 2010–2020 (43 B detections) ⇄ SPHEREx 2025–26 (102 colours). Diagram: stream → link → propagate → measure → flags.
-4. **Validated.** Table: Barnard 10.24 vs 10.36 ″/yr; WISE 0855 8.25 vs 8.15; Lacaille 9352; GJ 1; ε Indi A/B — all confirmed by SPHEREx at predicted positions. WISE 0855 449 vs 462 µJy over 16 yr.
-5. **Discover without coordinates.** Screens: lenses, blink, tour; ⟨counts⟩ movers / methane worlds / vanished / unusual.
-6. **Evidence for every object.** Dossier: flipbook (every exposure), spectrum, 16-yr light curve, AI spectral twins (ε Indi B's twins are methane dwarfs).
-7. **Impact & honesty.** For students → professionals; continues NEOWISE motion science; free static hosting; limits stated (12.9″ blends, saturation, "unexplained ≠ new"). Team + thanks.
+
+1. **Watch the sky move.** Blink start screen. One line: "Type a position; get every SPHEREx pass as a movie." URL.
+2. **The problem.** A billion sources, a new sky every six months, 102 colours. SPHEREx rolls, and every exposure is
+   a different colour: naive blinking lies.
+3. **Blink.** Screenshot of ε Indi B: movie, timeline coloured by wavelength, flags, spectrum with the methane dip.
+   "15 seconds, 0.4 MB per exposure, straight from NASA's archive. No server."
+4. **Measured, not just shown.** Three panels: spectrum with 2MASS/WISE anchors; R Draconis light curve by band;
+   ε Indi B motion + parallax (vs Gaia).
+5. **The five challenge targets.** The validation table; WISE 0855's 2010 coordinates recognised and followed.
+6. **Beyond the tool.** Atlas (16 years of change), 3D, Lab: "Could SPHEREx see Planet X?", 22 candidates to vet.
+7. **Built to last.** Static, free, embeddable, re-indexed in a minute per release; business plan in one table; limits; team.
 
 ## 30-second video (storyboard)
+
 | t | Picture | Caption / voice |
 |---|---|---|
-| 0–4 s | Black → magma SPHEREx globe zoom-out, headline | "In 1930, Pluto was found by blinking two photos of the sky." |
-| 4–9 s | Tour flies to Barnard's Star; BLINK flips 2010 ⇄ 2025, star jumps | "We blinked the entire infrared sky — sixteen years apart." |
-| 9–15 s | Lenses switch on; glowing points across the globe | "43 billion WISE detections, re-measured in SPHEREx's 102 colours." |
-| 15–22 s | Dossier: flipbook (raw → de-flashed), spectrum, light curve | "Every object comes with its evidence — every exposure, its spectrum, its history." |
-| 22–27 s | Twins grid; Unusual lens | "Our AI finds its twins — and flags what it has never seen." |
-| 27–30 s | URL + logo | "SKYLENS. The infrared sky has moved — go find something." |
+| 0–4 s | Start screen; typing "08h55m10.83s −07d14m42.5s" | "Pluto was found by blinking two photos of the sky." |
+| 4–9 s | The note "you entered where WISE 0855 was in 2010"; frames stream in | "MIRA does it with NASA's SPHEREx — for any spot, in seconds." |
+| 9–15 s | ε Indi B movie → spectral sweep; the methane dip lights up in the spectrum | "Every exposure is a different colour. Together they are a spectrum." |
+| 15–21 s | Motion tab: the track and the parallax swing; "12 light-years" | "Measure how it moves — and how far it is." |
+| 21–26 s | Atlas zoom-out, 3D fly-through, Lab "Could SPHEREx see Planet X?" | "A census of sixteen years, a lab of questions." |
+| 26–30 s | Logo + URL | "MIRA. Watch the sky move." |

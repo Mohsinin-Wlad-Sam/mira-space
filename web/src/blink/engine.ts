@@ -337,12 +337,15 @@ export async function readFrame(exp: Exposure, t: Target, o: ReadOpts): Promise<
   // isolated spikes (one pixel far above all four neighbours) are candidates for hot pixels and cosmic rays: ask NASA's
   // flags about exactly those pixels and blank the ones marked as detector defects. Unflagged spikes are left alone —
   // they may be real (an asteroid, a flare).
-  const s0 = clippedStats(sub), spikes: [number, number][] = [];
-  if (s0.sig > 0) for (let yy = 1; yy < ny - 1 && spikes.length < 60; yy++) for (let xx = 1; xx < nx - 1; xx++) {
+  // (candidates: far above the noise and sharper than their surroundings — single hot pixels first, then pairs and
+  // star cores; only what NASA flags as a defect is blanked, so real stars survive the check)
+  const s0 = clippedStats(sub), cand: [number, number, number][] = [];
+  if (s0.sig > 0) for (let yy = 1; yy < ny - 1; yy++) for (let xx = 1; xx < nx - 1; xx++) {
     const k = yy * nx + xx, v = sub[k] - s0.med; if (!(v > 12 * s0.sig)) continue;
-    const nb = Math.max(sub[k - 1], sub[k + 1], sub[k - nx], sub[k + nx]) - s0.med;
-    if (v > 5 * Math.max(nb, s0.sig)) spikes.push([xx, yy]);
+    let sum = 0; for (const q of [k - 1, k + 1, k - nx, k + nx, k - nx - 1, k - nx + 1, k + nx - 1, k + nx + 1]) sum += Number.isFinite(sub[q]) ? sub[q] - s0.med : 0;
+    const sharp = v / Math.max(sum / 8, s0.sig); if (sharp > 3) cand.push([xx, yy, sharp]);
   }
+  const spikes = cand.sort((a, b) => b[2] - a[2]).slice(0, 24).map(([xx, yy]) => [xx, yy] as [number, number]);
   const desc = await descP;
   if (desc && flagsAt) {
     try {

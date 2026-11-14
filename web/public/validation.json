@@ -1,5 +1,5 @@
 {
- "built": "2026-11-14T15:46Z",
+ "built": "2026-11-14T15:58Z",
  "stamp_px": 32,
  "max_frames": 144,
  "index": {
@@ -43,14 +43,14 @@
     "source": "Gaia DR3"
    },
    "motion": {
-    "pmra": -2.676,
-    "epmra": 0.406,
-    "pmdec": 10.216,
-    "epmdec": 0.405,
-    "plx": 0.215,
-    "eplx": 0.144,
-    "n": 32,
-    "rms": 0.52,
+    "pmra": -2.532,
+    "epmra": 0.428,
+    "pmdec": 10.237,
+    "epmdec": 0.428,
+    "plx": 0.247,
+    "eplx": 0.147,
+    "n": 31,
+    "rms": 0.51,
     "from_flagged": true
    },
    "methane_ratio": null,
@@ -94,7 +94,7 @@
     },
     {
      "det": 6,
-     "n": 21,
+     "n": 20,
      "lam": 4.79,
      "flux_mJy": null,
      "limit5_mJy": 2.66
@@ -107,10 +107,10 @@
     "band": 0,
     "amplitude": 1.08,
     "lo": "2026-05-04",
-    "hi": "2025-09-30",
+    "hi": "2026-09-22",
     "all_amplitude": 1.08
    },
-   "seconds": 19.4
+   "seconds": 19.1
   },
   {
    "key": "eps-indi-b",
@@ -131,13 +131,13 @@
     "source": "Gaia DR3"
    },
    "motion": {
-    "pmra": 4.1,
-    "epmra": 0.169,
-    "pmdec": -2.584,
-    "epmdec": 0.167,
-    "plx": 0.363,
+    "pmra": 4.107,
+    "epmra": 0.17,
+    "pmdec": -2.569,
+    "epmdec": 0.168,
+    "plx": 0.36,
     "eplx": 0.083,
-    "n": 92,
+    "n": 91,
     "rms": 0.83,
     "from_flagged": false
    },
@@ -154,8 +154,8 @@
     },
     {
      "det": 2,
-     "n": 24,
-     "lam": 1.25,
+     "n": 22,
+     "lam": 1.28,
      "flux_mJy": 21.3,
      "limit5_mJy": 0.158
     },
@@ -168,7 +168,7 @@
     },
     {
      "det": 4,
-     "n": 15,
+     "n": 14,
      "lam": 2.82,
      "flux_mJy": 8.98,
      "limit5_mJy": 0.118
@@ -182,10 +182,10 @@
     },
     {
      "det": 6,
-     "n": 20,
+     "n": 19,
      "lam": 4.66,
      "flux_mJy": 18.7,
-     "limit5_mJy": 0.441
+     "limit5_mJy": 0.424
     }
    ],
    "lightcurve": {
@@ -198,7 +198,7 @@
     "hi": "2025-10-18",
     "all_amplitude": 1.08
    },
-   "seconds": 18.2
+   "seconds": 16.9
   },
   {
    "key": "wise-0855",
@@ -231,7 +231,7 @@
    },
    "methane_ratio": 0.144,
    "f46_mJy": 0.574,
-   "w2_catwise_mJy": null,
+   "w2_catwise_mJy": 0.567,
    "detectors": [
     {
      "det": 1,
@@ -286,7 +286,7 @@
     "hi": "2026-05-03",
     "all_amplitude": 1.49
    },
-   "seconds": 14.1
+   "seconds": 13.6
   },
   {
    "key": "rw-aur",
@@ -319,7 +319,7 @@
    },
    "methane_ratio": null,
    "f46_mJy": null,
-   "w2_catwise_mJy": null,
+   "w2_catwise_mJy": 1392.484,
    "detectors": [
     {
      "det": 1,

@@ -144,7 +144,7 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<() 
     <aside class="sp-ctl" id="spctl">
       <form id="spsearch" class="sp-search"><input id="spq" list="spnames" placeholder="Find: Jupiter, Sirius, Barnard…" autocomplete="off"><datalist id="spnames"></datalist></form>
       <div class="sp-row2"><button class="btn sm" id="sptour">▶ Autopilot tour</button><button class="btn sm ghost" id="spfree" title="Free flight (F)">✈ Free flight</button></div>
-      <button class="btn sm sp-labbtn" id="splab">🧪 Open the Lab · experiments on this data</button>
+      <button class="btn sm ghost sp-labbtn" id="splab">Open the Lab · ask the sky a question</button>
       <div class="sp-live" id="splive"><div class="eyebrow"><span class="dotlive"></span>Live from NASA</div><div id="splivebody" class="mono">loading…</div></div>
       <div class="eyebrow">Go to</div><div class="sp-dest" id="spdest"></div>
       <div class="eyebrow">See with</div>
