@@ -212,9 +212,11 @@ export class SkyLayer {
     const key = color + (sel ? "*" : ""); let s = this.sprites.get(key); if (s) return s;
     s = document.createElement("canvas"); s.width = s.height = 64; const g = s.getContext("2d")!;
     const grd = g.createRadialGradient(32, 32, 0, 32, 32, 32);
-    grd.addColorStop(0, color); grd.addColorStop(0.22, color + "dd"); grd.addColorStop(0.55, color + "44"); grd.addColorStop(1, color + "00");
+    // a crisp ring with a faint glow: marks the object without hiding the sky under it
+    grd.addColorStop(0, color + "55"); grd.addColorStop(0.3, color + "33"); grd.addColorStop(0.7, color + "11"); grd.addColorStop(1, color + "00");
     g.fillStyle = grd; g.fillRect(0, 0, 64, 64);
-    g.strokeStyle = "rgba(255,255,255,.85)"; g.lineWidth = 2.2; g.beginPath(); g.arc(32, 32, 10.5, 0, 2 * Math.PI); g.stroke();
+    g.strokeStyle = color; g.lineWidth = 4.5; g.beginPath(); g.arc(32, 32, 17, 0, 2 * Math.PI); g.stroke();
+    g.fillStyle = color; g.beginPath(); g.arc(32, 32, 4.5, 0, 2 * Math.PI); g.fill();
     this.sprites.set(key, s); return s;
   }
 

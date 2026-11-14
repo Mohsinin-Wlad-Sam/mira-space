@@ -1,0 +1,19 @@
+# MIRA — static site on a small instance (tested layout: Caddy 2 on a 1 vCPU / 1 GB ARM box).
+# Usage:  SITE_ADDRESS=mira.example.org caddy run --config deploy/Caddyfile     (HTTPS certificates are automatic)
+#         SITE_ADDRESS=:8080 caddy run --config deploy/Caddyfile                 (plain HTTP for a quick test)
+{$SITE_ADDRESS::8080} {
+	root * {$MIRA_ROOT:/srv/mira}
+	encode zstd gzip
+
+	# hashed build assets never change; data feeds are refreshed by sync / re-index
+	@assets path /assets/*
+	header @assets Cache-Control "public, max-age=31536000, immutable"
+	@index path /data/sphx2/*
+	header @index Cache-Control "public, max-age=3600"
+	@data path /data/* /live/* /validation.json
+	header @data Cache-Control "public, max-age=600"
+
+	# two entry pages: the landing (/, client-side routes fall back to it) and the app (/explore/)
+	try_files {path} {path}/index.html /index.html
+	file_server
+}

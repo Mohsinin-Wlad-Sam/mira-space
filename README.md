@@ -1,90 +1,91 @@
 <p align="center"><img src="web/public/brand/mira-emblem.png" width="160" alt="Mira logo"></p>
 
-# Mira — the infrared sky has moved
+# Mira — watch the sky move
 
 **NASA Space Apps Challenge 2026 · "Planet X and SPHEREx"** · team *assrar-dawla*
 
-Mira is a public, map-first web app built on a **16-year infrared sky census**: we linked 43 billion WISE/NEOWISE detections (2010–2020) into moving objects and measured every one again in NASA SPHEREx's 102-colour all-sky map (2025–26). Anyone can blink the sky between 2010 and 2025, light up what moved, what vanished, what is made of methane, or what the AI cannot explain — and open the evidence behind every object: every individual SPHEREx exposure, its spectrum, its 16-year light curve and its spectral twins.
+Type a position on the sky. Mira finds every NASA SPHEREx exposure that covers it, reads the pixels straight from
+NASA's public archive, lines them up on the sky and plays them as a movie — then measures the spectrum, the light
+curve and the motion of anything you click. No server, no sign-up: it all happens in the browser.
 
-*Mira was called **SKYLENS** during development; older docs, HPC paths (`~/skylens`) and some code identifiers still use that name.*
+Behind the tool is a 16-year census: 43 billion WISE/NEOWISE detections (2010–2020) linked into moving objects and
+measured again in SPHEREx's 102-colour all-sky map, browsable as an atlas and in 3D.
 
-## What a visitor can do
-| Feature | What it shows | Built from |
+*Mira was called **SKYLENS** during development; older docs, HPC paths (`~/skylens`) and some identifiers keep that name.*
+
+## What it does
+
+| Part | What a visitor gets | Built from |
 |---|---|---|
-| **Blink 2010 ⇄ 2025** | the whole sky flips between WISE and SPHEREx; nearby stars jump | AllWISE W2 HiPS vs SPHEREx DR1 cube (both IRSA) |
-| **Time machine** | slide or play 2010 → 2025: markers move along their measured motions while the imagery crossfades | census motions + both HiPS surveys |
-| **Lenses** (Motion · Methane · Vanished · Brightened · Unusual) | glowing candidates anywhere on the sky | census feeds (static JSON) |
-| **Guided tour** | Barnard's Star, WISE 0855, ε Indi B, RW Aur, a vanished source | census objects |
-| **Wavelength bar** | scrub SPHEREx's 102 colours (0.75–5 µm) | SPHEREx HiPS cube slices |
-| **Honest flipbook** | every SPHEREx exposure of an object, date + per-pixel wavelength, per-visit coadds, *de-flashed* mode | precomputed byte-range cutouts of L2 images |
-| **102-colour spectrum** | molecular bands annotated | census forced photometry |
-| **16-year light curve** | WISE epochs along the moving track + SPHEREx point | unWISE time-domain catalog + census |
-| **Spectral twins** | 12 nearest AI fingerprints anywhere on the sky | GPU autoencoder over 10.4 M spectra |
-| **3D neighbourhood** | the nearest stars (< 20 pc) in 3D, moving in real time; any object can be placed among them | Gaia DR3 astrometry |
-| **View settings** | base survey (SPHEREx, AllWISE, 2MASS, DSS2), colour map, stretch, projection, grid | IRSA HiPS |
+| **Blink** (`/explore/`) | A sky-registered movie of every SPHEREx pass over any RA/Dec or name. Modes: movie, spectral sweep (frames in wavelength order), deep stack (shift-and-add when following a mover), colour (six detectors → RGB), difference. Gaia DR3 and AllWISE overlays at each frame's date. NASA's quality flags on every frame. Field of view 3.3′–13′. Link, embed, PNG / WebM / CSV export. | SPHEREx Level-2 exposures read by HTTP Range from `s3://nasa-irsa-spherex`; exposure index built from IRSA's inventory |
+| **On-the-fly measurements** | Spectrum of the target or any clicked source (PSF-weighted photometry at the wavelength each exposure saw, with 2MASS / WISE anchors and automatic methane detection); light curve from wavelength-matched pairs of exposures; proper motion and parallax fitted to centroids; halo photometry for saturated stars | the same exposures |
+| **Sky atlas** (`/explore/#atlas`) | The whole infrared sky, WISE 2010 against SPHEREx 2025, in eight wavelengths; census layers (motion, methane, vanished, brightened, unusual, new candidates); live Solar System | IRSA HiPS + census feeds |
+| **3D space** (`#space`) | Fly from the planets (JPL Horizons) through 400,000 census objects at their Gaia or AI distances out to the cosmic microwave background | census + NASA/ESA catalogues |
+| **Lab** (`#lab`) | Ten experiments that start from a question: *Could SPHEREx see Planet X?*, *How far is that star? Measure it* (live parallax fit with bootstrap), a candidate-vetting queue, a batch tool for target lists, and six on the census | engine + census |
+| **Method** (`#about`) | How it works, the challenge point by point, validation, limits | — |
 
-## Key results (validated)
-- The blind motion census recovers the Sun's nearest fast movers, each **independently confirmed by SPHEREx at its predicted 2025 position**: Barnard's Star 10.24″/yr (lit. 10.36), WISE 0855−0714 8.25″/yr (8.15), Lacaille 9352 6.90″/yr, GJ 1 5.75″/yr, ε Indi A 4.72″/yr, ε Indi B 4.71″/yr.
-- WISE 0855: WISE W2 449 µJy (2010–2020) vs SPHEREx 462 ± 31 µJy (2025) — constant over 16 years across two missions.
-- RW Aurigae: W2 varied ×3.6 across the WISE era (dust dimming).
-- Spectral twins of ε Indi B are methane-bearing brown dwarfs (8 of 10), learned without labels.
+## Validation (five challenge targets, through the same code the browser runs)
 
-## Website
-Two pages, built together by Vite:
+From `web/scripts/validate_blink.mts`, run of 14 Nov 2026 (index through 5 Oct 2026):
 
-| URL | Page | Source |
+| Target | Measured by Mira from SPHEREx alone | Reference |
 |---|---|---|
-| `/` | Landing page (React): the story, live census numbers, links into the viewer | `web/index.html`, `web/src/landing/` |
-| `/explore/` | Sky viewer (TypeScript + Aladin Lite, uPlot, three.js): everything in the table above | `web/explore/index.html`, `web/src/main.ts` and siblings |
+| Barnard's Star | saturated in 121 of 121 exposures (OVERFLOW flag shown); motion from the image wings −2.7 ± 0.4, +10.2 ± 0.4 ″/yr (indicative); halo brightness steady to 8% | −0.80, +10.36 ″/yr (Gaia DR3) |
+| ε Indi B | motion +4.10 ± 0.17, −2.58 ± 0.17 ″/yr; parallax 0.36 ± 0.12″; 82% fainter at 3.3 µm than at 4.0 µm (methane); steady | +3.98, −2.47 ″/yr; 0.271″ |
+| WISE 0855−0714 | seen only at 3.8–5 µm: 0.57 mJy at 4.6 µm; motion −8.4 ± 0.8, +2.7 ± 0.8 ″/yr from 7 exposures; its 2010 coordinates are recognised and followed | 0.57 mJy (WISE W2); −8.12, +0.67 ″/yr |
+| RW Aurigae | saturated; halo photometry: 1.9× brighter at 3.8–4.4 µm in Sep 2025 than in Sep 2026 | T Tauri star with dimming events |
+| R Draconis | saturated; halo photometry: 10× brighter at 0.75–1.1 µm in Sep 2026 than in Sep 2025, 1.2× at 2.4–3.9 µm | Mira variable, 246 d |
 
-They are separate pages on purpose: the landing's smooth scrolling and styles never touch the viewer's map. Both share one design (tokens in `web/src/landing/styles/tokens.css`, mirrored at the top of `web/src/style.css`).
+Engine checks against Astropy on the same NASA file: pixel positions to 0.004 px, resampled values to 0.005%, decoded
+flag masks bit for bit.
+
+## How Blink works
+
+1. **Index** — `census/sphx_index2.py` turns IRSA's inventory of 1.6 M exposures into one small JSON per HEALPix
+   nside-32 patch: up to 24 exposures per detector, whole-patch coverage first, spread over the visits.
+2. **Read** — per exposure, one Range request for the FITS header and one for the detector rows the field needs (~0.4 MB of a 65 MB file).
+3. **Register** — TAN-SIP astrometry (SIP inverted by iteration), bilinear resampling onto a north-up grid.
+4. **Wavelength** — the linear-variable-filter map gives the wavelength at every pixel of each detector.
+5. **Flags** — the FLAGS extension is a Rice-compressed table, one row per tile: only the rows needed are decoded
+   (`web/src/blink/rice.ts`); defects that are not sky are blanked, saturation is reported.
+6. **Measure** — `web/src/blink/measure.ts`: photometry, wavelength-matched light curves, motion + parallax.
+
+## Run it
 
 ```bash
 cd web
 npm install
-npm run dev        # http://localhost:5173/ and /explore/
+npm run dev        # http://localhost:5173/  (landing)  and  /explore/  (app)
 npm run build      # typecheck + production build -> web/dist/
-npm run preview    # serve the build
-npm run lint       # oxlint
+npx tsx scripts/validate_blink.mts     # the validation table above (needs the dev server and network)
 ```
 
-- **Editing the landing page:** all copy, links and photos (Unsplash) live in `web/src/landing/content.ts`.
-- **Viewer links:** `/explore/#tour` starts the guided tour, `/explore/#about` opens the method and validation page, `/explore/#hood` opens the 3D neighbourhood, and `/explore/#ra=<deg>&dec=<deg>&fov=<deg>` points the sky (add `&blink=1` to start blinking). Old links of the form `/#ra=…` redirect to the viewer.
-- **Sky images** stream straight from NASA/IPAC IRSA HiPS; we host none.
+Links: `/explore/?ra=<deg>&dec=<deg>&fov=<arcmin>` or `/explore/?target=<name>` open Blink on a position (add
+`&embed=1` inside an `<iframe>`); `#atlas`, `#tour`, `#space`, `#lab`, `#about` open the other sections.
 
-### Data feeds
-Both pages read static files from `/data/` (`web/public/data/` in development). Nothing is committed: `web/sync_data.sh` pulls `~/skylens/web_data/` from the HPC into `web/public/data/` (needs an open SSH ControlMaster; `--once` for a single sync). Without data the site still loads: the landing shows fixed numbers and the lenses stay empty.
-
-| File(s) | Contents | Written by |
-|---|---|---|
-| `summary.json` | census progress, headline numbers, SPHEREx channel wavelengths | `census/export_web.py` |
-| `movers.json`, `methane.json`, `vanished.json`, `brightened.json` | top candidates of each lens | `census/export_web.py` |
-| `targets.json` | the five challenge targets with their census matches | `census/export_web.py` |
-| `coverage.json` | which sky tiles are processed | `census/export_web.py` |
-| `sky/meta.json`, `sky/<lens>/top.json`, `sky/<lens>/<band>_<cell>.json` | map markers, chunked into 10° cells loaded as you pan and zoom | `census/export_web.py` |
-| `obj/<cell>.json` | dossier details (values + spectrum), grouped by HEALPix order-4 cell | `census/export_web.py` |
-| `unusual.json` | Unusual lens: highest AI anomaly scores | `census/ai_spectra.py twins` |
-| `twins/<id>.json` | spectral twins of featured objects | `census/ai_spectra.py twins` |
-| `lc/<id>.json` | 16-year light curves of featured objects | `census/lightcurves.py` |
-| `flipbook/<id>.json` + `.bin` | flipbook frames (metadata + float16 stamps) | `census/flipbook_batch.py` (`census/flipbook.py` for one object) |
-| `neighbors.json` | stars within 20 pc for the 3D view | `census/neighbors.py` (run locally; writes straight to `web/public/data/`) |
-
-### Deploying
-Any static host (planned: Cloudflare Pages). Sync the feeds into `web/public/data/` before `npm run build` so they ship in `web/dist/data/`, or upload a fresh `data/` folder next to the built site later.
+The census feeds and the exposure index live in `web/public/data/` (not in git; `web/sync_data.sh` pulls them from
+the cluster). Deployment on a small instance, and how to re-index after each SPHEREx release, are in
+[`docs/14_deployment_and_updates.md`](docs/14_deployment_and_updates.md).
 
 ## Repo map
+
 | Path | Contents |
 |---|---|
-| `web/` | the website: landing page (`src/landing/`) and sky viewer (`src/main.ts` and siblings). See [Website](#website) |
-| `census/` | pipeline: streaming readers, cross-epoch linker, SPHEREx forced photometry, tile job, launcher, exporters, flipbooks, light curves, AI |
-| `docs/09_resources_and_flagships.md` | resources, flagship features, compute plan |
-| `docs/10_submission_draft.md` | submission draft: project page fields, slide outline, video storyboard |
-| `docs/HPC_RUNBOOK.md` | how to run, monitor and finish the census on the cluster |
-| `docs/01–08` | research phase: challenge analysis, data feasibility, literature, earlier concepts, peer reviews |
-| `docs/07_si_usage_log.md` | SI (AI) tool usage statement |
+| `web/src/blink/` | the Blink engine, measurements, catalogues, plots and view |
+| `web/src/main.ts`, `sky.ts`, `space.ts`, `labapp.ts`, `labpro.ts`, … | app shell, atlas, 3D view, Lab |
+| `web/src/landing/` | landing page (React); all copy in `content.ts` |
+| `census/` | census pipeline (linker, SPHEREx forced photometry, AI, exporters) and the exposure index builders |
+| `deploy/` | Caddy / nginx / Docker configs and `update_spherex.sh` |
+| `docs/13_business_plan.md` | how Mira stays free and alive |
+| `docs/10_submission_draft.md` | submission text, slide outline |
+| `docs/07_si_usage_log.md` | statement of AI tool use |
+| `docs/01–12`, `docs/peer-review/` | research phase, design notes, reviews |
 
-## Production
-Everything heavy ran once on the MBZUAI GPU cluster. The hosted site is static files (≈20 MB app + feeds; flipbooks ≈1 MB per featured object) and reads NASA's public archive directly — no servers doing science, no GPUs.
+## Data and acknowledgements
 
-## Data & acknowledgements
-NASA SPHEREx DR1 spectral images and all-sky cube (IRSA, doi:10.26131/IRSA678, 10.26131/IRSA679) — a joint project of JPL and Caltech funded by NASA. unWISE time-domain catalog (Meisner et al. 2023, doi:10.26131/IRSA580). NASA WISE/NEOWISE. AllWISE, 2MASS and DSS2 HiPS via IRSA. Gaia DR3 (ESA). Aladin Lite (CDS).
+NASA SPHEREx Level-2 spectral images and all-sky maps (NASA/IPAC Infrared Science Archive; a joint project of JPL
+and Caltech funded by NASA). unWISE time-domain catalogue (Meisner et al. 2023). NASA WISE / NEOWISE and AllWISE.
+ESA Gaia DR3. 2MASS. SIMBAD, VizieR and Aladin Lite (CDS, Strasbourg). JPL Horizons and SBDB; NASA DONKI, EPIC, SDO;
+NASA Exoplanet Archive; NED; Planck. UltracoolSheet (Best et al.). Photos on the landing page: Unsplash (credits in the footer).
+
+Mira is a hackathon project and is not affiliated with or endorsed by NASA.

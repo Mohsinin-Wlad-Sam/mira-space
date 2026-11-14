@@ -1,0 +1,458 @@
+{
+ "built": "2026-11-14T15:46Z",
+ "stamp_px": 32,
+ "max_frames": 144,
+ "index": {
+  "v": 2,
+  "nside": 32,
+  "order": "nested",
+  "k_per_detector": 24,
+  "exposures": 1628230,
+  "entries": 1769472,
+  "whole_pixel_entries": 363826,
+  "pixels": 12288,
+  "releases": {
+   "dr1": 1179406,
+   "qr3": 448824
+  },
+  "first": "2025-04-24",
+  "last": "2026-10-05",
+  "mjd_min": 60789.750762,
+  "mjd_max": 61318.001388,
+  "built": "2026-11-14 14:44 UTC",
+  "source": "IRSA TAP spherex.plane + spherex.artifact",
+  "url": "https://nasa-irsa-spherex.s3.amazonaws.com/{rel}/level2/{week}/{ver}/{det}/level2_{week}_{seq}_{k}D{det}_spx_{ver}.fits"
+ },
+ "targets": [
+  {
+   "key": "barnard",
+   "name": "Barnard's Star",
+   "covered": 121,
+   "frames": 121,
+   "failed": 0,
+   "visits": 6,
+   "span_yr": 1.1,
+   "first": "2025-08-15",
+   "last": "2026-09-22",
+   "saturated_frames": 121,
+   "saturated": true,
+   "lit": {
+    "pmra": -0.801551,
+    "pmdec": 10.362394,
+    "plx": 0.546976,
+    "source": "Gaia DR3"
+   },
+   "motion": {
+    "pmra": -2.676,
+    "epmra": 0.406,
+    "pmdec": 10.216,
+    "epmdec": 0.405,
+    "plx": 0.215,
+    "eplx": 0.144,
+    "n": 32,
+    "rms": 0.52,
+    "from_flagged": true
+   },
+   "methane_ratio": null,
+   "f46_mJy": null,
+   "w2_catwise_mJy": 5912.761,
+   "detectors": [
+    {
+     "det": 1,
+     "n": 0,
+     "lam": null,
+     "flux_mJy": null,
+     "limit5_mJy": null
+    },
+    {
+     "det": 2,
+     "n": 0,
+     "lam": null,
+     "flux_mJy": null,
+     "limit5_mJy": null
+    },
+    {
+     "det": 3,
+     "n": 0,
+     "lam": null,
+     "flux_mJy": null,
+     "limit5_mJy": null
+    },
+    {
+     "det": 4,
+     "n": 0,
+     "lam": null,
+     "flux_mJy": null,
+     "limit5_mJy": null
+    },
+    {
+     "det": 5,
+     "n": 17,
+     "lam": 4.15,
+     "flux_mJy": null,
+     "limit5_mJy": 3.48
+    },
+    {
+     "det": 6,
+     "n": 21,
+     "lam": 4.79,
+     "flux_mJy": null,
+     "limit5_mJy": 2.66
+    }
+   ],
+   "lightcurve": {
+    "variable": false,
+    "pairs": 84,
+    "halo": true,
+    "band": 0,
+    "amplitude": 1.08,
+    "lo": "2026-05-04",
+    "hi": "2025-09-30",
+    "all_amplitude": 1.08
+   },
+   "seconds": 19.4
+  },
+  {
+   "key": "eps-indi-b",
+   "name": "Epsilon Indi B",
+   "covered": 119,
+   "frames": 119,
+   "failed": 0,
+   "visits": 5,
+   "span_yr": 1.44,
+   "first": "2025-04-25",
+   "last": "2026-10-02",
+   "saturated_frames": 0,
+   "saturated": false,
+   "lit": {
+    "pmra": 3.981977,
+    "pmdec": -2.466832,
+    "plx": 0.270658,
+    "source": "Gaia DR3"
+   },
+   "motion": {
+    "pmra": 4.1,
+    "epmra": 0.169,
+    "pmdec": -2.584,
+    "epmdec": 0.167,
+    "plx": 0.363,
+    "eplx": 0.083,
+    "n": 92,
+    "rms": 0.83,
+    "from_flagged": false
+   },
+   "methane_ratio": 0.179,
+   "f46_mJy": 18.666,
+   "w2_catwise_mJy": 27.428,
+   "detectors": [
+    {
+     "det": 1,
+     "n": 16,
+     "lam": 0.87,
+     "flux_mJy": 1.2,
+     "limit5_mJy": 0.317
+    },
+    {
+     "det": 2,
+     "n": 24,
+     "lam": 1.25,
+     "flux_mJy": 21.3,
+     "limit5_mJy": 0.158
+    },
+    {
+     "det": 3,
+     "n": 20,
+     "lam": 1.93,
+     "flux_mJy": 13.7,
+     "limit5_mJy": 0.146
+    },
+    {
+     "det": 4,
+     "n": 15,
+     "lam": 2.82,
+     "flux_mJy": 8.98,
+     "limit5_mJy": 0.118
+    },
+    {
+     "det": 5,
+     "n": 24,
+     "lam": 4,
+     "flux_mJy": 50.3,
+     "limit5_mJy": 0.245
+    },
+    {
+     "det": 6,
+     "n": 20,
+     "lam": 4.66,
+     "flux_mJy": 18.7,
+     "limit5_mJy": 0.441
+    }
+   ],
+   "lightcurve": {
+    "variable": false,
+    "pairs": 69,
+    "halo": false,
+    "band": 0,
+    "amplitude": 1.08,
+    "lo": "2026-04-28",
+    "hi": "2025-10-18",
+    "all_amplitude": 1.08
+   },
+   "seconds": 18.2
+  },
+  {
+   "key": "wise-0855",
+   "name": "WISE 0855−0714",
+   "covered": 87,
+   "frames": 87,
+   "failed": 0,
+   "visits": 4,
+   "span_yr": 1.02,
+   "first": "2025-05-05",
+   "last": "2026-05-14",
+   "saturated_frames": 0,
+   "saturated": false,
+   "lit": {
+    "pmra": -8.1237,
+    "pmdec": 0.6732,
+    "plx": 0.439,
+    "source": "Kirkpatrick+ 2021"
+   },
+   "motion": {
+    "pmra": -8.443,
+    "epmra": 0.831,
+    "pmdec": 2.656,
+    "epmdec": 0.831,
+    "plx": -0.44,
+    "eplx": 0.428,
+    "n": 7,
+    "rms": 1.02,
+    "from_flagged": false
+   },
+   "methane_ratio": 0.144,
+   "f46_mJy": 0.574,
+   "w2_catwise_mJy": null,
+   "detectors": [
+    {
+     "det": 1,
+     "n": 13,
+     "lam": 0.97,
+     "flux_mJy": 0.634,
+     "limit5_mJy": 0.154
+    },
+    {
+     "det": 2,
+     "n": 17,
+     "lam": 1.38,
+     "flux_mJy": 0.477,
+     "limit5_mJy": 0.16
+    },
+    {
+     "det": 3,
+     "n": 14,
+     "lam": 2.03,
+     "flux_mJy": 0.32,
+     "limit5_mJy": 0.159
+    },
+    {
+     "det": 4,
+     "n": 12,
+     "lam": 3.24,
+     "flux_mJy": 0.15,
+     "limit5_mJy": 0.136
+    },
+    {
+     "det": 5,
+     "n": 17,
+     "lam": 4.15,
+     "flux_mJy": 0.447,
+     "limit5_mJy": 0.282
+    },
+    {
+     "det": 6,
+     "n": 13,
+     "lam": 4.74,
+     "flux_mJy": 0.459,
+     "limit5_mJy": 0.49
+    }
+   ],
+   "lightcurve": {
+    "variable": false,
+    "pairs": 10,
+    "halo": false,
+    "band": 0,
+    "amplitude": 1.49,
+    "lo": "2025-05-06",
+    "hi": "2026-05-03",
+    "all_amplitude": 1.49
+   },
+   "seconds": 14.1
+  },
+  {
+   "key": "rw-aur",
+   "name": "RW Aurigae",
+   "covered": 100,
+   "frames": 99,
+   "failed": 0,
+   "visits": 3,
+   "span_yr": 1.04,
+   "first": "2025-09-02",
+   "last": "2026-09-16",
+   "saturated_frames": 95,
+   "saturated": true,
+   "lit": {
+    "pmra": 0.00723,
+    "pmdec": -0.02033,
+    "plx": 0.01542,
+    "source": "van Leeuwen 2007"
+   },
+   "motion": {
+    "pmra": 0.177,
+    "epmra": 0.221,
+    "pmdec": -0.151,
+    "epmdec": 0.221,
+    "plx": -0.161,
+    "eplx": 0.093,
+    "n": 95,
+    "rms": 1.2,
+    "from_flagged": true
+   },
+   "methane_ratio": null,
+   "f46_mJy": null,
+   "w2_catwise_mJy": null,
+   "detectors": [
+    {
+     "det": 1,
+     "n": 16,
+     "lam": 0.92,
+     "flux_mJy": 157,
+     "limit5_mJy": 0.464
+    },
+    {
+     "det": 2,
+     "n": 15,
+     "lam": 1.35,
+     "flux_mJy": null,
+     "limit5_mJy": 0.566
+    },
+    {
+     "det": 3,
+     "n": 17,
+     "lam": 2.02,
+     "flux_mJy": null,
+     "limit5_mJy": 0.572
+    },
+    {
+     "det": 4,
+     "n": 16,
+     "lam": 3.08,
+     "flux_mJy": null,
+     "limit5_mJy": 0.815
+    },
+    {
+     "det": 5,
+     "n": 17,
+     "lam": 4.12,
+     "flux_mJy": null,
+     "limit5_mJy": 1.09
+    },
+    {
+     "det": 6,
+     "n": 18,
+     "lam": 4.72,
+     "flux_mJy": null,
+     "limit5_mJy": 2
+    }
+   ],
+   "lightcurve": {
+    "variable": true,
+    "pairs": 44,
+    "halo": true,
+    "band": 5,
+    "amplitude": 1.92,
+    "lo": "2026-09-12",
+    "hi": "2025-09-09",
+    "all_amplitude": 1.86
+   },
+   "seconds": 14.9
+  },
+  {
+   "key": "r-dra",
+   "name": "R Draconis",
+   "covered": 125,
+   "frames": 125,
+   "failed": 0,
+   "visits": 11,
+   "span_yr": 1.27,
+   "first": "2025-06-08",
+   "last": "2026-09-15",
+   "saturated_frames": 125,
+   "saturated": true,
+   "lit": {
+    "pmra": -0.020643,
+    "pmdec": 0.006149,
+    "plx": 0.0012508999999999999,
+    "source": "Gaia DR3"
+   },
+   "motion": null,
+   "methane_ratio": null,
+   "f46_mJy": null,
+   "w2_catwise_mJy": 152542.302,
+   "detectors": [
+    {
+     "det": 1,
+     "n": 0,
+     "lam": null,
+     "flux_mJy": null,
+     "limit5_mJy": null
+    },
+    {
+     "det": 2,
+     "n": 0,
+     "lam": null,
+     "flux_mJy": null,
+     "limit5_mJy": null
+    },
+    {
+     "det": 3,
+     "n": 0,
+     "lam": null,
+     "flux_mJy": null,
+     "limit5_mJy": null
+    },
+    {
+     "det": 4,
+     "n": 0,
+     "lam": null,
+     "flux_mJy": null,
+     "limit5_mJy": null
+    },
+    {
+     "det": 5,
+     "n": 0,
+     "lam": null,
+     "flux_mJy": null,
+     "limit5_mJy": null
+    },
+    {
+     "det": 6,
+     "n": 0,
+     "lam": null,
+     "flux_mJy": null,
+     "limit5_mJy": null
+    }
+   ],
+   "lightcurve": {
+    "variable": true,
+    "pairs": 160,
+    "halo": true,
+    "band": 1,
+    "amplitude": 10.1,
+    "lo": "2025-09-09",
+    "hi": "2026-09-02",
+    "all_amplitude": 1
+   },
+   "seconds": 18.6
+  }
+ ]
+}

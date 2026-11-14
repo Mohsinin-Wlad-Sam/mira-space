@@ -7,8 +7,8 @@ import {
   build, readMask, propagate, skyToStamp, stampToSky, flagNames, badMask, indexMeta, labelVisits, mjdToDate, mjdToYear,
   DETECTORS, FLAG_DEFS, INFO_FLAGS, PIX_ARCSEC, type Frame, type Target, type IndexMeta,
 } from "./engine";
-import { spectrum, haloSeries, binSpectrum, lightCurve, fitMotion, type Phot, type LightCurve, type Motion } from "./measure";
-import { gaia, catwise, twomass, catPos, magToMjy, angSep, BANDS, CHALLENGE, parseCoords, resolveName, knownMoverNear, type CatSource } from "./catalogs";
+import { spectrum, haloSeries, binSpectrum, lightCurve, fitMotion, PLX_SYS, type Phot, type LightCurve, type Motion } from "./measure";
+import { gaia, allwise, twomass, catPos, magToMjy, angSep, BANDS, CHALLENGE, parseCoords, resolveName, knownMoverNear, type CatSource } from "./catalogs";
 import { drawSpectrum, drawLightCurve, drawMotion, detColor, lamColor } from "./plots";
 
 export type BlinkTarget = Target & { plx?: number; otype?: string; sptype?: string; source?: string; key?: string; note?: string };
@@ -96,7 +96,7 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
           <div class="bk-dets" id="bk-dets" title="Which of SPHEREx's six detectors to show (shift-click: only this one)">${DETECTORS.map((d) => `<button data-d="${d.det}" style="--c:${detColor(d.det)}" title="Detector ${d.det}: ${d.lo}–${d.hi} µm"><i></i>${d.lo.toFixed(d.lo < 1 ? 2 : 1)}–${d.hi.toFixed(1)}</button>`).join("")}</div>
           <div class="bk-toggles" id="bk-toggles">
             <button data-v="track" title="Keep the target centred: shift-and-add in Deep stack (T)">Follow target</button><button data-v="gaia" title="Gaia DR3 stars, moved to each frame's date (G)">Gaia</button>
-            <button data-v="wise" title="CatWISE2020 sources from WISE / NEOWISE 2010–2018 (W)">WISE</button><button data-v="mask" title="Paint NASA's contamination flags for this exposure (M)">Flags</button>
+            <button data-v="wise" title="AllWISE sources where NASA's WISE saw them in 2010: a mover has left its marker behind (W)">WISE 2010</button><button data-v="mask" title="Paint NASA's contamination flags for this exposure (M)">Flags</button>
             <button data-v="lock" title="One brightness scale for all frames (L)">Lock scale</button><button data-v="smooth" title="Interpolate between pixels">Smooth</button>
             <select id="bk-cmap" aria-label="Colour map"><option value="gray">Grey</option><option value="heat">Heat</option><option value="invert">Inverted</option></select>
           </div>
@@ -175,7 +175,7 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
   function loadCatalogs(my: number) {
     cat.state = "loading"; const r = (N * PIX_ARCSEC) / 2 * 1.45, [ra, dec] = center, pm = Math.hypot(target.pmra ?? 0, target.pmdec ?? 0);
     const wide = r + pm * 30;                                      // catalogue epochs reach back to 1998: include where a mover was
-    Promise.allSettled([gaia(ra, dec, r + pm * 12), catwise(ra, dec, r + pm * 12), twomass(ra, dec, wide)]).then(([g, w, t]) => {
+    Promise.allSettled([gaia(ra, dec, r + pm * 12), allwise(ra, dec, r + pm * 18), twomass(ra, dec, wide)]).then(([g, w, t]) => {
       if (my !== gen) return;
       if (g.status === "fulfilled") cat.gaia = g.value; if (w.status === "fulfilled") cat.wise = w.value; if (t.status === "fulfilled") cat.tm = t.value as TwoMass[];
       cat.state = g.status === "fulfilled" || w.status === "fulfilled" ? "ok" : "fail"; paint(); renderPanel();
@@ -373,12 +373,13 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
   // ------------------------------------------------------------ analysis (spectrum, light curve, motion of the probed source)
   function analyze() {
     if (frames.length < 3) { analysis = null; renderPanel(); return; }
-    const P = spectrum(frames, N, probe, probe.follow), over = FLAG_DEFS.find((d) => d.name === "OVERFLOW"), obit = over ? 1 << over.bit : 2;
+    const fs = dets.size === 6 ? frames : frames.filter((f) => dets.has(f.det));
+    const P = spectrum(frames, N, probe, probe.follow).filter((p) => dets.has(p.det)), over = FLAG_DEFS.find((d) => d.name === "OVERFLOW"), obit = over ? 1 << over.bit : 2;
     const nFlagged = P.filter((p) => p.flagged).length, nSat = probe.follow ? frames.filter((f) => f.flags > 0 && f.flags & obit).length : 0;
-    let motion = fitMotion(frames, N, center, probe, probe.follow), motionFlagged = false;
-    if (!motion && nFlagged > 0.5 * P.length) { motion = fitMotion(frames, N, center, probe, probe.follow, undefined, true); motionFlagged = !!motion; }
+    let motion = fitMotion(frames, N, center, probe, probe.follow, dets), motionFlagged = false;
+    if (!motion && nFlagged > 0.5 * P.length) { motion = fitMotion(frames, N, center, probe, probe.follow, dets, true); motionFlagged = !!motion; }
     // a saturated star: its core is lost, so follow the brightness of its unsaturated halo instead
-    const halo = nSat > 0.5 * frames.length, lc = lightCurve(halo ? haloSeries(frames, N, probe, probe.follow) : P);
+    const halo = nSat > 0.5 * frames.length, lc = lightCurve(halo ? haloSeries(fs, N, probe, probe.follow) : P);
     analysis = { P, bins: binSpectrum(P, 0.05), lc, halo, motion, motionFlagged, nFlagged, nSat };
     renderPanel(); renderTarget();
   }
@@ -386,6 +387,13 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
   function nearest<T extends CatSource>(L: T[], tol: number): T | null {
     let best: T | null = null, bd = tol;
     for (const s of L) { const [ra, dec] = probeSky(s.epoch), d = angSep(ra, dec, s.ra, s.dec); if (d < bd) { bd = d; best = s; } }
+    return best;
+  }
+  /** a different Gaia star close enough to share the measurement aperture (SPHEREx pixels are 6.15″) */
+  function blend(): { g: CatSource; sep: number } | null {
+    const year = frames.length ? mjdToYear((frames[0].mjd + frames[frames.length - 1].mjd) / 2) : 2026, [ra, dec] = probeSky(year);
+    let best: { g: CatSource; sep: number } | null = null;
+    for (const g of cat.gaia) { const [gr, gd] = catPos(g, year), sep = angSep(ra, dec, gr, gd); if (sep > 2 && sep < 10 && (!best || (g.mag ?? 99) < (best.g.mag ?? 99))) best = { g, sep }; }
     return best;
   }
   function anchors() {
@@ -443,12 +451,13 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
     if (tab === "frame") return renderFrame(el);
     if (!A) { el.innerHTML = `<div class="bk-empty">${opened ? "Measuring as the exposures arrive…" : "The spectrum, light curve and motion of your target appear here."}</div>`; return; }
     if (tab === "spectrum") {
-      const ins = insights(A.P), sat = A.nSat > 0.3 * frames.length;
+      const ins = insights(A.P), sat = A.nSat > 0.3 * frames.length, bl = blend();
+      if (bl) ins.push(`<b>Blended.</b> A Gaia star (G = ${bl.g.mag?.toFixed(1) ?? "?"}) lies ${bl.sep.toFixed(0)}″ away, about one SPHEREx pixel, so part of the light measured here is its own — mostly at short wavelengths.`);
       el.innerHTML = `${probeLine()}${sat ? `<div class="bk-warn"><b>Saturated.</b> This source is so bright that it overflows SPHEREx's detectors in ${A.nSat} of ${frames.length} exposures (NASA's OVERFLOW flag). Those measurements are drawn hollow: read them as lower limits.</div>` : ""}
         <div id="bk-plot"></div>
         <div class="bk-plotbar"><span class="mono">${A.P.length} measurements · ${A.nFlagged} flagged</span><span><button class="link" id="bk-log">${logSpec ? "linear scale" : "log scale"}</button> · <button class="link" id="bk-csv">download CSV</button></span></div>
         ${ins.map((s) => `<p class="bk-insight">${s}</p>`).join("")}
-        <p class="bk-cap">Each dot is one 2-minute exposure. SPHEREx's filter changes colour across each detector, so every exposure measures the source at a different wavelength; together they are its spectrum, built in your browser from the exposures above. The line is the median. ◇ are catalogue fluxes of the same source for comparison (2MASS 1998, WISE 2010–18).</p>`;
+        <p class="bk-cap">Each dot is one 2-minute exposure. SPHEREx's filter changes colour across each detector, so every exposure measures the source at a different wavelength; together they are its spectrum, built in your browser from the exposures above. The line is the median. ◇ are catalogue fluxes of the same source for comparison (2MASS 1998, WISE 2010).</p>`;
       drawSpectrum($("#bk-plot"), A.P, { log: logSpec, bins: A.bins.filter((b) => b.n >= 1), anchors: anchors(), onPick: seekFrame });
       $("#bk-log").onclick = () => { logSpec = !logSpec; renderPanel(); }; $("#bk-csv").onclick = downloadCsv;
     } else if (tab === "light") {
@@ -467,15 +476,15 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
       else {
         const tot = Math.hypot(m.pmra, m.pmdec), etot = Math.hypot(m.epmra, m.epmdec) / Math.SQRT2, sig = tot / Math.max(etot, 1e-6), pa = ((Math.atan2(m.pmra, m.pmdec) * 180) / Math.PI + 360) % 360;
         const g = probe.follow ? null : nearest(cat.gaia, 5), ref = probe.follow && hasPm() ? { pmra: target.pmra!, pmdec: target.pmdec!, plx: target.plx, src: target.source ?? "catalogue" } : g ? { pmra: g.pmra, pmdec: g.pmdec, plx: g.plx ?? undefined, src: "Gaia DR3" } : null;
-        const plxOk = m.plx !== null && m.eplx !== null && m.plx / m.eplx > 3;
+        const eplx = m.eplx === null ? NaN : Math.hypot(m.eplx, PLX_SYS), plxOk = m.plx !== null && m.plx / eplx > 3;
         el.innerHTML = `${probeLine()}${A.motionFlagged ? `<div class="bk-warn"><b>Indicative only.</b> Every exposure of this source is flagged (saturated), so its centre is measured from the wings of its image; errors are larger than quoted.</div>` : ""}
           <div id="bk-plot"></div>
           <table class="bk-table"><thead><tr><th></th><th>east ″/yr</th><th>north ″/yr</th><th>parallax ″</th></tr></thead><tbody>
-            <tr><td>SPHEREx alone <small>${m.n} exposures · ${m.visits} visits · ${(m.span / 365.25).toFixed(1)} yr</small></td><td>${fmtPm(m.pmra)} ± ${m.epmra.toFixed(2)}</td><td>${fmtPm(m.pmdec)} ± ${m.epmdec.toFixed(2)}</td><td>${m.plx === null ? "–" : `${m.plx.toFixed(2)} ± ${m.eplx!.toFixed(2)}`}</td></tr>
+            <tr><td>SPHEREx alone <small>${m.n} exposures · ${m.visits} visits · ${(m.span / 365.25).toFixed(1)} yr</small></td><td>${fmtPm(m.pmra)} ± ${m.epmra.toFixed(2)}</td><td>${fmtPm(m.pmdec)} ± ${m.epmdec.toFixed(2)}</td><td>${m.plx === null ? "–" : `${m.plx.toFixed(2)} ± ${eplx.toFixed(2)}`}</td></tr>
             ${ref ? `<tr class="ref"><td>${esc(ref.src)}</td><td>${fmtPm(ref.pmra)}</td><td>${fmtPm(ref.pmdec)}</td><td>${ref.plx ? (ref.plx / 1000).toFixed(3) : "–"}</td></tr>` : ""}</tbody></table>
-          <p class="bk-insight">${sig > 4 ? `<b>It moves.</b> ${tot.toFixed(2)} ± ${etot.toFixed(2)}″ per year toward position angle ${pa.toFixed(0)}° (${sig.toFixed(0)}σ), measured from SPHEREx exposures alone${plxOk ? `; its yearly parallax wobble (${m.plx!.toFixed(2)} ± ${m.eplx!.toFixed(2)}″) puts it between <b>${(3.2616 / (m.plx! + m.eplx!)).toFixed(0)} and ${(3.2616 / (m.plx! - m.eplx!)).toFixed(0)} light-years</b> away` : ""}.`
+          <p class="bk-insight">${sig > 4 ? `<b>It moves.</b> ${tot.toFixed(2)} ± ${etot.toFixed(2)}″ per year toward position angle ${pa.toFixed(0)}° (${sig.toFixed(0)}σ), measured from SPHEREx exposures alone${plxOk ? `; its yearly parallax wobble (${m.plx!.toFixed(2)} ± ${eplx.toFixed(2)}″) puts it between <b>${(3.2616 / (m.plx! + eplx)).toFixed(0)} and ${(3.2616 / (m.plx! - eplx)).toFixed(0)} light-years</b> away` : ""}.`
             : `<b>No significant motion.</b> Slower than ${(3 * etot).toFixed(2)}″ per year (3σ) over the ${(m.span / 365.25).toFixed(1)}-year SPHEREx baseline.`}</p>
-          <p class="bk-cap">The centre of the source is measured in every clean exposure where it is detected above 8σ, then a straight-line motion${m.withParallax ? " plus the parallax ellipse" : ""} is fitted with outlier rejection. Scatter per exposure: ${m.rms.toFixed(2)}″ (a pixel is 6.15″). Hollow points were rejected.</p>`;
+          <p class="bk-cap">The centre of the source is measured in every clean exposure where it is detected above 8σ, then a straight-line motion${m.withParallax ? " plus the parallax ellipse" : ""} is fitted with outlier rejection. Scatter per exposure: ${m.rms.toFixed(2)}″ (a pixel is 6.15″). Hollow points were rejected.${m.withParallax ? ` The parallax error includes ${PLX_SYS}″ for a systematic effect: SPHEREx flips over between visits six months apart, in step with the parallax swing.` : ""}</p>`;
         drawMotion($("#bk-plot"), m, { onPick: seekFrame });
       }
     }
@@ -582,7 +591,7 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
   host.querySelectorAll<HTMLButtonElement>("#bk-n button").forEach((b) => (b.onclick = () => { if (+b.dataset.n! !== maxFrames) { maxFrames = +b.dataset.n!; if (opened) start(); else syncControls(); } }));
   host.querySelectorAll<HTMLButtonElement>("#bk-dets button").forEach((b) => (b.onclick = (e) => { const d = +b.dataset.d!;
     if ((e as MouseEvent).shiftKey || (e as MouseEvent).altKey) dets = new Set([d]); else if (dets.has(d)) { if (dets.size > 1) dets.delete(d); } else dets.add(d);
-    idx = 0; refresh(); }));
+    idx = 0; refresh(); analyze(); }));
   host.querySelectorAll<HTMLButtonElement>("#bk-toggles button").forEach((b) => (b.onclick = () => toggle(b.dataset.v!)));
   function toggle(k: string) {
     if (k === "lock") lock[mode] = !lock[mode]; else (view as any)[k] = !(view as any)[k];

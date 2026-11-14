@@ -1,15 +1,12 @@
-import { tilesLabel, useSummary } from '../useSummary'
-
-/** "Census live · 1,234 / 12,288 tiles" — or a plain "Sky viewer · Open" before the feed loads. */
+/** Header shortcut into the app: a live dot, "Open the app", and the tool's name. */
 export default function CensusStatus({ className = '' }: { className?: string }) {
-  const s = useSummary()
   return (
     <>
       <span className="census-status__label">
-        {s && <span className="census-status__dot" aria-hidden="true" />}
-        <span className="census-status__text">{s ? 'Census live' : 'Sky viewer'}</span>
+        <span className="census-status__dot" aria-hidden="true" />
+        <span className="census-status__text">Open the app</span>
       </span>
-      <span className={`census-status__value ${className}`.trim()}>{s ? tilesLabel(s) : 'Open'}</span>
+      <span className={`census-status__value ${className}`.trim()}>Blink the sky</span>
     </>
   )
 }

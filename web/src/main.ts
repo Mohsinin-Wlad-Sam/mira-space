@@ -1,5 +1,4 @@
 import "./style.css";
-import A from "aladin-lite";
 import { load, fmt, sexa, key, loadDetail, BASE, type Summary, type Target, type Obj } from "./data";
 import { drawSpectrum } from "./spectrum";
 import { spectrumStory, lightStory } from "./explain";
@@ -36,7 +35,7 @@ const ui = document.getElementById("ui")!;
 const set: Settings = loadSettings();
 const S = {
   al: null as any, overlay: null as any, sky: null as SkyLayer | null, lam: [] as number[], chan: 94,
-  lenses: new Set<LensKey>(["movers", "methane", "vanished"]), blinkTimer: 0 as any, tourStep: -1, targets: [] as Target[], summary: null as Summary | null,
+  lenses: new Set<LensKey>(["movers", "methane"]), blinkTimer: 0 as any, tourStep: -1, targets: [] as Target[], summary: null as Summary | null,
   unusual: new Map<string, any>(), cands: new Map<string, any>(), candMeta: null as any, year: REF_YEAR, playing: false, speed: 2, loop: true, matched: false, zoom: { speed: set.zoomSpeed, toCursor: set.zoomToCursor },
 };
 if (import.meta.env.DEV) (window as any).__S = S;
@@ -70,9 +69,10 @@ ui.innerHTML = `
 <section class="blinkpage" id="blinkpage"></section>
 
 <aside class="lenses" id="lenses">
-  <div class="eyebrow lens-head">Lenses — what to light up</div>
+  <div class="eyebrow lens-head">Census · 16 years of change</div>
   ${(Object.keys(LENSES) as LensKey[]).map((k) => `<button class="lens" data-k="${k}" style="--c:${LENSES[k].c}"><span class="sw"></span>
     <span class="t">${LENSES[k].t}</span><span class="n" id="n-${k}">–</span><span class="d">${LENSES[k].d}</span></button>`).join("")}
+  <div class="eyebrow lens-head" style="margin-top:14px">Live</div>
   <div class="livebtns"><button class="lens livet on" id="livess" style="--c:#ffd27a"><span class="sw"></span><span class="t">Solar System now</span><span class="n">live</span>
     <span class="d">Planets, Moon, Sun, spacecraft and passing asteroids where they are on the timeline's date.</span></button>
     <button class="lens livet" id="livesky" style="--c:#5be3a6"><span class="sw"></span><span class="t">My sky now</span><span class="n">⌖</span>
@@ -81,7 +81,7 @@ ui.innerHTML = `
 </aside>
 
 <nav class="ladder" id="ladder" aria-label="See the sky in different light">
-  <span class="eyebrow">See it in</span>
+  <span class="eyebrow">Wavelength</span>
   ${LADDER.map((k) => `<button class="rung" data-s="${k}" title="${SURVEYS[k].label}"><b>${SURVEYS[k].short}</b><small>${SURVEYS[k].band}</small></button>`).join("")}
 </nav>
 <div class="ladcap" id="ladcap"></div>
@@ -94,7 +94,7 @@ ui.innerHTML = `
       <div class="tticks2"><span>2010 · WISE</span><span>2015</span><span>2020</span><span>2025 · SPHEREx</span></div></div>
     <select id="tspeed" aria-label="Playback speed">
       <option value="0.5">½ yr/s</option><option value="1">1 yr/s</option><option value="2" selected>2 yr/s</option><option value="5">5 yr/s</option><option value="15">15 yr/s</option><option value="40">40 yr/s</option></select>
-    <button class="btn sm ghost" id="blink" title="Flip between WISE 2010 and SPHEREx 2025">Blink</button>
+    <button class="btn sm ghost" id="blink" title="Flip the map between WISE 2010 and SPHEREx 2025 (B)">2010 ↔ 2025</button>
   </div>
   <div class="rainbow" id="rainbow">
     <div class="lab"><span class="eyebrow">SPHEREx sees 102 colours — drag to change wavelength</span><b id="chanlbl">–</b></div>
@@ -115,7 +115,9 @@ ui.innerHTML = `
 <div class="toast"></div>`;
 
 // ============================================================================ sky
+let A: any = null;
 async function initSky() {
+  A = (await import("aladin-lite")).default;      // 2.5 MB with its WebAssembly: loaded only when the atlas is opened
   await A.init;
   const p = hashParams();
   const start = p.get("ra") ? `${p.get("ra")} ${p.get("dec")}` : "266.4 -28.9";
@@ -579,11 +581,15 @@ function flyTo(ra: number, dec: number, fov: number) {
 }
 
 // ============================================================================ Lab (standalone page, lazy-loaded)
-async function openLabPage() {
-  setBlink(false); play(false); endTour(); closePanel();
+async function openLabPage(start?: string) {
+  setBlink(false); play(false); endTour(); closePanel(); blink.pause();
+  $("#about").classList.remove("open"); document.body.classList.remove("about-on");
   const { openLab } = await import("./labapp");
   document.body.classList.add("lab-on");
-  await openLab($("#labpage"), () => document.body.classList.remove("lab-on"));
+  const mark = (v: string) => document.querySelectorAll<HTMLElement>(".mainnav button").forEach((x) => x.classList.toggle("on", x.dataset.view === v));
+  mark("lab");
+  const closeLab = () => { document.body.classList.remove("lab-on"); mark(view); if (view === "blink") blink.resume(); };
+  await openLab($("#labpage"), closeLab, { onBlink: (t) => { $("#labpage").classList.remove("open"); $("#labpage").innerHTML = ""; closeLab(); openBlink(t); } }, start);
 }
 
 // ============================================================================ 3D space (lazy-loaded)
@@ -642,38 +648,92 @@ function endTour() { $("#tour").style.display = "none"; S.tourStep = -1; documen
 // ============================================================================ about
 async function renderAbout() {
   await loadBasics();
-  const rows = S.targets.map((t) => `<tr><td>${esc(t.name)}</td><td class="m">${t.census ? `${fmt(t.census.pmra, 2)}, ${fmt(t.census.pmdec, 2)}` : "pending"}</td>
+  const check: [string, string][] = [
+    ["Enter RA and Dec, get a series of images “like a little video”", "<b>Blink</b> takes coordinates in any common notation, or a name. Every exposure is re-projected north-up onto the same patch of sky, so the frames can be played, scrubbed and compared."],
+    ["Make moving objects easy to spot", "Frames are pinned to the sky; <b>Follow target</b> re-centres on a known mover; Gaia stars are drawn where they are at each frame's date, with arrows on fast ones; <b>Difference</b> shows what left and what arrived. The <b>Motion</b> tab measures proper motion and parallax from the frames."],
+    ["Test on Barnard's Star, ε Indi B, WISE 0855, RW Aur, R Dra", "One click each on the start screen; results in the validation table below. Typing the challenge's 2010 coordinates for WISE 0855 is recognised and followed to where it is now."],
+    ["Easy to update with new data releases", "Pixels are never copied: the browser reads them from NASA's archive. Only a small index of exposure footprints is hosted, rebuilt from IRSA's inventory by one script in about a minute. The header shows the date of the newest exposure indexed."],
+    ["Creative use of the 102 bands; co-add per detector", "Detector chips select any of the six arrays; <b>Deep stack</b> co-adds them per visit; <b>Colour</b> folds them into one RGB image; <b>Spectral sweep</b> plays the exposures in wavelength order."],
+    ["“Extra kudos”: spectra on the fly", "The <b>Spectrum</b> tab: PSF-weighted photometry of the target, or of any source you click, at the wavelength each exposure saw, with 2MASS and WISE fluxes for comparison. Methane is detected automatically. CSV download."],
+    ["Add or subtract images taken at different times", "<b>Deep stack</b> adds (with outlier rejection; along the target's motion when following it). <b>Difference</b> subtracts the first visit from each later one."],
+    ["Let users choose the field of view", "3.3′, 6.6′, 9.8′ or 13.1′, and 36, 72 or all indexed exposures, with the download size stated before you choose."],
+    ["Overlay Gaia or WISE", "Gaia DR3 (moved to each frame's date) and AllWISE (where WISE saw each source in 2010) toggles; the atlas adds eight all-sky surveys from ultraviolet to microwave."],
+    ["Coordinates in the URL; embeddable", "<span class='mono'>/explore/?ra=…&amp;dec=…&amp;fov=…</span> or <span class='mono'>?target=name</span>. The Share tab gives the link and an &lt;iframe&gt; snippet (<span class='mono'>&amp;embed=1</span> hides the site chrome)."],
+    ["Show metadata such as contamination flags", "NASA's quality flags are read from each exposure's compressed FLAGS extension: badges on every frame, a full flag overlay on demand, and the exposure's identifiers, timing, PSF and background in the <b>Exposure</b> tab."],
+    ["Use Astropy and Aladin", "The index and the census are built with Astropy; the atlas runs on Aladin Lite (CDS); the in-browser astrometry and flag decoding are verified against Astropy."],
+  ];
+  const rows = S.targets.map((t) => `<tr><td>${esc(t.name)}</td><td class="m">${t.census ? `${fmt(t.census.pmra, 2)}, ${fmt(t.census.pmdec, 2)}` : "–"}</td>
     <td class="m">${fmt(t.pmra / 1000, 2)}, ${fmt(t.pmdec / 1000, 2)}</td><td class="m">${t.census ? fmt(t.census.sx_w2_snr, 0) : "–"}</td></tr>`).join("");
-  $("#about").innerHTML = `<button class="icon-btn aclose" id="aclose">✕</button>
-    <div class="eyebrow">How it works</div><h2 class="display">A census of a changing sky</h2>
-    <p>For each of 12,288 patches of sky we linked the unWISE time-domain catalog — 43 billion WISE detections over 16 epochs (2010–2020) — into individual objects with their motion,
-    then measured every object again in SPHEREx's 102-colour all-sky map (2025–26), at the position its motion predicts. Comparing the two reveals what moved, what changed, and what each object is made of.</p>
-    <p>The heavy lifting ran once on a GPU cluster; this website only reads the results, and streams images directly from NASA's archive.
-    The map loads a light all-sky list first, then only the 10° regions you zoom into. Dots move with each object's measured proper motion
-    along great circles (exact for linear motion; perspective acceleration neglected, &lt; 4″ by 2100 even for Barnard's Star).</p>
-    <div class="eyebrow" style="margin-top:30px">Validation · the five challenge targets</div>
-    <div class="tablewrap"><table><thead><tr><th>Target</th><th>Census motion ″/yr (RA, Dec)</th><th>Literature</th><th>SPHEREx S/N</th></tr></thead><tbody>${rows}</tbody></table></div>
-    <div class="eyebrow" style="margin-top:30px">AI on GPUs · distances, temperatures and kinds for 132 million objects</div>
-    <p>A deep ensemble of neural networks reads each SPHEREx spectrum (102 colours), the WISE W1−W2 colour and the 16-year reduced proper motion,
-    and predicts the object's absolute infrared brightness, temperature and kind — each with its own uncertainty. It learned from 1.57 million stars with
-    Gaia DR3 parallaxes and 1,487 brown dwarfs from the UltracoolSheet, then ran over all 132 million census spectra in 90 seconds on the cluster's GPUs.
-    Distance follows from how bright the object looks. The 3D Space view places objects by Gaia parallax where it exists and by this AI elsewhere.</p>
+  $("#about").innerHTML = `<button class="icon-btn aclose" id="aclose" aria-label="Close">✕</button>
+    <div class="about-in">
+    <div class="eyebrow">How it works</div><h2 class="display">From NASA's archive to a movie in your browser</h2>
+    <p class="lead">MIRA does not keep a copy of SPHEREx. When you ask for a position, your browser reads just the pixels it needs from NASA's public archive, lines them up, and measures them — in about fifteen seconds, with no server in between.</p>
+    <ol class="steps">
+      <li><b>Find the exposures.</b> A small index, built from IRSA's inventory of 1.6 million SPHEREx exposures, lists those whose footprint covers each patch of sky, spread over every visit and all six detectors.</li>
+      <li><b>Read only what is needed.</b> Each exposure is a 65 MB file on NASA's public cloud storage. The browser fetches its header and only the detector rows that cross your field — about 0.4 MB.</li>
+      <li><b>Line them up.</b> SPHEREx rolls between visits. Using each exposure's astrometric solution (tangent projection with distortion terms), every frame is resampled north-up onto the same sky grid.</li>
+      <li><b>Know the wavelength.</b> SPHEREx's filter changes colour across each detector. A wavelength map per detector gives the colour each exposure saw at the target: 0.75 to 5 µm.</li>
+      <li><b>Check the flags.</b> NASA marks hot pixels, cosmic rays, saturation and ghosts in a compressed table. MIRA decodes the rows it needs, shows the flags, and blanks defects that are not sky.</li>
+      <li><b>Measure.</b> Brightness in every exposure gives a spectrum; exposures of different visits at the same wavelength give a light curve; the source's position in each frame gives its motion and parallax.</li>
+    </ol>
+
+    <div class="eyebrow sec">The challenge, point by point</div>
+    <div class="tablewrap"><table class="checklist"><tbody>${check.map(([q, a]) => `<tr><td>${q}</td><td>${a}</td></tr>`).join("")}</tbody></table></div>
+
+    <div class="eyebrow sec">Validation · the five challenge targets, through the same code your browser runs</div>
+    <div class="tablewrap" id="valtable"><p class="note">Loading the validation run…</p></div>
+    <p class="note">Engine checks against Astropy on the same NASA file: pixel positions agree to 0.004 px, resampled pixel values to 0.005%, and decoded flag masks bit for bit. Reproduce with <span class="mono">npx tsx scripts/validate_blink.mts</span>.</p>
+
+    <div class="eyebrow sec">The atlas · a census of 16 years of change</div>
+    <p>For each of 12,288 patches of sky we linked the unWISE time-domain catalogue — 43 billion WISE detections over 16 epochs, 2010–2020 — into individual objects with their motion,
+    then measured every object again in SPHEREx's 102-colour all-sky map at the position its motion predicts. Comparing the two shows what moved, what changed and what each object is made of.
+    The heavy computing ran once on a GPU cluster; the site only reads the results. Dots move with each object's measured proper motion; the background blends WISE 2010 into SPHEREx 2025 imagery and shows no intermediate observations.</p>
+    <div class="tablewrap"><table><thead><tr><th>Census check</th><th>Census motion ″/yr (RA, Dec)</th><th>Literature</th><th>SPHEREx S/N</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <p>A deep ensemble of neural networks reads each SPHEREx spectrum together with the WISE colour and the 16-year motion, and estimates the object's intrinsic brightness, temperature and kind, each with its own uncertainty.
+    It learned from 1.57 million stars with Gaia parallaxes and 1,487 brown dwarfs from the UltracoolSheet. Distance follows from how bright the object appears. The 3D view places objects by Gaia parallax where one exists and by this estimate elsewhere, and says which.</p>
     <div id="aimetrics" class="tablewrap"></div>
-    <div class="eyebrow" style="margin-top:30px">Live NASA data</div>
-    <p>Directly from NASA in your browser: <b>DONKI</b> solar storms (coronal mass ejections, drawn as expanding fronts at their measured speed and direction), <b>NeoWs</b> asteroids passing Earth today, and the <b>NASA Image and Video Library</b>.
-    Refreshed hourly into the site (their servers do not allow direct browser access): <b>JPL Horizons</b> positions of 13 spacecraft, <b>JPL</b> close approaches with <b>SBDB</b> orbits for asteroids passing within 0.05 au,
-    today's Sun from <b>SDO</b> and today's Earth from <b>EPIC</b>, mapped onto the 3D spheres. Planet positions use JPL's Keplerian elements (checked against an ephemeris to 0.003 au); 4,834 planetary systems come from the <b>NASA Exoplanet Archive</b>.</p>
-    <div class="eyebrow" style="margin-top:30px">Honest limits</div>
-    <ul><li>SPHEREx map pixels are 12.9″: close pairs blend, so changes are only flagged for isolated objects.</li>
-    <li>Very bright stars saturate SPHEREx and are excluded from change and methane lenses.</li>
-    <li>"Vanished" means "not seen by SPHEREx at the expected brightness" — every candidate is for human follow-up, not a confirmed discovery.</li>
-    <li>3D renderings are impressions driven by an estimated temperature, not images.</li>
-    <li>AI distances are typically ±27% (giants ±60%); objects whose AI uncertainty exceeds ±45% are not placed in 3D. Motion in 3D is straight-line: fine for ±250,000 years near the Sun, not for Galactic orbits.</li></ul>
-    <p class="eyebrow" style="margin-top:30px">Data: NASA SPHEREx DR1 (IRSA, doi:10.26131/IRSA679) · unWISE time-domain catalog (doi:10.26131/IRSA580) · NASA WISE/NEOWISE · Gaia DR3 (ESA) · NASA Space Apps 2026</p>`;
-  $("#about").classList.add("open"); $("#aclose").onclick = () => $("#about").classList.remove("open");
+
+    <div class="eyebrow sec">Live NASA data in the atlas and 3D view</div>
+    <p><b>JPL Horizons</b> positions of the planets, the Moon and 13 spacecraft; <b>JPL SBDB</b> orbits of asteroids passing within 0.05 au; <b>DONKI</b> coronal mass ejections; today's Sun from <b>SDO</b> and Earth from <b>EPIC</b>;
+    4,834 planetary systems from the <b>NASA Exoplanet Archive</b>. Feeds that do not allow browser access are refreshed into small static files by one script.</p>
+
+    <div class="eyebrow sec">Honest limits</div>
+    <ul>
+      <li>SPHEREx pixels are 6.15″ and its images about 7–9″ sharp: sources closer than that blend. MIRA warns when a Gaia star shares the aperture.</li>
+      <li>Fluxes assume a Gaussian image of the width NASA reports for each exposure. They agree with 2MASS and WISE to roughly 10–15% for isolated sources; they are not a substitute for NASA's own spectrophotometry.</li>
+      <li>Stars brighter than about 8th magnitude saturate. Their fluxes are lower limits, their light curves come from the halo, and their motions are indicative only.</li>
+      <li>The index holds up to 24 exposures per detector and sky patch (144 in all), spread over the visits — typically 90 to 125 usable for a position, out of the several hundred that exist.</li>
+      <li>Motions come from about a year and a half of SPHEREx data: uncertainties of 0.2″ per year, enough for nearby stars and brown dwarfs, not for distant ones. A parallax is quoted only above 3σ and with three or more visits.</li>
+      <li>The comparison catalogues come from CDS mirrors; if they are unreachable the overlays are simply absent.</li>
+      <li>Census flags such as “vanished” mean “not seen by SPHEREx at the expected brightness”. Every candidate is a prompt for a closer look, not a discovery.</li>
+    </ul>
+    <p class="note" style="margin-top:28px">Data: NASA SPHEREx Level-2 images and all-sky maps (NASA/IPAC IRSA, doi:10.26131/IRSA629, IRSA679) · unWISE time-domain catalogue (doi:10.26131/IRSA580) · NASA WISE/NEOWISE · ESA Gaia DR3 · 2MASS · SIMBAD and VizieR (CDS) · Aladin Lite.
+    Built for the NASA Space Apps Challenge 2026. AI tools were used in development and are listed in the repository (docs/07_si_usage_log.md); MIRA is not affiliated with or endorsed by NASA.</p>
+    </div>`;
+  const closeAbout = () => { $("#about").classList.remove("open"); document.body.classList.remove("about-on"); document.querySelectorAll<HTMLElement>(".mainnav button").forEach((x) => x.classList.toggle("on", x.dataset.view === view)); };
+  $("#about").classList.add("open"); document.body.classList.add("about-on"); $("#about").scrollTop = 0; $("#aclose").onclick = closeAbout;
+  document.querySelectorAll<HTMLElement>(".mainnav button").forEach((x) => x.classList.toggle("on", x.dataset.view === "about"));
+  fetch(`${import.meta.env.BASE_URL}validation.json`).then((r) => (r.ok ? r.json() : null)).then((v) => {
+    const el = document.getElementById("valtable"); if (!el || !v) return;
+    const pm = (x: number) => `${x >= 0 ? "+" : "−"}${Math.abs(x).toFixed(2)}`;
+    const band = ["all bands", "0.75–1.1 µm", "1.1–1.7 µm", "1.6–2.4 µm", "2.4–3.9 µm", "3.8–4.4 µm", "4.4–5.0 µm"];
+    el.innerHTML = `<table><thead><tr><th>Target</th><th>Exposures read</th><th>Measured by MIRA from SPHEREx alone</th><th>Reference</th></tr></thead><tbody>${v.targets.map((t: any) => {
+      const m = t.motion, lc = t.lightcurve, got: string[] = [], ref: string[] = [];
+      if (t.saturated) got.push(`Saturated in ${t.saturated_frames} of ${t.frames} exposures (NASA's OVERFLOW flag, shown on every frame)`);
+      if (m) { got.push(`Motion ${pm(m.pmra)} ± ${m.epmra.toFixed(2)}, ${pm(m.pmdec)} ± ${m.epmdec.toFixed(2)} ″/yr from ${m.n} exposures${m.from_flagged ? " (from the wings of the saturated image: indicative)" : ""}`);
+        ref.push(`${pm(t.lit.pmra)}, ${pm(t.lit.pmdec)} ″/yr (${t.lit.source})`);
+        const ep = m.plx === null ? NaN : Math.hypot(m.eplx, 0.08);      // statistical + orientation systematic (see measure.ts)
+        if (m.plx !== null && m.plx / ep > 3) { got.push(`Parallax ${m.plx.toFixed(2)} ± ${ep.toFixed(2)}″`); ref.push(`parallax ${t.lit.plx.toFixed(3)}″`); } }
+      if (t.methane_ratio !== null && t.methane_ratio < 0.6) got.push(`Methane: ${Math.round((1 - t.methane_ratio) * 100)}% fainter at 3.3 µm than at 4.0 µm`);
+      if (t.key === "wise-0855" && t.f46_mJy && t.w2_catwise_mJy) { got.push(`Seen only at 3.8–5 µm: ${t.f46_mJy.toFixed(2)} mJy at 4.6 µm`); ref.push(`${t.w2_catwise_mJy.toFixed(2)} mJy (WISE W2, 2010)`); }
+      if (lc.pairs >= 20 || lc.variable) got.push(lc.variable ? `Variable: ${lc.amplitude.toFixed(lc.amplitude > 3 ? 1 : 2)}× brighter at ${band[lc.band]} in ${String(lc.hi).slice(0, 7)} than in ${String(lc.lo).slice(0, 7)}${lc.halo ? " (halo photometry)" : ""}` : `Steady: visit levels within ${Math.round((lc.all_amplitude - 1) * 100)}%${lc.halo ? " (halo photometry)" : ""}`);
+      if (t.key === "r-dra") ref.push("Mira variable, period 246 days"); if (t.key === "rw-aur") ref.push("T Tauri star with deep dimming events"); if (t.key === "barnard" || t.key === "eps-indi-b") ref.push("not known to vary");
+      return `<tr><td>${esc(t.name)}</td><td class="m">${t.frames} of ${t.covered}<br>${t.visits} visits · ${t.span_yr.toFixed(1)} yr</td><td>${got.join("<br>")}</td><td>${ref.join("<br>")}</td></tr>`; }).join("")}</tbody></table>
+      <p class="note">Run of ${esc(String(v.built).replace("T", " "))} · ${v.stamp_px} × ${v.stamp_px} px stamps · index through ${esc(v.index?.last ?? "")}.</p>`;
+  }).catch(() => { /* table stays as a note */ });
   load<any>("ai_metrics", true).then((m) => {
     if (!m) return; const r = (k: string, label: string) => m[k] ? `<tr><td>${label}</td><td class="m">${m[k].n.toLocaleString()}</td><td class="m">${(m[k].dist_frac_err * 100).toFixed(0)}%</td><td class="m">${(m[k].frac_within_1sigma * 100).toFixed(0)}%</td></tr>` : "";
-    $("#aimetrics").innerHTML = `<table><thead><tr><th>Hold-out test (sky tiles never seen in training)</th><th>objects</th><th>distance error</th><th>within ±1σ (ideal 68%)</th></tr></thead><tbody>
+    $("#aimetrics").innerHTML = `<table><thead><tr><th>AI hold-out test (sky tiles never seen in training)</th><th>objects</th><th>distance error</th><th>within ±1σ (ideal 68%)</th></tr></thead><tbody>
       ${r("M_gaia", "Stars with Gaia parallaxes")}${r("M_ultracool", "Brown dwarfs (UltracoolSheet)")}${r("M_giants", "Giants (hardest)")}
       ${m.Teff ? `<tr><td>Temperature</td><td class="m">${m.Teff.n.toLocaleString()}</td><td class="m">${(m.Teff.robust_frac * 100).toFixed(1)}% scatter</td><td class="m">${(m.Teff.frac_within_1sigma * 100).toFixed(0)}%</td></tr>` : ""}
       ${m.class ? `<tr><td>Kind of object (4 classes)</td><td class="m">${m.class.confusion.flat().reduce((a: number, b: number) => a + b, 0).toLocaleString()}</td><td class="m">${(m.class.accuracy * 100).toFixed(1)}% correct</td><td class="m">brown dwarfs ${Math.round(m.class.confusion[2][2] / m.class.confusion[2].reduce((a: number, b: number) => a + b, 0) * 100)}% found</td></tr>` : ""}
@@ -729,6 +789,8 @@ async function bootAtlas() {
 async function boot() {
   document.querySelectorAll<HTMLButtonElement>(".mainnav button").forEach((b) => b.onclick = () => {
     const v = b.dataset.view!; endTour();
+    if (v !== "about") { $("#about").classList.remove("open"); document.body.classList.remove("about-on"); }
+    if (v !== "lab" && document.body.classList.contains("lab-on")) { $("#labpage").classList.remove("open"); $("#labpage").innerHTML = ""; document.body.classList.remove("lab-on"); }
     if (v === "blink") setView("blink"); else if (v === "atlas") showAtlas(); else if (v === "space") openSpaceView(); else if (v === "lab") openLabPage(); else renderAbout();
   });
   $("#pclose").onclick = closePanel;
@@ -757,7 +819,7 @@ async function boot() {
   else setView("blink");
   const openFromHash = async () => {
     const g = hashParams();
-    if (g.has("tour")) { await showAtlas(); renderStep(0); } else if (g.has("about")) renderAbout(); else if (g.has("lab")) openLabPage(); else if (g.has("hood") || g.has("space")) openSpaceView();
+    if (g.has("tour")) { await showAtlas(); renderStep(0); } else if (g.has("about")) renderAbout(); else if (g.has("lab")) openLabPage(g.get("lab") || undefined); else if (g.has("hood") || g.has("space")) openSpaceView();
     else if (g.has("atlas") && view !== "atlas") showAtlas(); else if (g.has("blink") && !g.get("ra") && view !== "blink") setView("blink");
   };
   openFromHash(); window.addEventListener("hashchange", openFromHash);

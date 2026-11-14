@@ -2,6 +2,7 @@
 // Everything runs in the browser on the 3D catalogue (data/space/*.bin) and JPL planet orbits.
 import * as THREE from "three";
 import { AU, PLANETS, planetPos, ecl2gal } from "./bodies";
+import { planetx, parallax, hunt, batch, type LabCtx } from "./labpro";
 
 const BASE = import.meta.env.BASE_URL;
 const PCYR = 1.0227121650537077e-6, KMS = 1 / PCYR, LY = 3.261563777;
@@ -26,40 +27,53 @@ async function loadNamed(): Promise<Named[]> {
     .sort((a, b) => a.p.length() - b.p.length());
 }
 
-const EXPS = [
-  { id: "hr", icon: "✦", q: "Where do stars live?", d: "Plot temperature against true brightness for 400,000 objects and watch families appear." },
-  { id: "avr", icon: "↗", q: "Do older stars move faster?", d: "Test a 70-year-old prediction with SPHEREx temperatures and 16 years of WISE motion." },
-  { id: "apex", icon: "☉", q: "Which way is the Sun heading?", d: "Measure our own motion through the Galaxy from the stars around us." },
-  { id: "reach", icon: "⟷", q: "How far can each method see?", d: "Gaia parallaxes vs. our AI distances from SPHEREx spectra." },
-  { id: "probe", icon: "🚀", q: "How long to reach a star?", d: "Launch a probe at a real speed and intercept a moving star." },
-  { id: "flyby", icon: "⊛", q: "What if a star flew past the Sun?", d: "A real gravity simulation of the planets and a visiting star." },
+type Exp = { id: string; g: string; icon: string; q: string; d: string; tag: string };
+const EXPS: Exp[] = [
+  { id: "planetx", g: "Start here", icon: "✕", q: "Could SPHEREx see Planet X?", d: "Push a hidden planet, or a cold brown dwarf, out into the dark and find where SPHEREx loses it — and how far it would jump between two passes.", tag: "Anyone · 1 minute" },
+  { id: "parallax", g: "Start here", icon: "△", q: "How far is that star? Measure it.", d: "Read real SPHEREx exposures, watch a nearby brown dwarf swing as Earth circles the Sun, and turn the swing into light-years.", tag: "Anyone · live NASA data" },
+  { id: "hunt", g: "Start here", icon: "◎", q: "Be the first to look", d: "Objects that look like cold nearby worlds and sit in no catalogue of known brown dwarfs. Check them one by one and keep your verdicts.", tag: "Citizen science" },
+  { id: "hr", g: "The Galaxy around us", icon: "✦", q: "Where do stars live?", d: "Plot temperature against true brightness for 400,000 objects and watch families appear.", tag: "Curious" },
+  { id: "avr", g: "The Galaxy around us", icon: "↗", q: "Do older stars move faster?", d: "Test a 70-year-old prediction with SPHEREx temperatures and 16 years of WISE motion.", tag: "Curious" },
+  { id: "apex", g: "The Galaxy around us", icon: "☉", q: "Which way is the Sun heading?", d: "Measure our own motion through the Galaxy from the stars around us.", tag: "Curious" },
+  { id: "reach", g: "The Galaxy around us", icon: "⟷", q: "How far can each method see?", d: "Gaia parallaxes against our AI distances from SPHEREx spectra.", tag: "Curious" },
+  { id: "probe", g: "The Galaxy around us", icon: "➤", q: "How long to reach a star?", d: "Launch a probe at a real speed and intercept a moving star.", tag: "Anyone" },
+  { id: "flyby", g: "The Galaxy around us", icon: "⊛", q: "What if a star flew past the Sun?", d: "A real gravity simulation of the planets and a visiting star.", tag: "Anyone" },
+  { id: "batch", g: "For researchers", icon: "≡", q: "Run a whole target list", d: "Paste names or coordinates: saturation, motion, variability and methane for each, measured from SPHEREx exposures, as a table and a CSV.", tag: "Research tool" },
 ];
+const PRO: Record<string, (P: HTMLElement, S: HTMLElement, ctx: LabCtx) => () => void> = { planetx, parallax, hunt, batch };
 
-export async function openLab(host: HTMLElement, onClose: () => void) {
+export async function openLab(host: HTMLElement, onClose: () => void, ctx: LabCtx, start?: string) {
   host.classList.add("open");
-  host.innerHTML = `<div class="lab-top"><div><div class="eyebrow">MIRA Lab</div><h2 class="display">Test ideas with real data</h2>
-      <p class="lab-sub">Every experiment runs on the census in your browser — the same numbers astronomers would use.</p></div><button class="icon-btn" id="labx">✕</button></div>
-    <div class="lab-grid" id="labgrid">${EXPS.map((e) => `<button class="lab-card" data-id="${e.id}"><span class="ic">${e.icon}</span><b>${e.q}</b><span>${e.d}</span></button>`).join("")}</div>
-    <div class="lab-run" id="labrun"></div>`;
+  const groups = [...new Set(EXPS.map((e) => e.g))];
+  host.innerHTML = `<div class="lab-in">
+    <div class="lab-top"><div><div class="eyebrow">MIRA Lab</div><h2 class="display">Ask the sky a question</h2>
+      <p class="lab-sub">Ten experiments on real data. Each starts with a question, gives a plain answer, and shows the working for those who want it. Nothing here is pre-recorded: the numbers are computed in your browser.</p></div>
+      <button class="icon-btn" id="labx" aria-label="Close the Lab">✕</button></div>
+    <div id="labhome">${groups.map((g) => `<div class="eyebrow lab-g">${g}</div><div class="lab-grid${g === "Start here" ? " big" : ""}">${EXPS.filter((e) => e.g === g).map((e) =>
+      `<button class="lab-card" data-id="${e.id}"><span class="ic">${e.icon}</span><span class="tg">${e.tag}</span><b>${e.q}</b><span class="ds">${e.d}</span><span class="go">Open →</span></button>`).join("")}</div>`).join("")}</div>
+    <div class="lab-run" id="labrun" style="display:none"></div></div>`;
   const $ = (s: string) => host.querySelector(s) as HTMLElement;
   let stop: (() => void) | null = null;
-  ($("#labx")).onclick = () => { stop?.(); host.classList.remove("open"); host.innerHTML = ""; onClose(); };
-  const run = $("#labrun"), grid = $("#labgrid");
-  run.innerHTML = `<div class="soon">Loading the census catalogue…</div>`; run.style.display = "none";
+  ($("#labx")).onclick = () => { stop?.(); host.classList.remove("open", "running"); host.innerHTML = ""; onClose(); };
+  const run = $("#labrun"), home = $("#labhome");
   const catP = loadCat(), namedP = loadNamed();
-  host.querySelectorAll<HTMLButtonElement>(".lab-card").forEach((b) => b.onclick = async () => {
-    stop?.(); stop = null;
-    host.querySelectorAll(".lab-card").forEach((x) => x.classList.toggle("on", x === b));
-    grid.classList.add("compact"); run.style.display = "";
-    const e = EXPS.find((x) => x.id === b.dataset.id)!;
-    run.innerHTML = `<h3 class="display">${e.q}</h3><div class="lab-body"><div class="lab-plot" id="lp"></div><div class="lab-side" id="ls"><div class="soon">Running…</div></div></div>`;
+  const back = () => { stop?.(); stop = null; run.style.display = "none"; run.innerHTML = ""; home.style.display = ""; host.scrollTop = 0; host.classList.remove("running"); };
+  const open = async (id: string) => {
+    const e = EXPS.find((x) => x.id === id); if (!e) return;
+    stop?.(); stop = null; home.style.display = "none"; run.style.display = ""; host.scrollTop = 0; host.classList.add("running");
+    run.innerHTML = `<button class="link lab-back" id="labback">← All experiments</button><div class="eyebrow">${e.g} · ${e.tag}</div><h3 class="display">${e.q}</h3>
+      <div class="lab-body"><div class="lab-plot" id="lp"></div><div class="lab-side" id="ls"><div class="soon">Running…</div></div></div>`;
+    $("#labback").onclick = back;
+    if (PRO[e.id]) { stop = PRO[e.id]($("#lp"), $("#ls"), ctx); return; }
     const cat = await catP, named = await namedP;
-    if (!cat && e.id !== "flyby") { $("#ls").innerHTML = `<div class="soon">The census catalogue is not available.</div>`; return; }
+    if (!$("#ls")) return;
+    if (!cat && e.id !== "flyby") { $("#ls").innerHTML = `<div class="soon">The census catalogue is not available on this deployment.</div>`; return; }
     stop = ({ hr, avr, apex, reach, probe, flyby } as Record<string, (c: Cat, n: Named[], P: HTMLElement, S: HTMLElement) => (() => void) | void>)[e.id](cat!, named, $("#lp"), $("#ls")) || null;
-  });
+  };
+  host.querySelectorAll<HTMLButtonElement>(".lab-card").forEach((b) => (b.onclick = () => open(b.dataset.id!)));
+  if (start) open(start);
 }
 
-// ---------------------------------------------------------------- helpers
 function canvas(el: HTMLElement, h = 420) {
   const c = document.createElement("canvas"), d = Math.min(2, devicePixelRatio || 1), w = Math.max(320, el.clientWidth);
   c.width = w * d; c.height = h * d; c.style.width = "100%"; c.style.height = `${h}px`; el.innerHTML = ""; el.appendChild(c);

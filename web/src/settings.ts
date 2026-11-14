@@ -14,12 +14,12 @@ export type Settings = {
   zoomSpeed: number; zoomToCursor: boolean; blinkMs: number; blinkFade: boolean; saver: boolean;
 };
 export const DEFAULTS: Settings = {
-  survey: "spherex", colormap: "magma", stretch: "asinh", brightness: -0.08, contrast: 1.15, gamma: 1.6,
+  survey: "spherex", colormap: "grayscale", stretch: "asinh", brightness: -0.18, contrast: 1.2, gamma: 1.6,
   projection: "SIN", grid: false, galactic: false,
-  markerSize: 13, trails: true, labels: true, density: 1, maxMarkers: LOW_POWER ? 500 : 1500,
+  markerSize: 8, trails: true, labels: true, density: 1, maxMarkers: LOW_POWER ? 400 : 900,
   zoomSpeed: 1, zoomToCursor: true, blinkMs: 900, blinkFade: false, saver: LOW_POWER,
 };
-const KEY = "skylens.settings.v1";
+const KEY = "mira.settings.v3";
 export function loadSettings(): Settings {
   try { const s = JSON.parse(localStorage.getItem(KEY) || "{}"); const o = { ...DEFAULTS, ...s }; if (!(o.survey in SURVEYS) || o.survey === "sxrgb") o.survey = DEFAULTS.survey; return o; } catch { return { ...DEFAULTS }; }
 }

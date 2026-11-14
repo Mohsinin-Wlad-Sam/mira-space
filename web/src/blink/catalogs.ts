@@ -1,5 +1,5 @@
 // Catalogue overlays and name resolution for BLINK, straight from the public astronomy services (all CORS-enabled):
-//   Gaia DR3 (ESA) and CatWISE2020 (NASA WISE/NEOWISE) via VizieR; object names and known motions via SIMBAD / Sesame.
+//   Gaia DR3 (ESA), AllWISE (NASA WISE, 2010) and 2MASS via VizieR; object names and known motions via SIMBAD / Sesame.
 // CDS runs mirrors (Strasbourg, Harvard CfA, IDIA); we try them in turn and remember the one that answers.
 import type { Target } from "./engine";
 
@@ -51,13 +51,13 @@ export async function gaia(ra: number, dec: number, radiusArcsec: number, max = 
   return rows.map((r) => ({ ra: num(r.RA_ICRS), dec: num(r.DE_ICRS), pmra: (num(r.pmRA) || 0) / 1000, pmdec: (num(r.pmDE) || 0) / 1000, plx: isFinite(num(r.Plx)) ? num(r.Plx) : null,
     mag: isFinite(num(r.Gmag)) ? num(r.Gmag) : null, mag2: isFinite(num(r.RPmag)) ? num(r.RPmag) : null, epoch: 2016.0, id: `Gaia DR3 ${r.Source}` })).filter((s) => isFinite(s.ra) && isFinite(s.dec));
 }
-/** CatWISE2020 sources (WISE + NEOWISE 2010–2018; positions at epoch 2015.4, motions in arcsec/yr), brightest W2 first */
-export async function catwise(ra: number, dec: number, radiusArcsec: number, max = 400): Promise<CatSource[]> {
-  const rows = await vizier("II/365/catwise", ra, dec, radiusArcsec, "Name,RAPMdeg,DEPMdeg,pmRA,pmDE,W1mproPM,W2mproPM", "W2mproPM", max);
-  return rows.map((r) => ({ ra: num(r.RAPMdeg), dec: num(r.DEPMdeg), pmra: num(r.pmRA) || 0, pmdec: num(r.pmDE) || 0, plx: null,
-    mag: isFinite(num(r.W2mproPM)) ? num(r.W2mproPM) : null, mag2: isFinite(num(r.W1mproPM)) ? num(r.W1mproPM) : null, epoch: 2015.4, id: `CWISE ${r.Name}` })).filter((s) => isFinite(s.ra) && isFinite(s.dec));
+/** AllWISE sources: where NASA's WISE saw each source in 2010 (mean epoch 2010.5), brightest W2 first.
+ *  Positions are NOT moved to the frame's date: a fast mover has left its 2010 marker behind, which is the point. */
+export async function allwise(ra: number, dec: number, radiusArcsec: number, max = 400): Promise<CatSource[]> {
+  const rows = await vizier("II/328/allwise", ra, dec, radiusArcsec, "AllWISE,RAJ2000,DEJ2000,W1mag,W2mag", "W2mag", max);
+  return rows.map((r) => ({ ra: num(r.RAJ2000), dec: num(r.DEJ2000), pmra: 0, pmdec: 0, plx: null,
+    mag: isFinite(num(r.W2mag)) ? num(r.W2mag) : null, mag2: isFinite(num(r.W1mag)) ? num(r.W1mag) : null, epoch: 2010.5, id: `WISEA ${r.AllWISE}` })).filter((s) => isFinite(s.ra) && isFinite(s.dec));
 }
-
 /** 2MASS point sources (1997–2001): J, H, Ks magnitudes — independent brightness anchors for the on-the-fly spectrum */
 export async function twomass(ra: number, dec: number, radiusArcsec: number, max = 300): Promise<(CatSource & { j: number; h: number; k: number })[]> {
   const rows = await vizier("II/246/out", ra, dec, radiusArcsec, "2MASS,RAJ2000,DEJ2000,Jmag,Hmag,Kmag", "Kmag", max);

@@ -182,6 +182,10 @@ function solve(A: number[][], b: number[]): { x: number[]; inv: number[][] } | n
   return { x: M.map((r) => r[2 * n]), inv: M.map((r) => r.slice(n, 2 * n)) };
 }
 
+/** Systematic floor on SPHEREx-only parallaxes (arcsec). The telescope's roll flips by ~180° between visits six months
+ *  apart — the same rhythm as the parallax swing — so any centroid bias tied to detector orientation imitates parallax
+ *  and does not average out. Sized from the two validation objects with known parallaxes (ε Indi B, Barnard's Star). */
+export const PLX_SYS = 0.08;
 export type AstroPoint = { k: number; mjd: number; xi: number; eta: number; err: number; used: boolean; visit: number };
 export type Motion = { pts: AstroPoint[]; pmra: number; pmdec: number; epmra: number; epmdec: number; plx: number | null; eplx: number | null; rms: number; t0: number;
   xi0: number; eta0: number; n: number; visits: number; span: number; withParallax: boolean };
