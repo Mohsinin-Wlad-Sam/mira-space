@@ -135,6 +135,8 @@ export function detectChanges(frames: Frame[], N: number, center: [number, numbe
   const wPos = W.map((w) => sky(w.ra, w.dec)), tPos = T.map((t) => sky(t.ra, t.dec));
   const within = (P: [number, number][], xi: number, eta: number, r: number) => P.map((p, k) => ({ k, d: Math.hypot(p[0] - xi, p[1] - eta) })).filter((q) => q.d < r).sort((a, b) => a.d - b.d);
   const hasPm = (g: CatSource | null) => !!g && g.plx !== null;
+  const chroma = (s: Src) => { if (s.track) return 0; const r = all[1] ? centroid({ ...proto, img: all[1], psf } as Frame, N, s.x, s.y) : null, b = all[2] ? centroid({ ...proto, img: all[2], psf } as Frame, N, s.x, s.y) : null;
+    return r && b && r.snr >= 10 && b.snr >= 10 ? Math.hypot(r.x - b.x, r.y - b.y) * PIX : 0; };
   const rows0 = found.map((s) => {
     const [xi, eta] = tan(s.x, s.y), nb = within(gNow, xi, eta, 4.5).sort((a, b) => (G[a.k].mag ?? 30) - (G[b.k].mag ?? 30));
     const gi = nb.length ? nb[0].k : -1, g = gi >= 0 ? G[gi] : null;
@@ -142,7 +144,7 @@ export function detectChanges(frames: Frame[], N: number, center: [number, numbe
     // the comparison is with the source's own signal: the brighter it is, the brighter a neighbour must be to matter
     const gLim = Math.max(13, 19 - 2.5 * Math.log10(Math.max(s.snr, 12) / 12));
     const crowd = g ? within(gNow, gNow[gi][0], gNow[gi][1], 10).some((q) => q.k !== gi && (G[q.k].mag ?? 30) < (g.mag ?? 30) + 2) : within(gNow, xi, eta, 10).some((q) => (G[q.k].mag ?? 30) < gLim);
-    return { s, xi, eta, g, gi, crowd };
+    return { s, xi, eta, g, gi, crowd, chroma: chroma(s) };
   });
   const edge = (s: Src) => s.x < 6 || s.y < 6 || s.x > N - 7 || s.y > N - 7;
   const blend = (s: Src) => found.some((o) => o !== s && Math.hypot(o.x - s.x, o.y - s.y) < 2.4 && o.snr > 0.3 * s.snr);
@@ -157,12 +159,16 @@ export function detectChanges(frames: Frame[], N: number, center: [number, numbe
   const off = V.map((q, vi) => { const dx: number[] = [], dy: number[] = [];
     for (const r of refs) { const m = r.s.vis[vi]; if (!m || m.snr < 8) continue; const [px, py] = predG(r.g!, q.yr, q.mjd); dx.push(m.xi - px); dy.push(m.eta - py); }
     return dx.length >= 3 ? { xi: median(dx), eta: median(dy), n: dx.length } : { xi: 0, eta: 0, n: 0 }; });
+  // a visit with too few reference stars borrows the median offset of the calibrated ones (never a silent zero) and
+  // carries a larger error; `loose` marks it
+  const okOff = off.filter((o) => o.n >= 3), loose0 = okOff.length ? { xi: median(okOff.map((o) => o.xi)), eta: median(okOff.map((o) => o.eta)) } : { xi: 0, eta: 0 };
+  off.forEach((o) => { if (!o.n) { o.xi = loose0.xi; o.eta = loose0.eta; } });
   const resid: number[] = [];
   refs.forEach((r) => V.forEach((q, vi) => { const m = r.s.vis[vi]; if (!m || m.snr < 8 || !off[vi].n) return; const [px, py] = predG(r.g!, q.yr, q.mjd); resid.push(m.xi - off[vi].xi - px, m.eta - off[vi].eta - py); }));
   const calibrated = off.some((o) => o.n >= 3), astroRms = resid.length >= 6 ? mad(resid, median(resid)) : null;
   const floor = Math.min(0.6, Math.max(0.1, astroRms ?? 0.3));
   const epochsOf = (s: Src): Epoch[] => V.map((q, vi) => { const m = s.vis[vi]; if (!m) return null;
-    return { yr: q.yr, xi: m.xi - off[vi].xi, eta: m.eta - off[vi].eta, err: Math.hypot(((psf / 2.35) / m.snr) * 1.5, floor), src: "SPHEREx" as const, snr: m.snr }; }).filter(Boolean) as Epoch[];
+    return { yr: q.yr, xi: m.xi - off[vi].xi, eta: m.eta - off[vi].eta, err: Math.hypot(((psf / 2.35) / m.snr) * 1.5, floor, off[vi].n ? 0 : 0.35), src: "SPHEREx" as const, snr: m.snr }; }).filter(Boolean) as Epoch[];
   const meanPos = (ep: Epoch[]): [number, number, number] | null => { if (!ep.length) return null; const w = ep.reduce((s, p) => s + 1 / (p.err * p.err), 0);
     return [ep.reduce((s, p) => s + p.xi / (p.err * p.err), 0) / w, ep.reduce((s, p) => s + p.eta / (p.err * p.err), 0) / w, ep.reduce((s, p) => s + p.yr / (p.err * p.err), 0) / w]; };
   // ---- how far from the truth does a source of a given signal-to-noise land? Faint sources are pulled by neighbours
@@ -176,7 +182,7 @@ export function detectChanges(frames: Frame[], N: number, center: [number, numbe
   const sysPos = (snr: number) => Math.hypot(posA, posB / Math.max(snr, 1));
   // ---- brightness of every source in every exposure
   const bad = badMask(), over = FLAG_DEFS.find((d) => d.name === "OVERFLOW"), obit = over ? 1 << over.bit : 0;
-  const base = rows0.map(({ s, xi, eta, g, crowd }) => {
+  const base = rows0.map(({ s, xi, eta, g, crowd, chroma: chr }) => {
     const ep = epochsOf(s), pmSx = ep.length >= 2 ? fitLine(ep, "SPHEREx visits") : null;
     // (the fitted path is in Gaia's frame; the image itself is displaced by that visit's offset, so add it back)
     const mv = pmSx && pmSx.sig > 4 && pmSx.tot > 0.5 ? pmSx : null;
@@ -190,7 +196,7 @@ export function detectChanges(frames: Frame[], N: number, center: [number, numbe
       if (mk) { nMask++; for (let b = -1; b <= 1; b++) for (let a = -1; a <= 1; a++) { const i = Math.round(x) + a, j = Math.round(y) + b; if (i >= 0 && j >= 0 && i < N && j < N) fl |= mk[j * N + i]; } if (fl & obit) nOver++; }
       P.push({ k, mjd: f.mjd, det: f.det, lam, bw, flux: p.flux, err: p.err, snr: p.flux / Math.max(p.err, 1e-9), flagged: (fl & bad) !== 0, visit: f.visit });
     });
-    return { s, xi, eta, g, crowd, ep, pmSx, P, satMask: nMask > 3 && nOver > 0.4 * nMask,
+    return { s, xi, eta, g, crowd, chr, ep, pmSx, P, satMask: nMask > 3 && nOver > 0.4 * nMask,
       J: bandOf(P, 1.17, 1.33), H: bandOf(P, 1.5, 1.78), K: bandOf(P, 2.0, 2.3), W1: bandOf(P, 2.9, 3.8), W2: bandOf(P, 4.1, 5.0) };
   });
   // ---- counterparts in 2010 and ~1999. With a Gaia motion we know where to look; otherwise the same place, and a
@@ -201,27 +207,32 @@ export function detectChanges(frames: Frame[], N: number, center: [number, numbe
   const rows: ChangeRow[] = base.map((b, n) => {
     const { s, xi, eta, g } = b;
     const back = (yr: number): [number, number] => { if (hasPm(g)) { const [ra, dec] = catPos(g!, yr); return sky(ra, dec); } return [xi, eta]; };
-    const [wx, wy] = back(2010.5), wc = within(wPos, wx, wy, 6)[0];
-    const wOk = wc && (wc.d <= 3 || (s.snr >= 20 && (same(b.W1, w1Of(W[wc.k]), 1.6) || same(b.W2, w2Of(W[wc.k]), 1.6))));
-    const w = wOk ? W[wc.k] : null; if (w) usedW.add(wc.k);
-    const [tx, ty] = back(1999.5), tc = within(tPos, tx, ty, 6)[0];
-    const tOk = tc && (tc.d <= 3 || (s.snr >= 20 && same(b.K, Number.isFinite(T[tc.k].k) ? magToMjy(T[tc.k].k, "Ks") : null, 1.6)));
-    const tm = tOk ? T[tc.k] : null;
+    // 2010: the nearest source within 3"; failing that (a slow mover has drifted a few arcsec), the nearest one within
+    // 8" that has the same brightness, for sources bright enough for that comparison to mean something
+    const [wx, wy] = back(2010.5), wn = within(wPos, wx, wy, hasPm(g) ? 4 : 8);
+    const wc = wn.find((q) => q.d <= 3) ?? (s.snr >= 12 ? wn.find((q) => same(b.W1, w1Of(W[q.k]), 1.6) || same(b.W2, w2Of(W[q.k]), 1.6)) : undefined);
+    const w = wc ? W[wc.k] : null; if (wc) usedW.add(wc.k);
     // comparing with another survey adds the confusion error of this source once (it is common to all SPHEREx visits)
     const sys = sysPos(s.snr), ext: Epoch[] = [];
-    if (w) ext.push({ yr: w.epoch, xi: wPos[wc.k][0], eta: wPos[wc.k][1], err: Math.hypot(w.epos ?? 0.3, 0.1, sys), src: "WISE 2010" });
-    if (tm) ext.push({ yr: tm.epoch, xi: tPos[tc.k][0], eta: tPos[tc.k][1], err: Math.hypot(tm.epos ?? 0.2, 0.1, sys), src: "2MASS" });
+    if (w && wc) ext.push({ yr: w.epoch, xi: wPos[wc.k][0], eta: wPos[wc.k][1], err: Math.hypot(w.epos ?? 0.3, 0.1, sys), src: "WISE 2010" });
+    // ~1999: with a Gaia motion, or once 2010 and today give a line, look where that line was; otherwise the same place
+    let [tx, ty] = back(1999.5), tr = 3;
+    const line = !hasPm(g) && ext.length && b.ep.length ? fitLine([...b.ep, ...ext], "") : null;
+    if (line && line.base > 5) { tx = line.xi0 + line.ra * (1999.5 - line.t0); ty = line.eta0 + line.dec * (1999.5 - line.t0); tr = Math.min(6, Math.max(2.5, 1 + 3 * line.etot * (line.t0 - 1999.5))); }
+    const tc = within(tPos, tx, ty, tr)[0], tm = tc ? T[tc.k] : null;
+    if (tm && tc) ext.push({ yr: tm.epoch, xi: tPos[tc.k][0], eta: tPos[tc.k][1], err: Math.hypot(tm.epos ?? 0.2, 0.1, sys), src: "2MASS" });
     const pm = b.ep.length && ext.length ? fitLine([...b.ep, ...ext], ["SPHEREx", ...ext.map((e) => e.src)].join(" + ")) : b.pmSx;
     const tags: Tag[] = [], zone = zoneOf(xi, eta);
     const self = zone && Math.hypot(zone.xi - xi, zone.eta - eta) < 9;
-    if (b.satMask || self) tags.push("SATURATED"); else if (zone || blend(s) || b.crowd) tags.push("BLENDED");
+    const split = b.chr > Math.max(1.5, 4 * sysPos(s.snr));        // red and blue centres differ: two sources of different colour
+    if (b.satMask || self) tags.push("SATURATED"); else if (zone || blend(s) || b.crowd || split) tags.push("BLENDED");
     if (edge(s)) tags.push("EDGE");
     const lcv = !tags.includes("SATURATED") && b.P.length >= 8 ? lightCurve(b.P) : null;
     const [ra, dec] = stampToSky(center[0], center[1], N, s.x, s.y);
     return { n: n + 1, x: s.x, y: s.y, ra, dec, snr: s.snr, red: s.red, track: !!s.track, gaia: g, wise: w, tm, linked: false, J: b.J, H: b.H, K: b.K, W1: b.W1, W2: b.W2,
       epochs: [...ext, ...b.ep].sort((p, q) => p.yr - q.yr), pm, pmSx: b.pmSx, dW1: null, dW2: null, dK: null,
       lc: lcv ? { variable: lcv.variable, amp: (lcv.best ?? lcv.all).amplitude, pairs: lcv.pairs } : null,
-      tags, why: zone && !self ? `in the halo of ${zone.id}` : "", known: "", isTarget: !!target && Math.hypot(s.x - target[0], s.y - target[1]) < 2, P: b.P };
+      tags, why: zone && !self ? `in the halo of ${zone.id}` : split ? `its red and blue light are centred ${b.chr.toFixed(1)}″ apart: two sources in one pixel` : "", known: "", isTarget: !!target && Math.hypot(s.x - target[0], s.y - target[1]) < 2, P: b.P };
   });
   const clean = (r: ChangeRow) => !r.tags.includes("SATURATED") && !r.tags.includes("BLENDED") && !r.tags.includes("EDGE");
   // ---- depth of this field in the two WISE bands (5 sigma, mJy)
@@ -277,7 +288,10 @@ export function detectChanges(frames: Frame[], N: number, center: [number, numbe
       linkedW.add(pick.k); r.wise = pick.w; r.linked = true; r.dW1 = r.dW2 = null;
       const e: Epoch = { yr: pick.w.epoch, xi: pick.xi, eta: pick.eta, err: Math.hypot(pick.w.epos ?? 0.3, 0.1, sysPos(r.snr)), src: "WISE 2010" };
       r.epochs = [e, ...r.epochs.filter((q) => q.src === "SPHEREx")].sort((a, b) => a.yr - b.yr);
-      r.pm = fitLine(r.epochs, "SPHEREx + WISE 2010, linked");
+      r.pm = fitLine(r.epochs, "SPHEREx + WISE 2010, linked"); r.tm = null;
+      if (r.pm && haveT) { const L = r.pm, bx = L.xi0 + L.ra * (1999.5 - L.t0), by = L.eta0 + L.dec * (1999.5 - L.t0), tc = within(tPos, bx, by, Math.min(12, Math.max(3, 1 + 3 * L.etot * (L.t0 - 1999.5))))[0];
+        if (tc) { const t2 = T[tc.k]; r.tm = t2; r.epochs = [{ yr: t2.epoch, xi: tPos[tc.k][0], eta: tPos[tc.k][1], err: Math.hypot(t2.epos ?? 0.2, 0.1, sysPos(r.snr)), src: "2MASS" as const }, ...r.epochs].sort((a, b) => a.yr - b.yr);
+          r.pm = fitLine(r.epochs, "SPHEREx + WISE 2010 + 2MASS, linked"); } }
     }
   }
   // ---- verdicts

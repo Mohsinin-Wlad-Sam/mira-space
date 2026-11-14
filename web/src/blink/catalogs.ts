@@ -129,13 +129,13 @@ export function parseCoords(q: string): [number, number] | null {
 export type Challenge = Resolved & { key: string; name: string; otype: string; blurb: string; test: string; fov: number; lit: string; frames?: number; tab?: "spectrum" | "light" | "motion" };
 export const CHALLENGE: Challenge[] = [
   { key: "barnard", name: "Barnard's Star", ra: 269.45207696, dec: 4.69336497, pmra: -0.801551, pmdec: 10.362394, epoch: 2000, plx: 546.976, sptype: "M4V", otype: "red dwarf", source: "Gaia DR3 via SIMBAD",
-    blurb: "The fastest-moving star in the sky", test: "10.4″ per year: it shifts by more than a pixel between SPHEREx visits. So bright that it saturates — watch the OVERFLOW flag.", fov: 32, lit: "Gaia DR3", tab: "motion" },
+    blurb: "The fastest-moving star in the sky", test: "10.4″ per year: it shifts by more than a pixel between SPHEREx visits. So bright that it saturates — watch the OVERFLOW flag.", fov: 64, lit: "Gaia DR3", tab: "motion" },
   { key: "eps-indi-b", name: "Epsilon Indi B", ra: 331.04414659, dec: -56.7828442, pmra: 3.981977, pmdec: -2.466832, epoch: 2000, plx: 270.658, sptype: "T1+T6", otype: "brown-dwarf pair", source: "Gaia DR3 via SIMBAD",
-    blurb: "Two brown dwarfs orbiting a nearby star", test: "A methane world: it nearly vanishes at 3.3 µm and returns at 4 µm. MIRA measures its motion and parallax from SPHEREx frames alone.", fov: 32, lit: "Gaia DR3" },
+    blurb: "Two brown dwarfs orbiting a nearby star", test: "A methane world: it nearly vanishes at 3.3 µm and returns at 4 µm. MIRA measures its motion and parallax from SPHEREx frames alone.", fov: 64, lit: "Gaia DR3" },
   { key: "wise-0855", name: "WISE 0855−0714", ra: 133.81890825, dec: -7.247048, pmra: -8.1237, pmdec: 0.6732, epoch: 2000, plx: 439.0, sptype: "Y", otype: "coldest known brown dwarf", source: "Kirkpatrick et al. 2021 via SIMBAD",
-    blurb: "The coldest known brown dwarf (~285 K)", test: "Invisible below 4 µm and 8.1″ per year fast: only SPHEREx's two reddest detectors, stacked along its motion, can show it.", fov: 32, lit: "Kirkpatrick+ 2021" },
+    blurb: "The coldest known brown dwarf (~285 K)", test: "Invisible below 4 µm and 8.1″ per year fast: only SPHEREx's two reddest detectors, stacked along its motion, can show it.", fov: 64, lit: "Kirkpatrick+ 2021" },
   { key: "rw-aur", name: "RW Aurigae", ra: 76.95652603, dec: 30.40143817, pmra: 0.00723, pmdec: -0.02033, epoch: 2000, plx: 15.42, sptype: "K1–K5e", otype: "T Tauri binary", source: "SIMBAD",
-    blurb: "A young star dimmed by its own dust", test: "A variable: its infrared light is compared visit to visit at matched wavelengths. It saturates, so MIRA measures its halo.", fov: 32, lit: "van Leeuwen 2007", frames: 144, tab: "light" },
+    blurb: "A young star dimmed by its own dust", test: "A variable: its infrared light is compared visit to visit at matched wavelengths. It saturates, so MIRA measures its halo.", fov: 64, lit: "van Leeuwen 2007", frames: 144, tab: "light" },
   { key: "r-dra", name: "R Draconis", ra: 248.16761083, dec: 66.75497942, pmra: -0.020643, pmdec: 0.006149, epoch: 2000, plx: 1.2509, sptype: "M5–M9e", otype: "Mira variable, period 246 d", source: "Gaia DR3 via SIMBAD",
-    blurb: "A pulsating red giant near the ecliptic pole", test: "Near the ecliptic pole, where SPHEREx returns week after week: watch it brighten tenfold at 1 µm while barely changing at 4 µm.", fov: 32, lit: "Gaia DR3", frames: 144, tab: "light" },
+    blurb: "A pulsating red giant near the ecliptic pole", test: "Near the ecliptic pole, where SPHEREx returns week after week: watch it brighten tenfold at 1 µm while barely changing at 4 µm.", fov: 64, lit: "Gaia DR3", frames: 144, tab: "light" },
 ];

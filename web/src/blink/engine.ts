@@ -132,7 +132,9 @@ export function chooseExposures(all: Exposure[], t: Target, max: number, dets?: 
     L.forEach((e, k) => { if (k && e.mjd - L[k - 1].mjd > 20) visits.push([]); visits[visits.length - 1].push(e); });
     const quota = visits.map(() => 0);
     for (let left = per, guard = 0; left > 0 && guard < 1000; guard++) { const i = guard % visits.length; if (quota[i] < visits[i].length) { quota[i]++; left--; } else if (quota.every((q, j) => q >= visits[j].length)) break; }
-    visits.forEach((v, i) => { const q = quota[i]; for (let k = 0; k < q; k++) pick.push(v[q === 1 ? Math.floor(v.length / 2) : Math.round((k * (v.length - 1)) / (q - 1))]); });
+    // within a visit the exposures step across the filter, so position in the visit is wavelength: stagger the picks
+    // from visit to visit, otherwise every visit samples the same few wavelengths and leaves the same gaps
+    visits.forEach((v, i) => { const q = quota[i], ph = (i + 0.5) / visits.length; for (let k = 0; k < q; k++) pick.push(v[Math.min(v.length - 1, Math.floor(((k + ph) / q) * v.length))]); });
   }
   return { cover, pick: [...new Set(pick)].sort((a, b) => a.mjd - b.mjd) };
 }

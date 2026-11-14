@@ -84,6 +84,7 @@ export function binSpectrum(P: Phot[], res = 0.04): { lam: number; flux: number;
   for (const p of good) { if (cur.length && p.lam > cur[0].lam * (1 + res)) flush(); cur.push(p); }
   flush(); return bins;
 }
+/** one visit's level; `n` is the number of distinct exposures of that visit that entered a matched pair */
 export type LcVisit = { visit: number; mjd: number; ratio: number; err: number; n: number };
 export type LcSeries = { det: number; visits: LcVisit[]; amplitude: number; chi2: number; lo: LcVisit | null; hi: LcVisit | null };
 export type LightCurve = { all: LcSeries; series: LcSeries[]; pairs: number; variable: boolean; best: LcSeries | null };
@@ -99,10 +100,11 @@ function matchedLevels(P: Phot[], det: number, tol = 0.012): { V: LcVisit[]; pai
   const ids = [...new Set(good.map((p) => p.visit))].sort((a, b) => a - b), n = ids.length, ix = new Map(ids.map((v, i) => [v, i]));
   if (n < 2) return { V: [], pairs: 0 };
   const A = Array.from({ length: n }, () => new Array(n).fill(0)), rhs = new Array(n).fill(0), cnt = new Array(n).fill(0), list: [number, number, number, number][] = [];
+  const seen: Set<number>[] = Array.from({ length: n }, () => new Set<number>());          // distinct exposures of each visit that take part in a pair
   for (let i = 0; i < good.length; i++) for (let j = i + 1; j < good.length && good[j].lam <= good[i].lam * (1 + tol); j++) {
     const p = good[i], q = good[j]; if (p.det !== q.det || p.visit === q.visit) continue;
     const a = ix.get(p.visit)!, c = ix.get(q.visit)!, d = Math.log(q.flux / p.flux), w = 1 / (Math.pow(p.err / p.flux, 2) + Math.pow(q.err / q.flux, 2) + 2 * 0.03 * 0.03);
-    A[a][a] += w; A[c][c] += w; A[a][c] -= w; A[c][a] -= w; rhs[c] += w * d; rhs[a] -= w * d; cnt[a]++; cnt[c]++; list.push([a, c, d, w]);
+    A[a][a] += w; A[c][c] += w; A[a][c] -= w; A[c][a] -= w; rhs[c] += w * d; rhs[a] -= w * d; cnt[a]++; cnt[c]++; seen[a].add(i); seen[c].add(j); list.push([a, c, d, w]);
   }
   // visits linked by at least one chain of pairs form a group; levels are only comparable inside a group
   const root = ids.map((_, i) => i), find = (i: number): number => (root[i] === i ? i : (root[i] = find(root[i])));
@@ -118,7 +120,7 @@ function matchedLevels(P: Phot[], det: number, tol = 0.012): { V: LcVisit[]; pai
   const used = list.filter(([a]) => find(a) === groups[0][0]);
   const chi = used.reduce((q, [a, c, d, w]) => q + w * Math.pow(x[c] - x[a] - d, 2), 0) / Math.max(1, used.length - (m - 1)), scale = Math.max(1, Math.sqrt(chi));
   const V = keep.map((i, q) => { const L = good.filter((p) => p.visit === ids[i]);
-    return { visit: ids[i], mjd: L.reduce((t, p) => t + p.mjd, 0) / L.length, ratio: Math.exp(x[i]), err: Math.exp(x[i]) * Math.sqrt(Math.max(sol.inv[q][q] - 1 / (m * m), 1e-6)) * scale, n: cnt[i] }; }).sort((a, b) => a.mjd - b.mjd);
+    return { visit: ids[i], mjd: L.reduce((t, p) => t + p.mjd, 0) / L.length, ratio: Math.exp(x[i]), err: Math.exp(x[i]) * Math.sqrt(Math.max(sol.inv[q][q] - 1 / (m * m), 1e-6)) * scale, n: seen[i].size }; }).sort((a, b) => a.mjd - b.mjd);
   return { V, pairs: list.length };
 }
 /** Repeatability of one exposure's flux on constant stars (ln units), by detector. SPHEREx's 6" pixels undersample the
