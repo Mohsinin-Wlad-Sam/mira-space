@@ -148,6 +148,8 @@
   .bk { padding: 0 14px 40px; }
   .bk-start p { font-size: 16px; } .bk-go { height: 50px; } .bk-go .btn { padding: 0 16px; }
   .bk-row > .eyebrow { width: 100%; } .bk-find .a { font-size: 16px; }
+  /* on a phone the time bar gets a row of its own, above the buttons */
+  .bk-transport { flex-wrap: wrap; justify-content: center; } .bk-transport .bk-strip { order: -1; flex: 1 1 100%; width: 100%; }
 }
 
 /* ================= v5: the Lab as a set of instruments ================= */
