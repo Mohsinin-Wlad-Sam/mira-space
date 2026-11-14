@@ -7,10 +7,10 @@
 import { stampToSky } from "./engine";
 
 export type PastKey = "tm" | "wise";
-export type Survey = { key: PastKey; name: string; band: string; yr: number; url: string; order: number; fmt: "fits" | "jpg" };
+export type Survey = { key: PastKey; name: string; band: string; yr: number; url: string; /** order used on the Lab's 6.15" grid */ order: number; /** deepest order the tiles exist at */ maxOrder: number; fmt: "fits" | "jpg" };
 export const SURVEYS: Survey[] = [
-  { key: "tm", name: "2MASS", band: "2.2 µm", yr: 1999.5, url: "https://irsa.ipac.caltech.edu/data/hips/CDS/2MASS/K", order: 7, fmt: "jpg" },
-  { key: "wise", name: "WISE", band: "4.6 µm", yr: 2010.5, url: "https://irsa.ipac.caltech.edu/data/hips/CDS/AllWISE/W2", order: 7, fmt: "fits" },
+  { key: "tm", name: "2MASS", band: "2.2 µm", yr: 1999.5, url: "https://irsa.ipac.caltech.edu/data/hips/CDS/2MASS/K", order: 7, maxOrder: 9, fmt: "jpg" },
+  { key: "wise", name: "WISE", band: "4.6 µm", yr: 2010.5, url: "https://irsa.ipac.caltech.edu/data/hips/CDS/AllWISE/W2", order: 7, maxOrder: 8, fmt: "fits" },
 ];
 const D2R = Math.PI / 180, TILE = 512, TB = 9;
 
@@ -56,8 +56,8 @@ async function jpegTile(blob: Blob): Promise<Float32Array | null> {
   return out;
 }
 const tiles = new Map<string, Promise<Float32Array | null>>();
-function tile(s: Survey, npix: number, signal?: AbortSignal): Promise<Float32Array | null> {
-  const url = `${s.url}/Norder${s.order}/Dir${Math.floor(npix / 10000) * 10000}/Npix${npix}.${s.fmt}`;
+function tile(s: Survey, order: number, npix: number, signal?: AbortSignal): Promise<Float32Array | null> {
+  const url = `${s.url}/Norder${order}/Dir${Math.floor(npix / 10000) * 10000}/Npix${npix}.${s.fmt}`;
   let p = tiles.get(url);
   if (!p) {
     p = (async () => { const ac = new AbortController(), h = setTimeout(() => ac.abort(), 30000); signal?.addEventListener("abort", () => ac.abort());
@@ -75,25 +75,44 @@ function tile(s: Survey, npix: number, signal?: AbortSignal): Promise<Float32Arr
 export const ORIENT: Record<Survey["fmt"], number> = { fits: 6, jpg: 4 };
 const cell = (x: number, y: number, o: number) => { const [a, b] = o & 4 ? [y, x] : [x, y], col = o & 1 ? TILE - 1 - a : a, row = o & 2 ? TILE - 1 - b : b; return row * TILE + col; };
 
-/** the survey's picture of the field, on the stamp grid (N x N, 6.15" pixels, north up, east left); null if it cannot be read */
-export async function pastImage(s: Survey, ra0: number, dec0: number, N: number, signal?: AbortSignal, orient = ORIENT[s.fmt]): Promise<Float32Array | null> {
-  const nside = 2 ** (s.order + TB), SUB = [-0.25, 0.25], n4 = N * N * 4, tn = new Int32Array(n4), tp = new Int32Array(n4), want = new Set<number>(); let q = 0;
+/** sample a survey on any N x N grid: `toSky(i, j)` gives the sky position of a (fractional) pixel. Each output pixel
+ *  is the mean of 2 x 2 samples a quarter of a pixel off its centre. */
+async function sample(s: Survey, order: number, N: number, toSky: (i: number, j: number) => [number, number], signal?: AbortSignal, orient = ORIENT[s.fmt]): Promise<Float32Array | null> {
+  const nside = 2 ** (order + TB), SUB = [-0.25, 0.25], n4 = N * N * 4, tn = new Int32Array(n4), tp = new Int32Array(n4), want = new Set<number>(); let q = 0;
   for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) for (const dj of SUB) for (const di of SUB) {
-    const [ra, dec] = stampToSky(ra0, dec0, N, i + di, j + dj), [face, ix, iy] = hpxFaceXY(nside, ra, dec);
-    tn[q] = face * 4 ** s.order + interleave(ix >> TB, iy >> TB, s.order); tp[q] = cell(ix & (TILE - 1), iy & (TILE - 1), orient); want.add(tn[q]); q++;
+    const [ra, dec] = toSky(i + di, j + dj), [face, ix, iy] = hpxFaceXY(nside, ra, dec);
+    tn[q] = face * 4 ** order + interleave(ix >> TB, iy >> TB, order); tp[q] = cell(ix & (TILE - 1), iy & (TILE - 1), orient); want.add(tn[q]); q++;
   }
   if (want.size > 9) return null;
-  const got = new Map<number, Float32Array | null>(); await Promise.all([...want].map(async (t) => got.set(t, await tile(s, t, signal))));
+  const got = new Map<number, Float32Array | null>(); await Promise.all([...want].map(async (t) => got.set(t, await tile(s, order, t, signal))));
   if (![...got.values()].some(Boolean)) return null;
   const out = new Float32Array(N * N); let ok = 0;
   for (let k = 0; k < N * N; k++) { let sum = 0, m = 0; for (let u = 0; u < 4; u++) { const d = got.get(tn[k * 4 + u]), v = d ? d[tp[k * 4 + u]] : NaN; if (Number.isFinite(v)) { sum += v; m++; } } out[k] = m ? sum / m : NaN; if (m) ok++; }
-  if (!(ok > 0.5 * N * N)) return null;
-  if (s.fmt !== "jpg") return out;
-  // 2MASS stars are sharper (2.5") than a 6" pixel and its tiles are 8-bit: a light 3 x 3 smoothing brings the picture
-  // to the resolution of the WISE and SPHEREx ones, so that the three epochs can be compared by eye
+  return ok > 0.5 * N * N ? out : null;
+}
+/** a light 3 x 3 smoothing (weights 1 2 1) */
+function smooth3(img: Float32Array, N: number): Float32Array {
   const sm = new Float32Array(N * N), W = [1, 2, 1];
   for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) { let sum = 0, w = 0;
-    for (let b = -1; b <= 1; b++) for (let a = -1; a <= 1; a++) { const x = i + a, y = j + b; if (x < 0 || y < 0 || x >= N || y >= N) continue; const v = out[y * N + x]; if (Number.isFinite(v)) { sum += v * W[a + 1] * W[b + 1]; w += W[a + 1] * W[b + 1]; } }
+    for (let b = -1; b <= 1; b++) for (let a = -1; a <= 1; a++) { const x = i + a, y = j + b; if (x < 0 || y < 0 || x >= N || y >= N) continue; const v = img[y * N + x]; if (Number.isFinite(v)) { sum += v * W[a + 1] * W[b + 1]; w += W[a + 1] * W[b + 1]; } }
     sm[j * N + i] = w ? sum / w : NaN; }
   return sm;
+}
+/** the survey's picture of the field, on the Lab's stamp grid (N x N, 6.15" pixels, north up, east left); null if it cannot be read */
+export async function pastImage(s: Survey, ra0: number, dec0: number, N: number, signal?: AbortSignal, orient = ORIENT[s.fmt]): Promise<Float32Array | null> {
+  const out = await sample(s, s.order, N, (i, j) => stampToSky(ra0, dec0, N, i, j), signal, orient);
+  // 2MASS stars are sharper (2.5") than a 6" pixel and its tiles are 8-bit: a light smoothing brings the picture to the
+  // resolution of the WISE and SPHEREx ones, so that the three epochs can be compared by eye
+  return out && s.fmt === "jpg" ? smooth3(out, N) : out;
+}
+/** tile pixel size at a HiPS order, arcsec */
+const tilePix = (order: number) => 0.8052 * 2 ** (9 - order);
+/** A cutout at the survey's own sharpness: N x N pixels of `pix` arcsec centred on (ra0, dec0), north up, east left.
+ *  Used where a slow mover has to be seen shifting by a few arcseconds (the map's object card). */
+export async function pastCutout(s: Survey, ra0: number, dec0: number, N: number, pix: number, signal?: AbortSignal): Promise<Float32Array | null> {
+  const order = Math.max(3, Math.min(s.maxOrder, Math.ceil(9 - Math.log2(pix / 0.8052)))), c = (N - 1) / 2, D = Math.PI / 180, d0 = dec0 * D, sc = pix / 3600 * D;
+  const toSky = (i: number, j: number): [number, number] => { const x = -(i - c) * sc, y = -(j - c) * sc, den = Math.cos(d0) - y * Math.sin(d0);
+    return [ra0 + Math.atan2(x, den) / D, Math.atan2(Math.sin(d0) + y * Math.cos(d0), Math.hypot(x, den)) / D]; };
+  const out = await sample(s, order, N, toSky, signal);
+  return out && s.fmt === "jpg" && tilePix(order) < 0.75 * pix ? smooth3(out, N) : out;
 }

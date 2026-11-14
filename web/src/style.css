@@ -774,3 +774,15 @@ body.asst-on .blinkpage, body.asst-on .catpage, body.asst-on .logpage { right: m
   .ct-obj h2 { font-size: 21px; }
 }
 .ct-plane { display: flex; align-items: center; gap: 8px; margin: 0 0 10px; font-size: 12px; color: var(--dim); cursor: pointer; } .ct-plane input { accent-color: #f0f0fa; } .ct-plane span { font-family: var(--mono); font-size: 10.5px; color: var(--faint); }
+
+/* ---- the map: what was confirmed, and the "see it move" pictures in an object's card */
+.sp-find { display: grid; gap: 6px; margin: 0 0 14px; }
+.sp-findbtn { display: flex; align-items: baseline; gap: 10px; text-align: left; padding: 8px 10px; background: none; border: .8px solid var(--line); border-radius: var(--radius); color: var(--white); cursor: pointer; }
+.sp-findbtn:hover { border-color: var(--white); } .sp-findbtn b { font-family: var(--display, inherit); font-size: 20px; color: #ff9d4d; min-width: 62px; } .sp-findbtn span { font-size: 12px; opacity: .8; line-height: 1.3; }
+.sp-findbtn.hl b { color: #7df0a6; }
+.sp-ver { margin: 12px 0; padding: 10px 12px; border-left: 2px solid #ff9d4d; background: rgba(255,157,77,.07); font-size: 13px; line-height: 1.5; }
+.pv { margin: 8px 0 12px; } .pv-stage { position: relative; } .pv-cv { display: block; width: 100%; aspect-ratio: 1; background: #05060a; border: .8px solid var(--line); }
+.pv-cap { position: absolute; left: 8px; top: 8px; right: 8px; font-size: 11px; font-family: var(--mono); color: #f0f0fa; text-shadow: 0 1px 3px #000, 0 0 8px #000; }
+.pv-ctl { display: flex; align-items: center; gap: 8px; margin-top: 8px; } .pv-ctl .icon-btn { position: static; width: 32px; height: 32px; flex: none; } .pv-range { flex: 1; min-width: 0; } .pv-yr { min-width: 40px; text-align: right; }
+.pv-stops { display: flex; gap: 6px; margin-top: 6px; } .pv-stops button { flex: 1; padding: 5px 4px; font-size: 11px; font-family: var(--mono); background: none; color: var(--white); border: .8px solid var(--line); border-radius: var(--radius); cursor: pointer; }
+.pv-stops button.on { background: var(--white); color: #000; } .pv-note { font-size: 11px; opacity: .7; line-height: 1.45; margin: 8px 0 0; }

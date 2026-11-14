@@ -651,7 +651,7 @@ function ensureSpace(): Promise<SpaceHandle | null> {
     try {
       const { openSpace } = await import("./space");
       space = await openSpace(host, { lowPower: set.saver || LOW_POWER,
-        onObserve: (t) => { const pos = `${t.ra.toFixed(5)} ${t.dec >= 0 ? "+" : ""}${t.dec.toFixed(5)}`; if (t.name) observe(t.name, { ra: t.ra, dec: t.dec, name: t.name, epoch: REF_YEAR }); else observe(pos); },
+        onObserve: (t) => { if (t.pmra !== undefined) { observe({ ra: t.ra, dec: t.dec, pmra: t.pmra, pmdec: t.pmdec, epoch: t.epoch, name: t.name ?? "Confirmed mover" } as BlinkTarget); return; } const pos = `${t.ra.toFixed(5)} ${t.dec >= 0 ? "+" : ""}${t.dec.toFixed(5)}`; if (t.name) observe(t.name, { ra: t.ra, dec: t.dec, name: t.name, epoch: REF_YEAR }); else observe(pos); },
       });
     } catch (e) { console.warn("3D universe unavailable", e); space = null; }
     if (!space) mountHero(host, true);
