@@ -27,7 +27,7 @@ app and need not be deployed.
 # on your machine
 cd web && npm ci && npm run build            # -> web/dist (app + everything under public/)
 rsync -az --delete web/dist/ user@host:/srv/mira/
-rsync -az web/server deploy user@host:/opt/mira/      # only needed for the assistant
+rsync -azR web/server deploy user@host:/opt/mira/     # the API and the assistant (-R keeps web/server beside deploy)
 
 # on the instance (Debian/Ubuntu): Caddy gives automatic HTTPS
 sudo apt install -y caddy nodejs
@@ -41,8 +41,8 @@ other sites (do not add `X-Frame-Options`): embedding is a feature. Both maps an
 the `<iframe>` for the view on screen. The `allow="geolocation"` attribute in that snippet is only needed for
 "My sky now", which asks the visitor's browser for a position and uses it inside the page.
 
-The data under `web/public/data/` are not in git (they are produced on the cluster); `web/sync_data.sh` pulls them.
-For a deployment without cluster access, copy `web/public/data/` from a machine that has them.
+The data under `web/public/data/` are in the repository since 15 November 2026 (about 510 MB): a clone is enough to
+build and deploy. `web/sync_data.sh` refreshes them from the cluster.
 
 ### Sizing on the AWS free plan
 
@@ -62,6 +62,34 @@ the public us-east-1 list as we know them: check them in AWS's calculator before
 t3.small, t4g.micro and t3.micro are among the instance types that plan allows
 ([AWS announcement](https://aws.amazon.com/about-aws/whats-new/2025/07/aws-free-tier-credits-month-free-plan),
 [EC2 documentation](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-free-tier-usage.html)).
+
+### Production as deployed (16 November 2026)
+
+| Item | Value |
+|---|---|
+| Instance | EC2 `mira-prod`: **t4g.micro** (2 vCPU, 1 GB, Arm), Ubuntu 24.04, Paris (`eu-west-3a`). The build is done on a laptop, so 1 GB is enough. CPU credits are in `standard` mode: a very busy hour can slow it down, but it can never add a charge |
+| Disk | 20 GB gp3, encrypted (3.6 GB used) |
+| Address | fixed (Elastic IP): `15.224.146.58` |
+| Open ports | 80 and 443 to everyone; 22 only from the laptop that deployed it (security group `mira-web`: change that one rule when your address changes) |
+| Site | `/srv/mira` (20,494 files, 521 MB), served by Caddy with `deploy/Caddyfile` |
+| API and assistant | `deploy/mira-api.service` (Node 22, user `mira`, on `127.0.0.1:8787`). Settings in `/etc/mira/mira.env`, which only root can read: the model key, `MIRA_DATA=/srv/mira/data`, `MIRA_API_STORE` and `MIRA_ANSWERS_FILE` under `/var/lib/mira`, and `MIRA_API_ADMIN`, made on the server (read it with `sudo grep MIRA_API_ADMIN /etc/mira/mira.env`) |
+| Names it answers on | `SITE_ADDRESS` in `/etc/systemd/system/caddy.service.d/mira.conf`; Caddy obtains and renews the certificates |
+
+Cost at Paris list prices (AWS price list, read on 16 November 2026): the instance US$0.0094 an hour (6.86 a month), the
+disk 1.86, the address 3.65: **about US$12.40 a month**.
+
+To publish a new build:
+
+```bash
+cd web && npm run build
+rsync -az --delete -e "ssh -i ~/.ssh/mira-prod-eu-west-3.pem" dist/ ubuntu@15.224.146.58:/srv/mira/
+# only when web/server or deploy changed:
+cd .. && rsync -azR -e "ssh -i ~/.ssh/mira-prod-eu-west-3.pem" web/server deploy ubuntu@15.224.146.58:app/
+ssh -i ~/.ssh/mira-prod-eu-west-3.pem ubuntu@15.224.146.58 'sudo rsync -a --delete app/ /opt/mira/ && sudo systemctl restart mira-api'
+```
+
+A domain name: at the registrar, two `A` records (the bare name and `www`) to `15.224.146.58`; then put both names in
+`SITE_ADDRESS` and `sudo systemctl restart caddy`. The certificate arrives by itself within a minute.
 
 ### The data API (same process as the assistant)
 

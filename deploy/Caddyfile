@@ -18,7 +18,11 @@
 		reverse_proxy 127.0.0.1:{$MIRA_PROXY_PORT:8787}
 	}
 
-	# two entry pages: the landing (/, client-side routes fall back to it) and the app (/explore/)
-	try_files {path} {path}/index.html /index.html
-	file_server
+	# two entry pages: the landing (/, client-side routes fall back to it) and the app (/explore/).
+	# Inside its own "handle" on purpose: Caddy runs try_files before any handle, so left outside it would rewrite
+	# /api/... to /index.html before the proxy above ever saw the request.
+	handle {
+		try_files {path} {path}/index.html /index.html
+		file_server
+	}
 }

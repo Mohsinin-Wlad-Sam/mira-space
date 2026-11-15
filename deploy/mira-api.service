@@ -1,0 +1,26 @@
+# MIRA: the API and the assistant's proxy (one small Node process behind Caddy).
+# Install:  sudo cp deploy/mira-api.service /etc/systemd/system/ && sudo systemctl daemon-reload && sudo systemctl enable --now mira-api
+# Its settings (the model key among them) are read from /etc/mira/mira.env, a file only root can read.
+[Unit]
+Description=MIRA API and assistant proxy
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=mira
+Group=mira
+WorkingDirectory=/var/lib/mira
+EnvironmentFile=/etc/mira/mira.env
+ExecStart=/usr/local/bin/node /opt/mira/deploy/assistant-proxy.mjs
+Restart=always
+RestartSec=2
+# the process only needs to read the site's data and write its two small files in /var/lib/mira
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/lib/mira
+MemoryMax=400M
+
+[Install]
+WantedBy=multi-user.target
