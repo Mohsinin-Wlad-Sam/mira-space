@@ -43,6 +43,18 @@ const TOOLS: { g: string; k: ToolKey; t: string; d: string; pro?: boolean }[] = 
   { g: "Researcher tools", k: "wm", t: "Sky world model", d: "A network that learned how the sky moves: its forecast, and what it did not expect", pro: true },
   { g: "Researcher tools", k: "watch", t: "Watchlist", d: "Measure a list of targets in one run; export the table", pro: true },
 ];
+/** the rail's icons: 20 x 20, one stroke width */
+const ICON: Record<string, string> = {
+  picture: '<rect x="3" y="4" width="14" height="12" rx="1"/><path d="M3 13l4-4 3 3 2-2 5 5"/>', layers: '<path d="M10 3l7 4-7 4-7-4z"/><path d="M3 10.5l7 4 7-4"/><path d="M3 14l7 4 7-4"/>',
+  colours: '<path d="M4 16V9M8 16V4M12 16v-5M16 16V7"/>', changes: '<circle cx="10" cy="10" r="4.5"/><path d="M10 2v3.5M10 14.5V18M2 10h3.5M14.5 10H18"/>',
+  motion: '<path d="M4.5 15.5L15 5M15 5H9.5M15 5v5.5"/><circle cx="4.5" cy="15.5" r="1.3"/>', spectrum: '<path d="M2 12c2 0 2-7 4-7s2 10 4 10 2-6 4-6 2 3 4 3"/>',
+  light: '<circle cx="10" cy="10" r="3"/><path d="M10 2v2.2M10 15.8V18M2 10h2.2M15.8 10H18M4.4 4.4l1.5 1.5M14.1 14.1l1.5 1.5M4.4 15.6l1.5-1.5M14.1 5.9l1.5-1.5"/>',
+  limits: '<path d="M3 16.5h14"/><path d="M3 16.5C6 8 9 4.5 17 4.5"/><path d="M3 10h14" stroke-dasharray="1.5 2.5"/>', frames: '<rect x="3" y="3" width="6" height="6"/><rect x="11" y="3" width="6" height="6"/><rect x="3" y="11" width="6" height="6"/><rect x="11" y="11" width="6" height="6"/>',
+  export: '<path d="M10 3v10M6 9l4 4 4-4M4 17h12"/>', wm: '<path d="M10 2l2.1 5.9L18 10l-5.9 2.1L10 18l-2.1-5.9L2 10l5.9-2.1z"/>', watch: '<path d="M8 5h9M8 10h9M8 15h9"/><path d="M3 5l1 1 1.6-2M3 10l1 1 1.6-2M3 15l1 1 1.6-2"/>',
+  sky: '<circle cx="10" cy="10" r="7"/><path d="M3 10h14M10 3c3 3 3 11 0 14M10 3c-3 3-3 11 0 14"/>', save: '<path d="M5.5 3h9v14L10 13.8 5.5 17z"/>', docs: '<path d="M5 3h7l3 3v11H5z"/><path d="M12 3v3h3M7.5 10.5h5M7.5 13.5h5"/>',
+  read: '<path d="M4 5h12M4 10h12M4 15h7"/>',
+};
+const icon = (k: string) => `<svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON[k] ?? ""}</svg>`;
 type Item = { kind: "frame" | "stack" | "rgb" | "diff"; key: string; mjd: number; f?: Frame; list?: Frame[]; ref?: Frame[]; label?: string };
 type Probe = { dx: number; dy: number; follow: boolean };
 type TwoMass = CatSource & { j: number; h: number; k: number };
@@ -101,44 +113,46 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
           <div>${CHALLENGE.map((t) => `<button class="chip" data-key="${t.key}" title="${esc(t.blurb)}">${esc(t.name)}</button>`).join("")}</div></div>
       </div>
     </div>
-    <div class="bk-body lab" id="bk-body" hidden>
-      <section class="lab-main">
-        <div class="lab-who">
-          <div class="bk-target" id="bk-target"></div>
-          <div class="lab-facts" id="bk-facts"></div>
+    <div class="bk-body labx" id="bk-body" hidden>
+      <nav class="lx-rail" id="bk-rail" aria-label="Tools"></nav>
+      <header class="lx-top">
+        <div class="bk-target" id="bk-target"></div>
+        <div class="lx-opts">
+          <div class="lx-tabs" id="bk-views" role="tablist" aria-label="How to show the exposures">${VIEWS.map((v, k) => `<button role="tab" data-v="${v.k}" title="${v.tip} (key ${k + 1})">${v.t}</button>`).join("")}</div>
+          <label class="lx-sel" title="Field of view"><span>Field</span><select id="bk-fovsel" aria-label="Field of view">${SIZES.map((s) => `<option value="${s}">${((s * PIX_ARCSEC) / 60).toFixed(1)}′</option>`).join("")}</select></label>
         </div>
-        <div class="lab-pic">
-          <div class="bk-stage" id="bk-stage">
-            <canvas id="bk-cv" aria-label="SPHEREx frames of this position"></canvas>
-            <div class="bk-hud tl" id="bk-hud"></div>
-            <div class="bk-hud tr" id="bk-flags"></div>
-            <div class="bk-hud bl mono" id="bk-read"></div>
-            <div class="bk-load" id="bk-load"></div>
-          </div>
-          <div class="bk-transport">
-            <button class="icon-btn" id="bk-prev" aria-label="Previous date" title="← previous date">‹</button>
-            <button class="icon-btn" id="bk-play" aria-label="Play or pause" title="Space"></button>
-            <button class="icon-btn" id="bk-next" aria-label="Next date" title="→ next date">›</button>
-            <canvas class="bk-strip" id="bk-strip" height="46"></canvas>
-            <select id="bk-rate" class="bk-rate" aria-label="Playback speed" title="Playback speed"></select>
-          </div>
-          <div class="bk-data mono" id="bk-data"></div>
+      </header>
+      <section class="lx-view" id="bk-view">
+        <div class="bk-stage" id="bk-stage">
+          <canvas id="bk-cv" aria-label="SPHEREx frames of this position"></canvas>
+          <div class="bk-hud tl" id="bk-hud"></div>
+          <div class="bk-hud tr" id="bk-flags"></div>
+          <div class="bk-load" id="bk-load"></div>
+          <i class="lx-c tl"></i><i class="lx-c tr"></i><i class="lx-c bl"></i><i class="lx-c br"></i>
         </div>
       </section>
-      <aside class="lab-drawer" id="bk-drawer" hidden aria-label="Tools">
+      <footer class="lx-time">
+        <div class="lx-trans">
+          <button class="icon-btn" id="bk-prev" aria-label="Previous date" title="← previous date">‹</button>
+          <button class="icon-btn" id="bk-play" aria-label="Play or pause" title="Space"></button>
+          <button class="icon-btn" id="bk-next" aria-label="Next date" title="→ next date">›</button>
+        </div>
+        <canvas class="bk-strip" id="bk-strip" height="46"></canvas>
+        <select id="bk-rate" class="bk-rate" aria-label="Playback speed" title="Playback speed"></select>
+      </footer>
+      <aside class="lx-insp" id="bk-drawer" aria-label="Inspector">
         <header class="lab-dh">
-          <button class="lab-back" id="bk-back" title="All tools">‹ Tools</button>
-          <b id="bk-toolname">Tools</b>
-          <span class="lab-dh-r">${opts.onExplain ? `<button class="bk-ask" id="bk-ask" title="Ask the assistant to explain this tool in everyday words">Explain</button>` : ""}<button class="bk-help" id="bk-help" title="Show or hide the method notes" aria-label="Show or hide the method notes">?</button><button class="lab-x" id="bk-close" aria-label="Close the tools" title="Close (Esc)">×</button></span>
+          <button class="lab-back" id="bk-back" title="Back to the readings">‹ Readings</button>
+          <b id="bk-toolname">Readings</b>
+          <span class="lab-dh-r">${opts.onExplain ? `<button class="bk-ask" id="bk-ask" title="Ask the assistant to explain this tool in everyday words">Explain</button>` : ""}<button class="bk-help" id="bk-help" title="Show or hide the method notes" aria-label="Show or hide the method notes">?</button><button class="lab-x" id="bk-close" aria-label="Hide the inspector" title="Hide (Esc)">×</button></span>
         </header>
-        <div class="lab-list" id="bk-toollist"></div>
+        <div class="lab-facts" id="bk-facts"></div>
         <div class="lab-tool" id="bk-toolbody">
           <div class="bk-srcbar" id="bk-readouts"></div>
           <div class="lab-sec" data-sec="picture">
-            <div class="lab-f"><span class="eyebrow">Show</span><div class="seg" id="bk-views" role="tablist" aria-label="How to show the exposures">${VIEWS.map((v, k) => `<button role="tab" data-v="${v.k}" title="${v.tip} (key ${k + 1})">${v.t}</button>`).join("")}</div></div>
-            <p class="bk-cap show bk-explain" id="bk-explain"></p>
             <div class="lab-f"><span class="eyebrow">Time bar reaches back to</span><div class="seg" id="bk-range" title="SPHEREx began in 2025; further back the Lab shows the pictures two earlier NASA surveys took of the same field: WISE at 4.6 µm (2010) and 2MASS at 2.2 µm (about 1999)">
               <button data-r="1999">1999</button><button data-r="2010">2010</button><button data-r="sx">SPHEREx only</button></div><button class="lab-tg" id="bk-loop" title="Start over when the end is reached">Repeat</button></div>
+            <p class="bk-cap show bk-explain" id="bk-explain"></p>
             <div class="lab-f"><span class="eyebrow">Field of view</span><div class="seg" id="bk-fov">${SIZES.map((s) => `<button data-s="${s}" title="${s} × ${s} SPHEREx pixels">${((s * PIX_ARCSEC) / 60).toFixed(1)}′</button>`).join("")}</div></div>
             <div class="lab-f"><span class="eyebrow">Exposures read</span><div class="seg" id="bk-n">${BUDGETS.map((b) => `<button data-n="${b}">${b === 144 ? "All" : b}</button>`).join("")}</div><span class="bk-cost mono" id="bk-cost"></span></div>
             <div class="lab-f"><span class="eyebrow">Display</span><div class="bk-toggles" id="bk-pic">
@@ -167,6 +181,7 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
           <div class="bk-panel" id="bk-panel"></div>
         </div>
       </aside>
+      <div class="lx-status"><div class="bk-data mono" id="bk-data"></div><div class="lx-read mono" id="bk-read"></div></div>
     </div>
   </div>`;
   const $ = <T extends HTMLElement>(s: string) => host.querySelector(s) as T;
@@ -198,7 +213,7 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
   let past: Partial<Record<PastKey, PastImg | null>> = {}, pastState: "idle" | "loading" | "done" = "idle";
   let probe: Probe = { dx: 0, dy: 0, follow: true }, logSpec = false;
   // the drawer: closed until a tool is asked for; `tool` null = the list of tools
-  let drawerOpen = false, tool: ToolKey | null = null, pro = (() => { try { return localStorage.getItem("mira.pro") === "1"; } catch { return false; } })();
+  let drawerOpen = innerWidth >= 1100, tool: ToolKey | null = null, pro = (() => { try { return localStorage.getItem("mira.pro") === "1"; } catch { return false; } })();
   let tab: Tab = "changes", order: "time" | "lambda" = "time", explain = (() => { try { return localStorage.getItem("mira.explain") === "1"; } catch { return false; } })();
   const excluded = new Set<string>();                    // exposures the user has unticked: left out of pictures and measurements
   const live = () => (excluded.size ? frames.filter((f) => !excluded.has(f.exp.id)) : frames);
@@ -218,7 +233,8 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
     opened = true; target = { ...t }; probe = { dx: 0, dy: 0, follow: true };
     N = o.size && SIZES.includes(o.size) ? o.size : N; maxFrames = o.frames ?? maxFrames;
     dets = new Set([1, 2, 3, 4, 5, 6]); view.track = false; mode = o.mode ?? "evolve"; order = "time";
-    tab = o.tab ?? "changes"; if (isTab(tool)) tab = tool;       // a tool that is open (or asked for in the address) stays open on the new field excluded.clear(); evo.range = "1999"; evo.rate = 5;
+    // a tool that is open (or asked for in the address) stays open on the new field
+    tab = o.tab ?? "changes"; if (isTab(tool)) tab = tool; excluded.clear(); evo.range = "1999"; evo.rate = 5;
     if (t.key === "wise-0855") dets = new Set([5, 6]);   // only visible at 4–5 µm
     start();
   }
@@ -693,8 +709,10 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
     host.querySelectorAll<HTMLElement>("#bk-n button").forEach((b) => b.classList.toggle("on", +b.dataset.n! === maxFrames));
     host.querySelectorAll<HTMLElement>("#bk-dets button").forEach((b) => b.classList.toggle("on", dets.has(+b.dataset.d!)));
     host.querySelectorAll<HTMLElement>("#bk-toggles button[data-v], #bk-pic button[data-v]").forEach((b) => { const k = b.dataset.v!; b.classList.toggle("on", k === "lock" ? lock[mode] : (view as any)[k]); });
-    const panel = isTab(tool); host.querySelector(".bk-body")!.classList.toggle("tools", drawerOpen); $("#bk-drawer").hidden = !drawerOpen;
-    $("#bk-toollist").hidden = !!tool; $("#bk-toolbody").hidden = !tool; $("#bk-back").hidden = !tool; $("#bk-toolname").textContent = tool ? TOOLS.find((q) => q.k === tool)?.t ?? "" : "Tools";
+    const panel = isTab(tool); host.querySelector(".bk-body")!.classList.toggle("noinsp", !drawerOpen); $("#bk-drawer").hidden = !drawerOpen;
+    $("#bk-facts").hidden = !!tool; $("#bk-toolbody").hidden = !tool; $("#bk-back").hidden = !tool; $("#bk-toolname").textContent = tool ? TOOLS.find((q) => q.k === tool)?.t ?? "" : "Readings";
+    host.querySelectorAll<HTMLElement>("#bk-rail [data-tool]").forEach((b) => b.classList.toggle("on", drawerOpen && (b.dataset.tool || null) === tool));
+    ($("#bk-fovsel") as HTMLSelectElement).value = String(N);
     host.querySelectorAll<HTMLElement>(".lab-sec").forEach((q) => (q.hidden = q.dataset.sec !== tool)); $("#bk-panel").hidden = !panel; $("#bk-readouts").hidden = !panel || tool === "frames" || tool === "export" || tool === "limits";
     host.querySelectorAll<HTMLElement>(".lab-fact").forEach((b) => b.classList.toggle("on", drawerOpen && (b.dataset.tool || null) === tool));
     const ask = host.querySelector<HTMLElement>("#bk-ask"); if (ask) ask.hidden = !tool; $("#bk-help").hidden = !tool;
@@ -747,7 +765,7 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
     rows.push(["spectrum", "Its light", a ? (/^[—…]$/.test(a.made.big) ? a.made.chip : a.made.chip) : "…", a ? `${/^[—…]$/.test(a.made.big) ? "" : `${a.made.big}${a.made.unit ? ` ${a.made.unit}` : ""} `}${a.made.label}` : ""]);
     rows.push(["light", "Brightness", a ? a.change.chip : "…", a ? `${/^[—…]$/.test(a.change.big) ? "" : `${a.change.big} `}${a.change.label}` : ""]);
     el.innerHTML = rows.map(([key, label, big, sub]) => `<button class="lab-fact${drawerOpen && tool === key ? " on" : ""}" data-tool="${key}"><span class="k">${label}</span><b>${esc(big)}</b><small>${esc(sub)}</small></button>`).join("")
-      + `<button class="lab-fact all${drawerOpen && !tool ? " on" : ""}" data-tool=""><span class="k">Tools</span><b>All tools</b><small>picture · layers · colours · exposures · export</small></button>`;
+      + `<p class="lx-hint">Each reading opens the tool that produced it. Every tool is in the rail on the left.</p>`;
   }
   const tbl = (head: string[], rows: string[][], cls = "") => `<div class="bk-tw"><table class="bk-table ${cls}"><thead><tr>${head.map((h) => `<th>${h}</th>`).join("")}</tr></thead><tbody>${rows.map((r) => `<tr>${r.map((v) => `<td>${v}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
   const csv = (name: string, head: string[], rows: (string | number)[][], comment = "") => save(new Blob([`# MIRA · ${target.name ?? ""} · RA ${center[0].toFixed(6)} Dec ${center[1].toFixed(6)} (ICRS)${comment ? ` · ${comment}` : ""}\n${head.join(",")}\n${rows.map((r) => r.join(",")).join("\n")}\n`], { type: "text/csv" }), `${fileStem()}_${name}.csv`);
@@ -1028,26 +1046,29 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
     if ((k === "gaia" || k === "wise") && cat.state === "fail") toast("The star catalogue service (CDS VizieR) is not answering right now");
     refresh();
   }
+  ($("#bk-fovsel") as HTMLSelectElement).onchange = (e) => host.querySelector<HTMLButtonElement>(`#bk-fov button[data-s="${(e.target as HTMLSelectElement).value}"]`)?.click();
   ($("#bk-cmap") as HTMLSelectElement).onchange = (e) => { view.cmap = (e.target as HTMLSelectElement).value; paint(); syncControls(); };
   /** open one tool in the drawer (null: the list of tools) */
   function openTool(k: ToolKey | null) {
     if (k && TOOLS.find((q) => q.k === k)?.pro && !pro) k = null;
     drawerOpen = true; tool = k; if (isTab(k)) tab = k;
-    syncControls(); renderReadouts(); renderPanel(); if (k === "colours") { det6Key = ""; renderDet6(); } if (k === "wm") renderWm(); if (k === "watch") renderWatch(); if (!k) renderToolList();
+    syncControls(); renderReadouts(); renderPanel(); if (k === "colours") { det6Key = ""; renderDet6(); } if (k === "wm") renderWm(); if (k === "watch") renderWatch();
     requestAnimationFrame(() => paint()); pushState();
   }
   function closeDrawer() { drawerOpen = false; syncControls(); requestAnimationFrame(() => paint()); pushState(); }
+  /** the rail: every tool as one icon; its name and what it answers appear beside it on hover */
   function renderToolList() {
+    const btn = (k: string, t: string, d: string, attr: string) => `<button ${attr} aria-label="${esc(t)}">${icon(k)}<span class="lx-tip"><b>${esc(t)}</b>${esc(d)}</span></button>`;
     const groups = [...new Set(TOOLS.map((q) => q.g))];
-    $("#bk-toollist").innerHTML = groups.map((g) => { const isPro = g === "Researcher tools";
-      return `<div class="lab-g${isPro ? " pro" : ""}"><div class="eyebrow">${g}${isPro ? `<label class="lab-sw" title="Tools for research teams. Free while MIRA is a prototype; see Plans in the documentation"><input type="checkbox" id="bk-pro" ${pro ? "checked" : ""}><i></i></label>` : ""}</div>
-        ${isPro && !pro ? `<p class="lab-pro-note">Batch runs and the sky world model. Switch on to try them.</p>` : TOOLS.filter((q) => q.g === g).map((q) => `<button class="lab-row" data-tool="${q.k}"><b>${q.t}${q.pro ? `<em>preview</em>` : ""}</b><span>${q.d}</span></button>`).join("")}</div>`; }).join("")
-      + `<div class="lab-g"><div class="eyebrow">This field</div><div class="lab-acts">${opts.onAtlas ? `<button class="btn sm ghost" id="bk-onsky" title="This field on the Sky map: where it is, and its pictures since 1999">On the Sky map</button>` : ""}${opts.onSave ? `<button class="btn sm ghost" id="bk-save">Save as a case</button>` : ""}<a class="btn sm ghost" href="/docs/#lab" target="_blank" rel="noopener">How the Lab works</a></div></div>`;
-    const sw = host.querySelector<HTMLInputElement>("#bk-pro"); if (sw) sw.onchange = () => { pro = sw.checked; try { localStorage.setItem("mira.pro", pro ? "1" : "0"); } catch { /* private mode */ } renderToolList(); };
+    $("#bk-rail").innerHTML = btn("read", "Readings", "The answers for this field, in a few words", 'data-tool=""') + groups.map((g) => { const L = TOOLS.filter((q) => q.g === g && (!q.pro || pro)); return L.length ? `<i class="lx-sep"></i>${L.map((q) => btn(q.k, q.t, q.d, `data-tool="${q.k}"`)).join("")}` : ""; }).join("")
+      + `<span class="lx-grow"></span><button id="bk-pro" class="lx-pro${pro ? " on" : ""}" aria-pressed="${pro}" aria-label="Researcher tools">PRO<span class="lx-tip"><b>Researcher tools</b>${pro ? "On: the sky world model and the watchlist are in the rail" : "Batch runs and the sky world model. Free while MIRA is a prototype"}</span></button>`
+      + (opts.onAtlas ? btn("sky", "On the Sky map", "This field on the Sky map: where it is, and its pictures since 1999", 'id="bk-onsky"') : "") + (opts.onSave ? btn("save", "Save as a case", "Keep this reading in your cases", 'id="bk-save"') : "")
+      + `<a class="lx-a" href="/docs/#lab" target="_blank" rel="noopener" aria-label="How the Lab works">${icon("docs")}<span class="lx-tip"><b>Documentation</b>How every tool works</span></a>`;
+    const sw = host.querySelector<HTMLElement>("#bk-pro"); if (sw) sw.onclick = () => { pro = !pro; try { localStorage.setItem("mira.pro", pro ? "1" : "0"); } catch { /* private mode */ } if (!pro && (tool === "wm" || tool === "watch")) tool = null; renderToolList(); syncControls(); };
     const os = host.querySelector<HTMLButtonElement>("#bk-onsky"); if (os) os.onclick = () => { if (frames.length || center[0] || center[1]) opts.onAtlas?.(center[0], center[1]); };
-    const sv = host.querySelector<HTMLButtonElement>("#bk-save"); if (sv) sv.onclick = () => { if (!frames.length) return; opts.onSave?.(snapshot()); sv.textContent = "Saved ✓"; setTimeout(() => (sv.textContent = "Save as a case"), 1800); };
+    const sv = host.querySelector<HTMLButtonElement>("#bk-save"); if (sv) sv.onclick = () => { if (!frames.length) return; opts.onSave?.(snapshot()); toast("Saved to your cases"); };
   }
-  host.addEventListener("click", (e) => { const b = (e.target as HTMLElement).closest<HTMLElement>("[data-tool]"); if (!b || !host.contains(b)) return; const k = (b.dataset.tool || null) as ToolKey | null; if (drawerOpen && tool === k && b.classList.contains("lab-fact")) closeDrawer(); else openTool(k); });
+  host.addEventListener("click", (e) => { const b = (e.target as HTMLElement).closest<HTMLElement>("[data-tool]"); if (!b || !host.contains(b)) return; const k = (b.dataset.tool || null) as ToolKey | null; if (drawerOpen && tool === k && k !== null && b.closest("#bk-rail")) openTool(null); else openTool(k); });
   $("#bk-back").onclick = () => openTool(null); $("#bk-close").onclick = closeDrawer;
   const ASK: Record<string, string> = { picture: "Explain what this picture shows and how the time bar works: which pictures are real, from which survey and year.", layers: "Explain the markers drawn on the picture: detections, Gaia stars, WISE 2010 positions and NASA's flags.",
     colours: "Explain SPHEREx's six detectors and 102 wavelengths, and what the six pictures here tell about this object.", wm: "Explain what the sky world model does on this field, what its forecast and its surprise map mean, and how far to trust them.", watch: "Explain what the watchlist run measures for each target.", changes: "Explain in everyday words what the Motion detector found in this field: what moved, how we know, and what the other rows mean.",
@@ -1125,7 +1146,7 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
     context() {
       const r = selRow(), R = report;
       return { open: opened, target: opened ? { name: target.name ?? null, ra: +center[0].toFixed(5), dec: +center[1].toFixed(5), field_arcmin: +((N * PIX_ARCSEC) / 60).toFixed(1) } : null,
-        exposures: frames.length, visits: R?.visits.map((v) => +v.yr.toFixed(2)) ?? [], instrument: drawerOpen ? tool ?? "tool list" : "none open", tools: TOOLS.filter((q) => !q.pro || pro).map((q) => q.k), view: mode, loading: building,
+        exposures: frames.length, visits: R?.visits.map((v) => +v.yr.toFixed(2)) ?? [], instrument: drawerOpen ? tool ?? "readings" : "none open", tools: TOOLS.filter((q) => !q.pro || pro).map((q) => q.k), view: mode, loading: building,
         field: R ? { ...R.counts, gaia_reference_stars: R.cal.nRef, gaia_motion_recovery_arcsec_yr: R.cal.pmRms ? +R.cal.pmRms.toFixed(3) : null, smallest_detectable_motion_arcsec_yr: R.limits.pm ? +R.limits.pm.toFixed(2) : null,
           sources: R.rows.slice(0, 25).map((q) => ({ n: q.n, result: verdict(q).chip, detail: verdict(q).text, motion_arcsec_yr: q.pm && q.pm.base > 5 ? +q.pm.tot.toFixed(3) : null, sigma: q.pm ? +q.pm.sig.toFixed(1) : null,
             gaia_motion: gaiaPm(q) !== null ? +gaiaPm(q)!.toFixed(3) : null, now_over_2010: (q.dW2 ?? q.dW1) ? +(q.dW2 ?? q.dW1)!.ratio.toFixed(2) : null, identity: identity(q), target: q.isTarget })) } : null,
