@@ -106,3 +106,9 @@ main:focus {
     transition-duration: 0.001ms !important;
   }
 }
+
+/* one site: the pages dissolve into each other (the same rule is in the app's shell.css) */
+@view-transition { navigation: auto; }
+::view-transition-old(root) { animation: mira-out .2s cubic-bezier(.4, 0, 1, 1) both; } ::view-transition-new(root) { animation: mira-in .42s cubic-bezier(.2, .7, .2, 1) both; }
+@keyframes mira-out { to { opacity: 0; } } @keyframes mira-in { from { opacity: 0; transform: scale(1.01); } }
+@media (prefers-reduced-motion: reduce) { ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; } }

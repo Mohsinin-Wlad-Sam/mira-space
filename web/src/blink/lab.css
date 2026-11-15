@@ -8,23 +8,32 @@
    The rail holds every tool as one icon; the inspector shows the readings, or the tool that was asked for; the canvas
    and its timeline never move. Black, hairlines, uppercase labels, numbers in mono. Loaded after blink.css. */
 .bk:has(> .labx:not([hidden])) { max-width: none; padding: 0; }
-.labx { --hl: rgb(240 240 250 / .13); --insp: 440px; display: grid; grid-template-columns: 56px minmax(0, 1fr) var(--insp); grid-template-rows: 60px minmax(0, 1fr) 76px 30px;
+.labx { --hl: rgb(240 240 250 / .13); --insp: 440px; display: grid; grid-template-columns: var(--rail, 56px) minmax(0, 1fr) var(--insp); grid-template-rows: 60px minmax(0, 1fr) 76px 30px;
   grid-template-areas: "rail top insp" "rail view insp" "rail time insp" "status status status"; height: calc(100vh - var(--header-h)); height: calc(100dvh - var(--header-h)); min-height: 540px; padding: 0; gap: 0; align-items: stretch; justify-items: stretch; background: #000; }
 .labx.noinsp { --insp: 0px; }
 .labx[hidden] { display: none; }
 
-/* ---- rail ---- */
-.lx-rail { grid-area: rail; display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 10px 0 8px; border-right: .8px solid var(--hl); }
-.lx-rail button, .lx-rail .lx-a { position: relative; flex: none; display: grid; place-items: center; width: 40px; height: 36px; padding: 0; background: none; border: 0; border-radius: 6px; color: rgb(240 240 250 / .5); cursor: pointer; transition: color .15s, background-color .15s; }
+/* ---- rail: icons alone, or icons with their names; groups are separated by a rule, and named when there is room ---- */
+.labx { --rail: 56px; grid-template-columns: var(--rail) minmax(0, 1fr) var(--insp); } .labx.wide { --rail: 208px; }
+.lx-rail { grid-area: rail; display: flex; flex-direction: column; align-items: stretch; gap: 0; padding: 8px 0; border-right: .8px solid var(--hl); min-height: 0; overflow: hidden auto; scrollbar-width: none; background: #050507; }
+.lx-g { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 7px 0; border-top: .8px solid var(--hl); } .lx-g:first-of-type { border-top: 0; } .lx-g.foot { border-top: .8px solid var(--hl); }
+.lx-g.pro { background: rgb(255 157 77 / .045); box-shadow: inset 2px 0 0 rgb(255 157 77 / .5); }
+.lx-rail button, .lx-rail .lx-a { position: relative; flex: none; display: flex; align-items: center; justify-content: center; gap: 12px; width: 40px; height: 36px; padding: 0; background: none; border: 0; border-radius: 6px; color: rgb(240 240 250 / .52); text-decoration: none; cursor: pointer; transition: color .15s, background-color .15s; }
 .lx-rail button:hover, .lx-rail .lx-a:hover { color: #fff; background: rgb(240 240 250 / .07); }
 .lx-rail button.on { color: #fff; background: rgb(240 240 250 / .1); } .lx-rail button.on::before { content: ""; position: absolute; left: -8px; top: 8px; bottom: 8px; width: 2px; background: #fff; }
-.lx-sep { flex: none; width: 22px; height: .8px; margin: 6px 0; background: var(--hl); } .lx-grow { flex: 1; }
-.lx-rail .lx-pro { font-family: var(--body); font-weight: 700; font-size: 9px; letter-spacing: .14em; } .lx-rail .lx-pro.on { color: #ff9d4d; background: rgb(255 157 77 / .1); } .lx-rail .lx-pro.on::before { display: none; }
+.lx-rail svg { flex: none; } .lx-wide { align-self: center; margin-bottom: 6px; } .lx-grow { flex: 1; min-height: 8px; }
+.lx-lab, .lx-gh { display: none; } .lx-pi { font-family: var(--body); font-weight: 700; font-size: 9px; letter-spacing: .14em; width: 20px; text-align: center; }
+.lx-rail .lx-pro.on { color: #ff9d4d; background: rgb(255 157 77 / .1); } .lx-rail .lx-pro.on::before { display: none; }
+.labx.wide .lx-g { align-items: stretch; padding: 8px 8px; } .labx.wide .lx-rail button, .labx.wide .lx-rail .lx-a { width: auto; justify-content: flex-start; padding: 0 12px; } .labx.wide .lx-rail button.on::before { left: -8px; }
+.labx.wide .lx-lab { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--body); font-weight: 600; font-size: 11.5px; letter-spacing: .09em; text-transform: uppercase; }
+.labx.wide .lx-gh { display: block; padding: 2px 12px 6px; font-family: var(--mono); font-size: 9.5px; letter-spacing: .18em; text-transform: uppercase; color: rgb(240 240 250 / .38); } .labx.wide .lx-g.pro .lx-gh { color: #ff9d4d; }
+.labx.wide .lx-wide { align-self: stretch; margin: 0 8px 6px; } .labx.wide .lx-tip { display: none; }
 .lx-tip { position: absolute; left: 50px; top: 50%; z-index: 60; width: max-content; max-width: 260px; padding: 8px 12px; transform: translate(-4px, -50%); background: #111116; border: .8px solid rgb(240 240 250 / .2); border-radius: 6px;
   font-family: var(--body); font-weight: 400; font-size: 12px; line-height: 1.4; letter-spacing: 0; text-transform: none; text-align: left; white-space: normal; color: rgb(240 240 250 / .75); pointer-events: none; opacity: 0; transition: opacity .12s, transform .12s; }
 .lx-tip b { display: block; margin-bottom: 2px; font-weight: 700; font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; color: #fff; }
 .lx-rail button:hover .lx-tip, .lx-rail .lx-a:hover .lx-tip, .lx-rail button:focus-visible .lx-tip { opacity: 1; transform: translate(0, -50%); }
-@media (max-height: 760px) { .lx-rail button, .lx-rail .lx-a { height: 31px; } .lx-sep { margin: 3px 0; } }
+.lx-rail { overflow: visible; }
+@media (max-height: 760px) { .lx-rail button, .lx-rail .lx-a { height: 31px; } .lx-g { padding: 4px 0; } }
 
 /* ---- top bar: what is on the bench, and how it is shown ---- */
 .lx-top { grid-area: top; display: flex; align-items: center; justify-content: space-between; gap: 28px; min-width: 0; padding: 0 24px; border-bottom: .8px solid var(--hl); }
@@ -106,8 +115,15 @@
 .wm-grid canvas { display: block; width: 100%; aspect-ratio: 1; image-rendering: pixelated; background: #000; border-radius: 4px; box-shadow: 0 0 0 .8px rgb(240 240 250 / .16); }
 .wm-grid figcaption { margin-top: 5px; font-family: var(--mono); font-size: 9.5px; line-height: 1.4; color: var(--dim); } .wm-grid figcaption b { display: block; color: var(--white); font-weight: 500; letter-spacing: .06em; text-transform: uppercase; }
 .wm-mark { position: absolute; left: 5px; top: 5px; padding: 2px 5px; font-family: var(--mono); font-size: 7.5px; letter-spacing: .06em; text-transform: uppercase; color: #000; background: #ff9d4d; border-radius: 3px; pointer-events: none; }
-.wm-grid.wm-fut { grid-template-columns: 148px minmax(0, 1fr); gap: 14px; align-items: start; margin-top: 10px; } .wm-fut > div { min-width: 0; } .wm-fut .bk-table td, .wm-fut .bk-table th { padding-right: 6px; }
-.wm-f { display: flex; align-items: center; gap: 12px; } .wm-f input[type=range] { flex: 1; accent-color: #ff9d4d; } .wm-f output { font-family: var(--display); font-size: 22px; min-width: 62px; text-align: right; font-variant-numeric: tabular-nums; }
+.wm-steps { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0; margin: 14px 0 0; border: .8px solid var(--hl); border-radius: 6px 6px 0 0; overflow: hidden; }
+.wm-steps button { padding: 9px 0; background: none; border: 0; border-left: .8px solid var(--hl); color: var(--dim); font-family: var(--body); font-weight: 600; font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; cursor: pointer; } .wm-steps button:first-child { border-left: 0; }
+.wm-steps button:hover { color: #fff; } .wm-steps button.on { background: #f0f0fa; color: #000; }
+.wm-big { position: relative; border: .8px solid var(--hl); border-top: 0; border-radius: 0 0 6px 6px; overflow: hidden; background: #000; } .wm-big canvas { display: block; width: 100%; aspect-ratio: 1; image-rendering: pixelated; }
+.wm-big svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; } .wm-big svg line { stroke: #ff9d4d; stroke-width: .35; stroke-dasharray: 1 .8; opacity: .8; } .wm-big svg circle { fill: none; stroke: #ff9d4d; stroke-width: .5; } .wm-big svg text { fill: #ff9d4d; font-family: var(--mono); font-weight: 500; }
+.wm-big .wm-mark { left: 10px; top: 10px; font-size: 9px; padding: 3px 7px; }
+.wm-cap { margin: 9px 0 14px; font-size: 12.5px; line-height: 1.4; color: var(--dim); } .wm-cap b { margin-right: 6px; font-family: var(--display); font-size: 16px; color: var(--white); }
+.wm-n { display: inline-grid; place-items: center; width: 18px; height: 18px; border: .8px solid #ff9d4d; border-radius: 50%; color: #ff9d4d; font-style: normal; font-size: 10px; } .wm-vs td b { font-family: var(--display); font-size: 16px; font-weight: 600; }
+.wm-f { display: flex; align-items: center; gap: 12px; padding: 10px 0 4px; border-top: .8px solid var(--hl); } .wm-f .eyebrow { flex: none; } .wm-f input[type=range] { flex: 1; accent-color: #ff9d4d; } .wm-f output { font-family: var(--display); font-size: 22px; min-width: 62px; text-align: right; font-variant-numeric: tabular-nums; }
 
 @media (max-width: 1280px) { .labx { --insp: 404px; } .lx-tabs { gap: 16px; } .lx-opts { gap: 18px; } }
 @media (max-width: 900px) {
@@ -118,7 +134,8 @@
   .lx-view { padding: 14px; height: min(100vw, 64vh); }
   .lx-time { flex-wrap: wrap; gap: 8px 12px; padding: 10px 14px; } .labx .bk-strip { order: -1; flex: 1 1 100%; }
   .lx-rail { flex-direction: row; justify-content: flex-start; gap: 2px; padding: 6px 10px; overflow-x: auto; border-right: 0; border-top: .8px solid var(--hl); scrollbar-width: none; }
-  .lx-rail button.on::before { left: 8px; right: 8px; top: auto; bottom: -5px; width: auto; height: 2px; } .lx-sep { width: .8px; height: 22px; margin: 0 5px; } .lx-grow, .lx-tip { display: none; }
+  .lx-rail button.on::before { left: 8px; right: 8px; top: auto; bottom: -5px; width: auto; height: 2px; } .lx-grow, .lx-tip, .lx-wide, .labx.wide .lx-lab, .labx.wide .lx-gh { display: none; }
+  .lx-g, .labx.wide .lx-g { flex: none; flex-direction: row; align-items: center; gap: 2px; padding: 0 7px; border-top: 0; border-left: .8px solid var(--hl); box-shadow: none; } .lx-g:first-of-type { border-left: 0; padding-left: 0; } .labx.wide .lx-rail button, .labx.wide .lx-rail .lx-a { width: 40px; justify-content: center; padding: 0; }
   .lx-insp { position: fixed; left: 0; right: 0; bottom: 0; z-index: 45; max-height: 70vh; border-left: 0; border-top: .8px solid rgb(240 240 250 / .25); border-radius: 14px 14px 0 0; animation: lx-up .26s cubic-bezier(.2, .7, .2, 1); }
   @keyframes lx-up { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
   .lx-insp .lab-facts, .lx-insp .lab-tool { padding: 4px 16px calc(24px + env(safe-area-inset-bottom)); } .lab-dh { height: 52px; padding: 0 10px 0 16px; }

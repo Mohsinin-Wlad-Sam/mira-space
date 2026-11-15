@@ -95,22 +95,28 @@ one citizen-science project, and to measure hours saved and candidates confirmed
 
 ### Plans: how the offers are packaged
 
-The product has three depths, and the plans follow them. The first is the whole public site. The second is a set of
-researcher tools that already exist in the Lab behind a switch (free while MIRA is a prototype). The third is work
-done for an organisation on its own data.
+Three plans, each for what its user actually does. A visitor wants to see and understand; a researcher wants numbers,
+many targets and files; an agency wants the method run on its own survey, under its own roof. Each plan contains the
+one before it. Items marked *planned* are not built; everything else runs today.
 
-| Plan | For | What it adds | Paid how |
+| | **Explorer** | **Researcher** | **Mission** |
 |---|---|---|---|
-| **Explorer** | everyone: the public, classrooms, volunteers | Both maps (live planets, the visitor's own sky, SPHEREx by date, what the sky is made of), the Lab with all its instruments, the catalogue, the assistant, links and embeds | Free. Kept alive by grants (offer A) |
-| **Researcher** | research groups, advanced amateurs, university courses | Watchlists (a list of targets through the Lab's whole chain in one run, exported as a table), the sky world model (a network's forecast of a field and what it did not expect), bulk exports and the data files with support, workspaces shared across a group, exercises on real NASA data in Arabic, French and English (offer D) | A seat or a site licence; free for students and for volunteers who classify. Reference points: Slooh's education tier from US$30 per student per year [10]; remote-telescope plans from US$40 per 28 days [9] |
-| **Mission** | agencies, mission teams, archives, science centres | Verification runs on the organisation's own candidate lists at each data release (offer B); the engine adapted to its archive (offer C); a world model trained on its survey, so that each new visit is compared with what the model expected and only the surprises reach a person; private deployment, kiosk mode, support | Per project, mostly as a work package inside a shared grant |
+| **For** | the public, classrooms, volunteers | research groups, advanced amateurs, university courses | agencies, mission teams, archives, science centres |
+| **Price** | Free, no account | Per seat or site; free for students | Per project |
+| **See** | The Sky map: tonight's planets, your own sky, 27 years on one time bar. The Universe. Any place as a little film, 1999 to today. A star's card in plain words | the same | the same, under the organisation's own name (white label, kiosk mode) |
+| **Measure** | What moved, what its light says, did it change (Motion detector, Spectrograph, Photometer); field of view, layers, 102 colours | plus the full fit of a motion with parallax and distance (Astrometer); what could still hide in a field (Detection limits); every exposure with NASA's flags, in or out of the measurement | plus instruments built for the project, for example a search tuned to one orbit |
+| **Take away** | A link, an embed | FITS cube, CSV tables, Python (Astropy) that reproduces the reading, a printable field report | the same, with a record of every number back to its exposures |
+| **Many at once** | – | Watchlists: a list of targets measured in one run. *Planned:* a re-run at each data release, an alert when a watched target changes, an API | The verification pipeline on the organisation's own candidate lists at each data release: what turned 202,528 claims into 17,604 confirmed movers here |
+| **AI** | Ask the assistant (fair use) | The sky model on any field, its forecast against the measurement; the whole-sky scout's marks, checked against Gaia; V-JEPA 2's second opinion (research preview) | A scout trained on the organisation's survey; V-JEPA 2 fine-tuned on its confirmed objects |
+| **Run by** | us, for a few dollars a month | us | the organisation or us: private deployment, single sign-on, a data-quality report per release, training, support |
+| **Paid how** | Grants (offer A) | A seat or site licence (offer D). Reference points: Slooh's education tier from US$30 per student per year [10]; remote-telescope plans from US$40 per 28 days [9] | A work package inside a shared grant, or a contract (offers B and C) |
 
-Two things make the tiers credible rather than a price list. First, the researcher tools are built and run today:
-the watchlist measures a list in the browser, and the world model (trained in 24 minutes on one of our
-university's GPUs on 2,400 real picture pairs, tested on 984 real fast-moving stars it had never seen: half of
-them found, 79% of those moving 1 to 2 arcseconds a year, 0.3 false marks per field) runs in the visitor's
-browser with no server. Second, nothing in the Explorer plan is held back to sell the others: the paid plans
-sell runs, upkeep and adaptation, not access to NASA's data.
+Why this split. The free plan holds what a visitor can use without training, and it holds everything NASA's
+challenge asks of a public tool: the little film of any place, the 102 bands, spectra, dates in and out, field of
+view, Gaia and WISE overlays, links, NASA's flags. The Researcher plan holds what saves a researcher hours: the fit
+with its errors, the limits, the files, lists of targets, the models. The Mission plan holds what only an
+organisation needs: the pipeline, its own models, its own deployment. In the Lab the Researcher tools sit behind
+one switch, which is free while MIRA is a prototype.
 
 **Status.** No price has been tested with a customer. The switch in the Lab is a preview, not a paywall.
 

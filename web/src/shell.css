@@ -211,3 +211,14 @@ body.nocard .sp-info, body.nocard .sp-leader { display: none !important; }
 .sk-kv b { font-family: var(--display); font-weight: 600; font-size: 22px; line-height: 1; text-align: right; font-variant-numeric: tabular-nums; color: var(--white); } .sk-kv b small { font-size: 12px; font-weight: 400; color: var(--dim); }
 .sk-kv span { font-size: 12.5px; line-height: 1.4; color: rgb(240 240 250 / .78); }
 .sk-d { display: inline-block; width: 8px; height: 8px; margin-left: 5px; transform: rotate(45deg); border: 1.2px solid #b48cff; vertical-align: 1px; } .sk-d.on { background: #b48cff; }
+
+/* one site: its pages and its views dissolve into each other, the header stays where it is */
+@view-transition { navigation: auto; }
+header.top { view-transition-name: mira-head; }
+::view-transition-old(root) { animation: mira-out .2s cubic-bezier(.4, 0, 1, 1) both; } ::view-transition-new(root) { animation: mira-in .42s cubic-bezier(.2, .7, .2, 1) both; }
+@keyframes mira-out { to { opacity: 0; } } @keyframes mira-in { from { opacity: 0; transform: scale(1.01); } }
+@media (prefers-reduced-motion: reduce) { ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; } }
+
+/* a page of its own in the same row as the views: the documentation */
+.mainnav .navlink { position: relative; padding: 8px 0; color: var(--dim); font-family: var(--body); font-weight: 700; font-size: 13px; letter-spacing: .1em; text-transform: uppercase; text-decoration: none; white-space: nowrap; transition: color .2s; } .mainnav .navlink:hover { color: var(--white); }
+@media (max-width: 760px) { .mainnav .navlink { display: none; } }

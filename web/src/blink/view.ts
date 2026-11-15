@@ -38,10 +38,12 @@ const TOOLS: { g: string; k: ToolKey; t: string; d: string; pro?: boolean }[] = 
   { g: "Picture", k: "picture", t: "Picture", d: "What to show, how far back, field of view, depth" },
   { g: "Picture", k: "layers", t: "Layers", d: "Detections, Gaia stars, WISE 2010, NASA's flags" },
   { g: "Picture", k: "colours", t: "Colours", d: "Six detectors, 102 wavelengths: one picture each" },
-  ...TABS.slice(0, 5).map(([k, t, d]) => ({ g: "Measure", k: k as ToolKey, t, d })),
-  ...TABS.slice(5).map(([k, t, d]) => ({ g: "Data", k: k as ToolKey, t, d })),
-  { g: "Researcher tools", k: "wm", t: "Sky world model", d: "A network that learned how the sky moves: its forecast, and what it did not expect", pro: true },
-  { g: "Researcher tools", k: "watch", t: "Watchlist", d: "Measure a list of targets in one run; export the table", pro: true },
+  // what anyone asks of a place: did something move, what is it, did it change
+  ...(["changes", "spectrum", "light"] as Tab[]).map((k) => { const q = TABS.find((x) => x[0] === k)!; return { g: "Measure", k: k as ToolKey, t: q[1], d: q[2] }; }),
+  // what a researcher needs on top: the fit itself, the limits, every exposure, the data out, many targets at once, the model
+  ...(["motion", "limits", "frames", "export"] as Tab[]).map((k) => { const q = TABS.find((x) => x[0] === k)!; return { g: "Researcher", k: k as ToolKey, t: q[1], d: q[2], pro: true }; }),
+  { g: "Researcher", k: "watch", t: "Watchlist", d: "Measure a list of targets in one run; export the table", pro: true },
+  { g: "Researcher", k: "wm", t: "Sky world model", d: "A network that learned how the sky moves: what it marks here, against what the Lab measures", pro: true },
 ];
 /** the rail's icons: 20 x 20, one stroke width */
 const ICON: Record<string, string> = {
@@ -217,6 +219,8 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
   let probe: Probe = { dx: 0, dy: 0, follow: true }, logSpec = false;
   // the drawer: closed until a tool is asked for; `tool` null = the list of tools
   let drawerOpen = innerWidth >= 1100, tool: ToolKey | null = null, pro = (() => { try { return localStorage.getItem("mira.pro") === "1"; } catch { return false; } })();
+  /** the rail shows icons alone, or icons with their names: the visitor's choice, kept */
+  let railWide = (() => { try { return localStorage.getItem("mira.rail") === "1"; } catch { return false; } })();
   let tab: Tab = "changes", order: "time" | "lambda" = "time", explain = (() => { try { return localStorage.getItem("mira.explain") === "1"; } catch { return false; } })();
   const excluded = new Set<string>();                    // exposures the user has unticked: left out of pictures and measurements
   const live = () => (excluded.size ? frames.filter((f) => !excluded.has(f.exp.id)) : frames);
@@ -1054,7 +1058,7 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
   ($("#bk-cmap") as HTMLSelectElement).onchange = (e) => { view.cmap = (e.target as HTMLSelectElement).value; paint(); syncControls(); };
   /** open one tool in the drawer (null: the list of tools) */
   function openTool(k: ToolKey | null) {
-    if (k && TOOLS.find((q) => q.k === k)?.pro && !pro) k = null;
+    if (k && TOOLS.find((q) => q.k === k)?.pro && !pro) { pro = true; renderToolList(); }      // a link to a researcher tool opens it: they are free while MIRA is a prototype
     drawerOpen = true; tool = k; if (isTab(k)) tab = k;
     syncControls(); renderReadouts(); renderPanel(); if (k === "colours") { det6Key = ""; renderDet6(); } if (k === "wm") renderWm(); if (k === "watch") renderWatch();
     requestAnimationFrame(() => paint()); pushState();
@@ -1062,13 +1066,17 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
   function closeDrawer() { drawerOpen = false; syncControls(); requestAnimationFrame(() => paint()); pushState(); }
   /** the rail: every tool as one icon; its name and what it answers appear beside it on hover */
   function renderToolList() {
-    const btn = (k: string, t: string, d: string, attr: string) => `<button ${attr} aria-label="${esc(t)}">${icon(k)}<span class="lx-tip"><b>${esc(t)}</b>${esc(d)}</span></button>`;
+    const btn = (k: string, t: string, d: string, attr: string) => `<button ${attr} aria-label="${esc(t)}">${icon(k)}<span class="lx-lab">${esc(t)}</span><span class="lx-tip"><b>${esc(t)}</b>${esc(d)}</span></button>`;
     const groups = [...new Set(TOOLS.map((q) => q.g))];
-    $("#bk-rail").innerHTML = btn("read", "Readings", "The answers for this field, in a few words", 'data-tool=""') + groups.map((g) => { const L = TOOLS.filter((q) => q.g === g && (!q.pro || pro)); return L.length ? `<i class="lx-sep"></i>${L.map((q) => btn(q.k, q.t, q.d, `data-tool="${q.k}"`)).join("")}` : ""; }).join("")
-      + `<span class="lx-grow"></span><button id="bk-pro" class="lx-pro${pro ? " on" : ""}" aria-pressed="${pro}" aria-label="Researcher tools">PRO<span class="lx-tip"><b>Researcher tools</b>${pro ? "On: the sky world model and the watchlist are in the rail" : "Batch runs and the sky world model. Free while MIRA is a prototype"}</span></button>`
+    host.querySelector(".bk-body")!.classList.toggle("wide", railWide);
+    $("#bk-rail").innerHTML = `<button id="bk-wide" class="lx-wide" aria-pressed="${railWide}" aria-label="${railWide ? "Show icons only" : "Show the names of the tools"}"><svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="14" height="12" rx="1.5"/><path d="M8 4v12"/><path d="${railWide ? "M14 8l-2 2 2 2" : "M11.5 8l2 2-2 2"}"/></svg><span class="lx-lab">Tools</span><span class="lx-tip"><b>${railWide ? "Icons only" : "Show names"}</b>${railWide ? "Make room for the picture" : "Each tool with its name"}</span></button>`
+      + `<div class="lx-g">${btn("read", "Readings", "The answers for this field, in a few words", 'data-tool=""')}</div>`
+      + groups.map((g) => { const L = TOOLS.filter((q) => q.g === g && (!q.pro || pro)); return L.length ? `<div class="lx-g${g === "Researcher" ? " pro" : ""}"><span class="lx-gh">${g}</span>${L.map((q) => btn(q.k, q.t, q.d, `data-tool="${q.k}"`)).join("")}</div>` : ""; }).join("")
+      + `<span class="lx-grow"></span><div class="lx-g foot"><button id="bk-pro" class="lx-pro${pro ? " on" : ""}" aria-pressed="${pro}" aria-label="Researcher tools"><span class="lx-pi">PRO</span><span class="lx-lab">Researcher tools ${pro ? "on" : "off"}</span><span class="lx-tip"><b>Researcher tools</b>${pro ? "On: the fit, the limits, every exposure, exports, watchlists, the sky model" : "The fit, the limits, every exposure, exports, watchlists, the sky model. Free while MIRA is a prototype"}</span></button>`
       + (opts.onAtlas ? btn("sky", "On the Sky map", "This field on the Sky map: where it is, and its pictures since 1999", 'id="bk-onsky"') : "") + (opts.onSave ? btn("save", "Save as a case", "Keep this reading in your cases", 'id="bk-save"') : "")
-      + `<a class="lx-a" href="/docs/#lab" target="_blank" rel="noopener" aria-label="How the Lab works">${icon("docs")}<span class="lx-tip"><b>Documentation</b>How every tool works</span></a>`;
-    const sw = host.querySelector<HTMLElement>("#bk-pro"); if (sw) sw.onclick = () => { pro = !pro; try { localStorage.setItem("mira.pro", pro ? "1" : "0"); } catch { /* private mode */ } if (!pro && (tool === "wm" || tool === "watch")) tool = null; renderToolList(); syncControls(); };
+      + `<a class="lx-a" href="/docs/#lab" target="_blank" rel="noopener" aria-label="How the Lab works">${icon("docs")}<span class="lx-lab">Documentation</span><span class="lx-tip"><b>Documentation</b>How every tool works</span></a></div>`;
+    const wd = host.querySelector<HTMLElement>("#bk-wide"); if (wd) wd.onclick = () => { railWide = !railWide; try { localStorage.setItem("mira.rail", railWide ? "1" : "0"); } catch { /* private mode */ } renderToolList(); syncControls(); requestAnimationFrame(() => { fit(); paint(); }); };
+    const sw = host.querySelector<HTMLElement>("#bk-pro"); if (sw) sw.onclick = () => { pro = !pro; try { localStorage.setItem("mira.pro", pro ? "1" : "0"); } catch { /* private mode */ } if (!pro && tool && TOOLS.find((q) => q.k === tool)?.pro) tool = null; renderToolList(); syncControls(); renderPanel(); };
     const os = host.querySelector<HTMLButtonElement>("#bk-onsky"); if (os) os.onclick = () => { if (frames.length || center[0] || center[1]) opts.onAtlas?.(center[0], center[1]); };
     const sv = host.querySelector<HTMLButtonElement>("#bk-save"); if (sv) sv.onclick = () => { if (!frames.length) return; opts.onSave?.(snapshot()); toast("Saved to your cases"); };
   }

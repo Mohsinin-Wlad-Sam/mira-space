@@ -59,8 +59,9 @@ export function predict(m: Model, a: Float32Array, b: Float32Array, N: number, t
   return { next, heat, vx: o.d.slice(2 * n, 3 * n), vy: o.d.slice(3 * n, 4 * n) };
 }
 
-type Api = { N: () => number; past: () => any; visits: () => { yr: number; img: Float32Array; n: number }[]; frames: () => any[]; tmYear: () => number; esc: (s: string) => string };
-let year = 2050;
+type Row = { n: number; x: number; y: number; isTarget: boolean; pm: { tot: number; etot: number; base: number } | null; gaia: { pmra: number | null; pmdec: number | null } | null };
+type Api = { N: () => number; past: () => any; visits: () => { yr: number; img: Float32Array; n: number }[]; frames: () => any[]; tmYear: () => number; esc: (s: string) => string; report: () => { rows: Row[] } | null };
+let year = 0, which: "a" | "b" | "p" | "s" | "d" = "p";
 function draw(cv: HTMLCanvasElement, z: Float32Array, N: number, mode: "grey" | "heat" | "diff" = "grey") {
   cv.width = cv.height = N; const g = cv.getContext("2d")!, id = g.createImageData(N, N), d = id.data;
   for (let k = 0; k < N * N; k++) { const v = z[k];
@@ -81,30 +82,41 @@ export async function renderWorldModel(el: HTMLElement, api: Api) {
   const t0 = performance.now(), now = predict(m, A, B, N, (t3 - t2) / (t2 - t1)), ms = performance.now() - t0;
   // what the model did not expect: today's real picture minus its forecast for today (both on the same scale)
   const sur = S ? S.map((v, k) => v - now.next[k]) : null;
-  // the sources the model says are moving: peaks of its map, with the motion it reads off for each
-  const peaks: { i: number; j: number; p: number; pm: number; dir: number }[] = [], px = PIX_ARCSEC, gap = t2 - t1;
+  // the sources the model says are moving: peaks of its map, with the motion it reads off for each (pixels a year, x to the right, y down)
+  const peaks: { i: number; j: number; p: number; pm: number; dir: number; ux: number; uy: number }[] = [], px = PIX_ARCSEC, gap = t2 - t1;
   for (let j = 2; j < N - 2; j++) for (let i = 2; i < N - 2; i++) { const k = j * N + i, p = now.heat[k]; if (p < (mm.thr ?? 0.5)) continue; let top = true;
     for (let b = -2; b <= 2 && top; b++) for (let a = -2; a <= 2; a++) if (now.heat[(j + b) * N + i + a] > p) { top = false; break; }
-    if (top) peaks.push({ i, j, p, pm: (Math.hypot(now.vx[k], now.vy[k]) * mm.vscale * px) / gap, dir: (Math.atan2(-now.vx[k], -now.vy[k]) * 180) / Math.PI }); }
-  peaks.sort((a, b) => b.p - a.p);
-  el.innerHTML = `<p class="bk-reading"><b>World model</b> A network that was shown pairs of real pictures of the sky taken years apart and trained to draw the next one. Here it reads this field's <b>${t1.toFixed(0)}</b> and <b>2010</b> pictures and draws ${sx ? `<b>${t3.toFixed(1)}</b>, which SPHEREx then really observed` : "the present"}. ${peaks.length ? `It marks <b class="hl">${peaks.length} moving source${peaks.length > 1 ? "s" : ""}</b>${peaks[0] ? `, the clearest at about <b>${peaks[0].pm.toFixed(peaks[0].pm < 1 ? 2 : 1)}″ per year</b>` : ""}.` : "It sees nothing moving here."}</p>
-    <div class="wm-grid">
-      <figure><canvas id="wm-a"></canvas><figcaption><b>${t1.toFixed(0)} · 2MASS</b>real picture, 2.2 µm</figcaption></figure>
-      <figure><canvas id="wm-b"></canvas><figcaption><b>2010 · WISE</b>real picture, 4.6 µm</figcaption></figure>
-      <figure><canvas id="wm-h"></canvas><span class="wm-mark">model output</span><figcaption><b>What it says moved</b>its motion map, 0 to 1</figcaption></figure>
-      <figure><canvas id="wm-p"></canvas><span class="wm-mark">AI-generated · prediction</span><figcaption><b>${t3.toFixed(1)} · forecast</b>drawn by the model</figcaption></figure>
-      <figure><canvas id="wm-s"></canvas><figcaption><b>${sx ? `${t3.toFixed(1)} · SPHEREx` : "today"}</b>${sx ? "real picture, 0.75–5 µm" : "not observed yet"}</figcaption></figure>
-      <figure><canvas id="wm-d"></canvas><span class="wm-mark">model output</span><figcaption><b>Surprise</b>real minus forecast</figcaption></figure>
-    </div>
-    <h3 class="bk-h sec">Forecast another year</h3>
-    <div class="wm-f"><input type="range" id="wm-yr" min="2027" max="2080" step="1" value="${year}"><output id="wm-yo">${year}</output></div>
-    <div class="wm-grid wm-fut"><figure><canvas id="wm-f"></canvas><span class="wm-mark">AI-generated · prediction</span><figcaption><b id="wm-fc">${year} · forecast</b>drawn by the model</figcaption></figure>
-      <div>${peaks.length ? `<div class="bk-tw"><table class="bk-table num"><thead><tr><th>source at (x, y)</th><th>model's motion (″/yr)</th><th>toward</th><th>confidence</th></tr></thead><tbody>${peaks.slice(0, 6).map((p) => `<tr><td>${p.i}, ${p.j}</td><td>${p.pm.toFixed(2)}</td><td>${["N", "NE", "E", "SE", "S", "SW", "W", "NW"][Math.round(((p.dir + 360) % 360) / 45) % 8]}</td><td>${(p.p * 100).toFixed(0)}%</td></tr>`).join("")}</tbody></table></div>` : `<p class="bk-cap show">No source passes the model's mark in this field.</p>`}</div></div>
-      <p class="bk-cap show">Checked on ${mm.test?.n ?? "—"} real fast movers it never saw in training: it found ${mm.test ? `${Math.round(100 * mm.test.recall)}% of them (${(mm.test.by_pm ?? []).filter((b: any) => b.n).map((b: any) => `${Math.round(100 * b.recall)}% at ${b.hi > 50 ? `over ${b.lo}` : `${b.lo}–${b.hi}`}″/yr`).join(", ")}), with ${mm.test.fp_per_field.toFixed(2)} false marks per field, and read their motion to ${mm.test.pm_err_median.toFixed(2)}″ per year (median)` : "—"}. ${api.esc(mm.thr_note ?? "")} Compare with the Motion detector and the Astrometer, which measure; this one only looks.</p>
-    <p class="bk-cap show"><b>What this is.</b> ${api.esc(mm.about ?? "")} Run here in ${ms.toFixed(0)} ms in your browser (${(mm.params / 1e6).toFixed(2)} million weights, ${(mm.bytes / 1e6).toFixed(1)} MB). <b>What it is not:</b> a measurement. A forecast is a drawing by a network; it can be wrong, it knows nothing the two pictures do not show, and far extrapolations blur. The "surprise" picture also lights up for reasons that are not motion: the three surveys looked at different colours of light.</p>`;
-  const cv = (s: string) => el.querySelector(s) as HTMLCanvasElement;
-  draw(cv("#wm-a"), A, N); draw(cv("#wm-b"), B, N); draw(cv("#wm-h"), now.heat, N, "heat"); draw(cv("#wm-p"), now.next, N); if (S) draw(cv("#wm-s"), S, N); else draw(cv("#wm-s"), new Float32Array(N * N), N); if (sur) draw(cv("#wm-d"), sur, N, "diff"); else draw(cv("#wm-d"), new Float32Array(N * N), N, "diff");
-  const fut = () => { const f = predict(m, A, B, N, (year - t2) / (t2 - t1)); draw(cv("#wm-f"), f.next, N); };
-  fut(); let tmr = 0;
-  (el.querySelector("#wm-yr") as HTMLInputElement).oninput = (e) => { year = +(e.target as HTMLInputElement).value; (el.querySelector("#wm-yo") as HTMLElement).textContent = String(year); (el.querySelector("#wm-fc") as HTMLElement).textContent = `${year} · forecast`; clearTimeout(tmr); tmr = window.setTimeout(fut, 60); };
+    if (top) peaks.push({ i, j, p, pm: (Math.hypot(now.vx[k], now.vy[k]) * mm.vscale * px) / gap, dir: (Math.atan2(-now.vx[k], -now.vy[k]) * 180) / Math.PI, ux: (now.vx[k] * mm.vscale) / gap, uy: (now.vy[k] * mm.vscale) / gap }); }
+  peaks.sort((a, b) => b.p - a.p); const top = peaks.slice(0, 4), y0 = Math.floor(t3), Y1 = Math.floor(t1); if (year < y0) year = y0;
+  // what the Lab's own instruments measured for the same source: the row nearest to where the model puts it today
+  const rows = api.report()?.rows ?? [], at = (q: (typeof top)[0], t: number) => [q.i + 0.5 + q.ux * (t - t2), q.j + 0.5 + q.uy * (t - t2)];
+  const match = (q: (typeof top)[0]) => { const [x, y] = at(q, t3); let best: Row | null = null, bd = 5.5; for (const r of rows) { const d = Math.hypot(r.x - x, r.y - y); if (d < bd) { bd = d; best = r; } } return best; };
+  const compass = (d: number) => ["N", "NE", "E", "SE", "S", "SW", "W", "NW"][Math.round(((d + 360) % 360) / 45) % 8];
+  const vs = top.map((q, n) => { const r = match(q), g = r?.gaia && r.gaia.pmra !== null && r.gaia.pmdec !== null ? Math.hypot(r.gaia.pmra, r.gaia.pmdec) : null, lab = r?.pm && r.pm.base > 5 ? r.pm.tot : null;
+    return `<tr><td><i class="wm-n">${n + 1}</i></td><td><b>${q.pm.toFixed(q.pm < 1 ? 2 : 1)}″</b> ${compass(q.dir)}</td><td>${lab !== null ? `<b>${lab.toFixed(2)}″</b>${r!.isTarget ? " · your target" : ""}` : `<span class="dim">not measured</span>`}</td><td>${g !== null ? `${g.toFixed(2)}″` : "–"}</td></tr>`; }).join("");
+  const STEPS: [typeof which, string][] = [["a", String(Y1)], ["b", "2010"], ["p", "Forecast"], ["s", sx ? String(y0) : "Today"], ["d", "Surprise"]];
+  el.innerHTML = `<p class="bk-reading"><b>Sky model</b> It was shown this field in <b>${Y1}</b> and <b>2010</b> only. ${top.length ? `It says <b class="hl">${peaks.length} source${peaks.length > 1 ? "s" : ""} moved</b> and draws where ${peaks.length > 1 ? "they are" : "it is"} later.` : "It sees nothing moving here."}</p>
+    <div class="wm-steps" id="wm-steps" role="tablist">${STEPS.map(([k, t]) => `<button role="tab" data-w="${k}">${t}</button>`).join("")}</div>
+    <div class="wm-big"><canvas id="wm-big"></canvas><svg id="wm-ov" viewBox="0 0 ${N} ${N}" aria-hidden="true"></svg><span class="wm-mark" id="wm-ai" hidden></span></div>
+    <p class="wm-cap" id="wm-capt"></p>
+    <div class="wm-f"><span class="eyebrow">Forecast year</span><input type="range" id="wm-yr" min="${y0}" max="2080" step="1" value="${year}" aria-label="Year to forecast"><output id="wm-yo">${year}</output></div>
+    ${top.length ? `<h3 class="bk-h sec">The model against the measurement</h3><table class="bk-table wm-vs"><thead><tr><th></th><th>model reads, a year</th><th>the Lab measured</th><th>Gaia</th></tr></thead><tbody>${vs}</tbody></table>` : ""}
+    <p class="bk-cap show">The model only looks at pictures; the Lab measures. Tested on ${mm.test?.n ?? "—"} real movers it never saw: ${mm.test ? `${Math.round(100 * mm.test.recall)}% found, ${mm.test.fp_per_field.toFixed(2)} false marks per field` : "—"}. Runs in your browser in ${ms.toFixed(0)} ms. <a href="/docs/#worldmodel" target="_blank" rel="noopener">How it works</a></p>`;
+  const big = el.querySelector("#wm-big") as HTMLCanvasElement, ov = el.querySelector("#wm-ov") as SVGElement, ai = el.querySelector("#wm-ai") as HTMLElement, capt = el.querySelector("#wm-capt") as HTMLElement;
+  const zero = new Float32Array(N * N); let fut: Float32Array | null = null, futY = 0;
+  const show = () => {
+    if (which === "p" && year !== y0 && futY !== year) { fut = predict(m, A, B, N, (year - t2) / (t2 - t1)).next; futY = year; }
+    const te = which === "a" ? t1 : which === "b" ? t2 : which === "p" ? (year === y0 ? t3 : year) : t3;
+    if (which === "a") draw(big, A, N); else if (which === "b") draw(big, B, N); else if (which === "p") draw(big, year === y0 || !fut ? now.next : fut, N); else if (which === "s") draw(big, S ?? zero, N); else draw(big, sur ?? zero, N, "diff");
+    ai.hidden = which !== "p" && which !== "d"; ai.textContent = which === "p" ? "AI-generated · prediction" : "model output";
+    capt.innerHTML = which === "a" ? `<b>${Y1}</b> NASA 2MASS, real picture` : which === "b" ? `<b>2010</b> NASA WISE, real picture` : which === "p" ? `<b>${Math.floor(te)}</b> drawn by the model from its two pictures, ${Y1} and 2010`
+      : which === "s" ? (sx ? `<b>${y0}</b> NASA SPHEREx, real picture: compare with the forecast` : "Not observed yet") : `<b>Surprise</b> the real ${y0} picture minus the forecast: orange is brighter than expected, blue fainter`;
+    // each marked source: its path from the first picture to the forecast, and a ring where the model puts it on the date shown
+    ov.innerHTML = top.map((q, n) => { const [xa, ya] = at(q, t1), [xb, yb] = at(q, Math.max(t3, te)), [x, y] = at(q, te);
+      return `<line x1="${xa.toFixed(2)}" y1="${ya.toFixed(2)}" x2="${xb.toFixed(2)}" y2="${yb.toFixed(2)}"/><circle cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" r="${(N / 26).toFixed(2)}"/><text x="${(x + N / 20).toFixed(2)}" y="${(y - N / 28).toFixed(2)}" font-size="${(N / 17).toFixed(2)}">${n + 1}</text>`; }).join("");
+    el.querySelectorAll<HTMLButtonElement>("#wm-steps button").forEach((b) => b.classList.toggle("on", b.dataset.w === which));
+  };
+  el.querySelectorAll<HTMLButtonElement>("#wm-steps button").forEach((b) => (b.onclick = () => { which = b.dataset.w as typeof which; show(); }));
+  let tmr = 0; (el.querySelector("#wm-yr") as HTMLInputElement).oninput = (e) => { year = +(e.target as HTMLInputElement).value; (el.querySelector("#wm-yo") as HTMLElement).textContent = String(year); which = "p"; clearTimeout(tmr); tmr = window.setTimeout(show, 40); };
+  show();
 }

@@ -198,6 +198,7 @@ export const navLinks: NavLink[] = [
   { label: 'Evidence', href: '/#evidence' },
   { label: 'Plan', href: '/#plan' },
   { label: 'Team', href: '/#team' },
+  { label: 'Docs', href: '/docs/' },
 ]
 
 // ---------------------------------------------------------------------------
