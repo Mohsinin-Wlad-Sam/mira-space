@@ -24,7 +24,7 @@ def video(tm, w2, sx, K, reps, flip, dev):
     return (v - mean) / std
 
 def main():
-    ap = argparse.ArgumentParser(); ap.add_argument("--data", required=True); ap.add_argument("--gpu", type=int, default=0); ap.add_argument("--lr", type=float, default=2e-5); ap.add_argument("--epochs", type=int, default=6); ap.add_argument("--reps", type=int, default=2); ap.add_argument("--batch", type=int, default=16); ap.add_argument("--atlas", default=""); ap.add_argument("--tag", default="a"); ap.add_argument("--marks", default="")
+    ap = argparse.ArgumentParser(); ap.add_argument("--data", required=True); ap.add_argument("--gpu", type=int, default=0); ap.add_argument("--lr", type=float, default=2e-5); ap.add_argument("--epochs", type=int, default=6); ap.add_argument("--reps", type=int, default=2); ap.add_argument("--batch", type=int, default=16); ap.add_argument("--atlas", default=""); ap.add_argument("--catalogue", default=""); ap.add_argument("--objects", default="~/skylens/web_data/verified/objects.json"); ap.add_argument("--tag", default="a"); ap.add_argument("--marks", default="")
     a = ap.parse_args(); root = os.path.expanduser(a.data); dev = torch.device(f"cuda:{a.gpu}"); torch.manual_seed(0)
     from transformers import AutoModel
     K = clips_zoom(root); sp = np.array([split(int(t)) for t in K[:, 0]]); tr_all = np.nonzero(sp == 0)[0]; te = np.nonzero(sp == 2)[0]; rng = np.random.default_rng(0)
@@ -100,6 +100,36 @@ def main():
                    "x": [round(float(v), 4) for v in xy[:, 0]], "y": [round(float(v), 4) for v in xy[:, 1]], "kind": kind.tolist(), "pm": [round(float(v), 2) for v in pmv], "score": [round(float(v), 3) for v in prob],
                    "ra": [round(float(v), 4) for v in ra], "dec": [round(float(v), 4) for v in dec], "knn": [round(float(v), 1) for v in knn]}, open(os.path.expanduser(a.atlas), "w"))
         print("atlas written", len(E), how, flush=True)
+    # --- every confirmed mover the pictures show, in the model's own space: which stars it finds alike, and which it finds
+    # unlike all the others. A map of resemblance in three pictures (brightness in each, motion, surroundings), not a classification.
+    if a.catalogue:
+        from census.wm_data import tile_rc
+        def embed2(KK):
+            m.eval(); o = []
+            with torch.no_grad():
+                for i in range(0, len(KK), 48):
+                    with torch.autocast("cuda", dtype=torch.bfloat16): h = m(pixel_values_videos=video(tm, w2, sx, KK[i:i + 48], a.reps, 0, dev), skip_predictor=True).last_hidden_state
+                    f = h.float().mean(1); o.append(torch.cat([f, head(f)], 1).cpu())
+            return torch.cat(o).numpy()
+        S = np.load(f"{root}/stars.npz"); obj = json.load(open(os.path.expanduser(a.objects)))["cols"]; ok = np.nonzero(S["same"] & S["vis"])[0]
+        dy = 2012.8 - S["ep"][ok]; ra_m = S["ra"][ok] + S["pmra"][ok] / 3600 * dy / np.cos(np.radians(S["dec"][ok])); dec_m = S["dec"][ok] + S["pmdec"][ok] / 3600 * dy
+        t, r, c = tile_rc(ra_m, dec_m, 5); keep = t == S["tile"][ok]; ok, t, r, c = ok[keep], t[keep], r[keep], c[keep]
+        KC = np.stack([t, np.clip(np.round(r) - Z // 2, 0, 512 - Z), np.clip(np.round(c) - Z // 2, 0, 512 - Z), np.zeros(len(t)), np.zeros(len(t)), np.zeros(len(t)), np.zeros(len(t))], 1).astype(np.float32)
+        E = embed2(KC); Fc = torch.from_numpy(E[:, :1024]).to(dev); Fc = Fc / Fc.norm(dim=1, keepdim=True); prob = 1 / (1 + np.exp(-E[:, 1024])); nn_i = []; far = []
+        for i in range(0, len(Fc), 2048):
+            sim = Fc[i:i + 2048] @ Fc.T; v, ix = sim.topk(11, dim=1); nn_i.append(ix[:, 1:7].cpu().numpy()); far.append((1 - v[:, 1:11]).mean(1).cpu().numpy())
+        nn_i = np.concatenate(nn_i); far = np.concatenate(far); F0 = E[:, :1024] - E[:, :1024].mean(0); _, sv, Vt = np.linalg.svd(F0, full_matrices=False); P50 = F0 @ Vt[:50].T
+        try:
+            from sklearn.manifold import TSNE
+            xy = TSNE(2, perplexity=40, init="pca", random_state=0, n_jobs=32).fit_transform(P50); how = "t-SNE of the first 50 principal components of the 1,024 numbers"
+        except Exception as e:
+            print("no t-SNE:", e, flush=True); xy = P50[:, :2]; how = "the first two principal components of the 1,024 numbers"
+        xy = (xy - xy.min(0)) / np.maximum(1e-9, xy.max(0) - xy.min(0)); sp = np.array([split(int(q)) for q in t])
+        json.dump({"model": "V-JEPA 2 ViT-L, fine-tuned on MIRA's movers", "how": how, "auc_test": log[-1]["auc_test"], "n": int(len(ok)), "seen_in_training": int((sp == 0).sum()),
+                   "id": [obj["id"][k] for k in ok], "kind": [obj["kind"][k] for k in ok], "pm": [round(float(obj["pm"][k]), 2) for k in ok], "known": [int(obj["known"][k]) for k in ok],
+                   "ra": [round(float(v), 4) for v in S["ra"][ok]], "dec": [round(float(v), 4) for v in S["dec"][ok]], "x": [round(float(v), 4) for v in xy[:, 0]], "y": [round(float(v), 4) for v in xy[:, 1]],
+                   "score": [round(float(v), 3) for v in prob], "far": [round(float(v), 4) for v in far], "nn": nn_i.tolist()}, open(os.path.expanduser(a.catalogue), "w"))
+        print("catalogue written", len(ok), how, flush=True)
 
 if __name__ == "__main__":
     main()
