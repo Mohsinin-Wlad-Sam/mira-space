@@ -440,6 +440,7 @@ export async function openSky(host: HTMLElement, o: SkyOpts): Promise<SkyHandle>
   function show(what: string): boolean {
     hideIntro();
     if (what === "planets" || what === "spherex" || what === "colours") { const open = st.panel !== what; st.panel = open ? what : ""; if (what !== "colours" && st.wave >= 0) st.wave = -1;
+      if (open && what !== "spherex") { rail.classList.remove("shut"); fold.setAttribute("aria-expanded", "true"); }       // its panel must be in sight (on a phone the list starts folded)
       if (open && what === "planets") { st.show.planets = true; if (st.u < 2) jump(3); } if (open && what === "spherex") { whole(); playTo(2, 3); } if (!open && what === "colours") st.wave = -1; sync(); return true; }
     if (what === "story") { st.panel = ""; whole(); playTo(0, 3); return true; }
     if (what === "all" || what === "nogaia" || what === "open") { st.show.movers = true; if (what === "open" && st.chip === "open") { nextCase(); return true; } st.chip = what; if (st.u < 2) jump(3); sync(); if (what === "open") nextCase(); return true; }
