@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<link rel="icon" type="image/png" href="/favicon.png" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MIRA · 30-second film</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Semi+Condensed:wght@600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<!--
+  THE FILM. Thirty seconds, eight scenes, every one of them the running site (the maps and the Lab are loaded in
+  frames and driven from here) except the first, which is NASA's own animation of the spacecraft.
+  Open /film/ and press Space to watch it in real time. To render it frame by frame at full quality:
+      node web/scripts/render_film.mjs      (see the script; it steps a virtual clock and photographs each frame)
+  The clock: window.__vt is installed by the renderer; without it the page simply runs on real time.
+-->
+<style>
+:root { --white: rgb(240 240 250); --dim: rgb(240 240 250 / .78); --faint: rgb(240 240 250 / .5); --accent: #ff9d4d; --display: "Barlow Semi Condensed", "Barlow", Arial, sans-serif; --body: "Barlow", Arial, sans-serif; --mono: "JetBrains Mono", ui-monospace, Menlo, monospace; }
+* { box-sizing: border-box; } html, body { height: 100%; margin: 0; background: #000; overflow: hidden; color: var(--white); font-family: var(--body); -webkit-font-smoothing: antialiased; }
+#stage { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; overflow: hidden; background: #000; transform-origin: 0 0; }
+.sc { position: absolute; inset: 0; opacity: 0; overflow: hidden; } .sc iframe, .sc video { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; border: 0; transform-origin: 0 0; background: #000; } .sc video { object-fit: cover; }
+.shade { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(0deg, rgb(0 0 0 / .82) 0%, rgb(0 0 0 / .28) 30%, transparent 52%), linear-gradient(180deg, rgb(0 0 0 / .5), transparent 22%); opacity: 0; }
+.tx { position: absolute; left: 120px; right: 120px; opacity: 0; will-change: transform, opacity; }
+.tx .e { font-family: var(--mono); font-size: 19px; letter-spacing: .26em; text-transform: uppercase; color: var(--dim); margin-bottom: 18px; }
+.tx h1 { margin: 0; font-family: var(--display); font-weight: 700; text-transform: uppercase; font-size: 104px; line-height: .94; letter-spacing: .01em; text-shadow: 0 4px 40px rgb(0 0 0 / .8); }
+.tx h1 b { color: var(--accent); font-weight: 700; } .tx p { margin: 18px 0 0; font-size: 34px; line-height: 1.25; color: var(--dim); max-width: 1300px; text-shadow: 0 2px 20px rgb(0 0 0 / .9); }
+.tx.low { bottom: 104px; } .tx.mid { top: 50%; transform: translateY(-50%); text-align: center; } .tx.mid p { margin-left: auto; margin-right: auto; }
+.tx.big h1 { font-size: 300px; letter-spacing: .12em; margin-left: .12em; } .tx.big .tag { font-family: var(--display); font-weight: 600; font-size: 64px; letter-spacing: .08em; text-transform: uppercase; margin-top: 10px; }
+.tx.plate { padding: 30px 34px; border-radius: 16px; background: rgb(0 0 0 / .82); box-shadow: 0 0 0 .8px rgb(240 240 250 / .16); }
+.credit { position: absolute; right: 48px; bottom: 36px; font-family: var(--mono); font-size: 15px; letter-spacing: .12em; text-transform: uppercase; color: var(--faint); opacity: 0; text-shadow: 0 1px 6px #000; }
+.corner { position: absolute; right: 56px; top: 40px; font-family: var(--display); font-weight: 700; font-size: 26px; letter-spacing: .42em; opacity: 0; text-shadow: 0 1px 8px #000; }
+#end { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; background: #000; opacity: 0; }
+#end h1 { margin: 0; font-family: var(--display); font-weight: 700; font-size: 250px; letter-spacing: .14em; margin-left: .14em; line-height: 1; } #end .tag { font-family: var(--display); font-weight: 600; font-size: 56px; letter-spacing: .08em; text-transform: uppercase; margin-top: 6px; }
+#end .who { margin-top: 44px; font-size: 26px; color: var(--dim); } #end .who b { display: block; font-family: var(--mono); font-weight: 400; font-size: 16px; letter-spacing: .22em; text-transform: uppercase; color: var(--faint); margin-bottom: 10px; }
+#end .cr { position: absolute; left: 120px; right: 120px; bottom: 44px; font-family: var(--mono); font-size: 14.5px; line-height: 1.7; letter-spacing: .05em; color: var(--faint); }
+#hud { position: fixed; left: 16px; bottom: 12px; z-index: 9; font-family: var(--mono); font-size: 12px; color: var(--faint); } body.rec #hud { display: none; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="sc" id="s-nasa"><video id="vid" src="/film/nasa_clip.mp4" muted playsinline preload="auto"></video></div>
+  <div class="sc" id="s-sky"><iframe id="fSky" title="Sky" src="/explore/?embed=1&deck=film#sky"></iframe></div>
+  <div class="sc" id="s-space"><iframe id="fSpace" title="Space" src="/explore/?embed=1&deck=film#space"></iframe></div>
+  <div class="sc" id="s-lab"><iframe id="fLab" title="Lab" src="/explore/?embed=1&deck=1&target=eps-indi-b&tool=wm"></iframe></div>
+  <div class="shade" id="shade"></div>
+  <div class="corner" id="corner">MIRA</div>
+
+  <div class="tx low" data-t="0.25,2.5"><div class="e">Team Mohsinin Wlad Dario · NASA Space Apps Challenge 2026</div><h1>NASA's SPHEREx maps<br>the whole sky in <b>102 colours</b>.</h1></div>
+  <div class="tx low" data-t="2.75,5.45"><div class="e">The challenge · Planet X and SPHEREx</div><h1>Every place, every six months.<br><b>Spot what moves.</b></h1></div>
+  <div class="tx big" data-t="5.95,8.9" style="right:auto;left:110px;width:800px;bottom:auto;top:360px"><h1 style="font-size:210px">MIRA</h1><div class="tag" style="font-size:54px">See the sky change.</div></div>
+  <div class="tx low" data-t="9.4,14.0" style="right:auto;width:1100px"><div class="e">From the planets to the stars · re-measured on raw SPHEREx exposures</div><h1><b>17,604</b> stars<br>caught moving.</h1></div>
+  <div class="tx low" data-t="14.5,16.6" style="right:auto;width:600px;bottom:84px;left:96px"><div class="e">The Lab</div><h1 style="font-size:66px">Point at any place.<br>Play 27 years.</h1></div>
+  <div class="tx low" data-t="16.85,19.0" style="right:auto;width:600px;bottom:84px;left:96px"><div class="e">Epsilon Indi B · 12 light-years away</div><h1 style="font-size:66px"><b>4.70″</b> a year.<br>Measured.</h1></div>
+  <div class="tx low" data-t="19.5,23.0" style="left:auto;right:96px;width:760px"><div class="e">Only SPHEREx sees this</div><h1 style="font-size:84px">What the sky<br>is <b>made of</b>.</h1><p>Carbon dust · starlight · hydrogen</p></div>
+  <div class="tx low plate" data-t="23.5,26.8" style="right:auto;width:760px;bottom:auto;top:150px;left:84px"><div class="e">Trained on our university's GPUs · runs in the browser</div><h1 style="font-size:80px">A model that<br>forecasts the sky,</h1><p>and flags what it did not expect: the search a ninth planet needs.</p></div>
+
+  <div class="credit" data-t="0.2,2.55">Animation: NASA/JPL-Caltech</div>
+  <div class="credit" data-t="23.5,26.8" style="right:auto;left:120px">The forecast pictures are AI-generated and labelled</div>
+  <div id="end"><div><h1>MIRA</h1><div class="tag">See the sky change.</div>
+    <div class="who"><b>Team Mohsinin Wlad Dario · Ben Guerir · NASA Space Apps Challenge 2026</b>Mohammed Ouabdrrahmane · Hamza Ba-mohammed · Hiba Nemry · Aya Driouche · Abdelmonaim Bounite</div></div>
+    <div class="cr">Recorded from the running site: every picture of the sky is real data. NASA SPHEREx, 2MASS, WISE (NASA/IPAC IRSA) · ESA Gaia · CDS. Spacecraft animation: NASA/JPL-Caltech.<br>Music: “Impact Prelude” by Kevin MacLeod (incompetech.com), licensed under Creative Commons BY 4.0. The world model's forecast pictures are AI-generated. Not affiliated with or endorsed by NASA.</div></div>
+</div>
+<div id="hud">loading…</div>
+<script>
+const $ = (s) => document.querySelector(s), W = (id) => $(id).contentWindow, D = (id) => W(id).document, M = (id) => W(id).__mira;
+const DUR = 30, vt = () => window.__vt, now = () => performance.now(), wait = (ms) => new Promise((r) => setTimeout(r, ms));
+const sm = (u) => { u = Math.max(0, Math.min(1, u)); return u * u * (3 - 2 * u); }, lerp = (a, b, u) => a + (b - a) * u;
+// scene windows: [element, start, end]; a scene fades over 0.14 s at each end (a cut with a breath)
+const SC = [["#s-nasa", 0, 2.62], ["#s-sky", 2.62, 5.6], ["#s-space", 5.6, 14.25], ["#s-lab", 14.25, 19.25], ["#s-sky", 19.25, 23.25], ["#s-lab", 23.25, 27.0]];
+// what happens when the clock passes a time: [seconds, action]
+const click = (id, sel) => D(id).querySelector(sel)?.click();
+const CUES = [
+  [2.3, () => M("#fSky").sky().show("spherex")],                                              // SPHEREx fills the sky on its real dates
+  [8.5, () => { D("#fSpace").body.classList.remove("nocard"); M("#fSpace").space().shot("11391-389871", 6.5, 3000); }],     // from Jupiter out to a star that moved: Epsilon Indi B, 12 light-years away
+  [14.45, () => M("#fLab").lab.act({ play: true })],                                           // 1999 -> today in real pictures
+  [18.4, () => { const d = D("#fSky"); d.body.classList.remove("bare"); if (!d.querySelector("#skspec")) M("#fSky").sky().show("colours"); }],
+  [22.6, () => M("#fLab").lab.act({ instrument: "wm" })],
+];
+let fired = 0, t0 = 0, running = false, recording = false, lastT = -1;
+// how fast each frame's own clock runs during the film (the survey's 17 seconds are shown in 3)
+const rate = (id, t) => (id === "#fSky" ? (t < 5.7 ? 5.2 : 1) : id === "#fLab" && t > 14.2 && t < 19.3 ? 2.6 : 1);     // and the Lab's 27 years, with its rests on each picture, in 5
+const texts = [...document.querySelectorAll("[data-t]")].map((el) => ({ el, a: +el.dataset.t.split(",")[0], b: +el.dataset.t.split(",")[1], mid: el.classList.contains("mid"), credit: el.classList.contains("credit") }));
+function render(t) {
+  // scenes
+  const on = new Map();
+  for (const [sel, a, b] of SC) { const o = t < a || t > b ? 0 : Math.min(sm((t - a) / 0.14), sm((b - t) / 0.14)); on.set(sel, Math.max(on.get(sel) ?? 0, t >= a && t <= b ? Math.max(o, t - a < 0.14 && a === 0 ? sm((t - a) / 0.3) : o) : 0)); }
+  for (const [sel, o] of on) $(sel).style.opacity = o;
+  $("#shade").style.opacity = t < 27 ? 1 : 0; $("#corner").style.opacity = 0;
+  // slow push-ins
+  const vid = $("#vid"); vid.style.transform = `scale(${lerp(1.02, 1.1, t / 2.6)})`; vid.style.transformOrigin = "50% 45%";
+  $("#fSky").style.transform = t < 6 ? `scale(${lerp(1.0, 1.05, sm((t - 2.6) / 3))})` : `translate(0px, -70px) scale(${lerp(1.3, 1.36, sm((t - 19.25) / 4))})`; $("#fSky").style.transformOrigin = t < 6 ? "50% 50%" : "0% 50%";
+  $("#fSpace").style.transform = `scale(${t < 8.5 ? lerp(1.2, 1.27, sm((t - 5.6) / 2.9)) : lerp(1.27, 1.03, sm((t - 8.5) / 2.2))})`; $("#fSpace").style.transformOrigin = "0% 45%";      // Jupiter large at the right, the title at the left
+  if (t < 21) { $("#fLab").style.transform = `scale(${lerp(1.17, 1.25, sm((t - 14.25) / 5))})`; $("#fLab").style.transformOrigin = "50% 50%"; }
+  else { const u = sm((t - 23.25) / 3.75), k = lerp(1.6, 1.74, u); $("#fLab").style.transformOrigin = "0 0"; $("#fLab").style.transform = `translate(${-1920 * k + 1920 - 14}px, ${lerp(-36, -62, u)}px) scale(${k})`; }      // push in on the model's six pictures, at the right of the Lab
+  // captions
+  for (const q of texts) { const u = Math.min(sm((t - q.a) / 0.38), sm((q.b - t) / 0.3)), o = t < q.a || t > q.b ? 0 : u; q.el.style.opacity = o;
+    if (!q.credit) q.el.style.transform = `${q.mid ? "translateY(-50%) " : ""}translateY(${(1 - sm((t - q.a) / 0.6)) * 26}px)${q.mid ? ` scale(${lerp(0.97, 1.03, (t - q.a) / (q.b - q.a))})` : ""}`; }
+  // the pointer wanders over the sky in the "made of" scene: the spectrum follows it
+  if (t > 19.3 && t < 23.2) { const u = (t - 19.3) / 3.9, cv = D("#fSky").querySelector("#skymap canvas"); if (cv) { const r = cv.getBoundingClientRect(), x = r.left + r.width * lerp(0.36, 0.62, u), y = r.top + r.height * (0.5 - 0.11 * Math.sin(u * 6.3) - 0.03);
+    cv.dispatchEvent(new (W("#fSky").PointerEvent)("pointermove", { clientX: x, clientY: y, bubbles: true, pointerId: 77 })); } }
+  // the end card
+  $("#end").style.opacity = sm((t - 26.95) / 0.5) * (t > DUR - 0.02 ? 1 : 1);
+  if (t < 2.7) { const want = Math.min(3.5, 0.15 + t); if (Math.abs(vid.currentTime - want) > 0.012) vid.currentTime = want; }
+}
+function tick(tNow) {
+  if (!running) return; const t = Math.min(DUR, (tNow - t0) / 1000), dt = lastT < 0 ? 0 : (t - lastT) * 1000; lastT = t;
+  while (fired < CUES.length && CUES[fired][0] <= t) { try { CUES[fired][1](); } catch (e) { console.warn("cue", fired, e); } fired++; }
+  render(t);
+  if (recording) for (const id of ["#fSky", "#fSpace", "#fLab"]) { try { W(id).__vt?.step(dt * rate(id, t)); } catch (e) { /* a frame not ready */ } }
+  $("#hud").textContent = `${t.toFixed(2)} s`;
+  if (t < DUR) requestAnimationFrame(tick); else running = false;
+}
+async function prepare() {
+  const hud = (s) => ($("#hud").textContent = s);
+  const until = async (f, ms = 60000) => { const t1 = Date.now(); while (Date.now() - t1 < ms) { try { if (f()) return true; } catch (e) { /* not there yet */ } await wait(250); } return false; };
+  hud("loading the maps and the Lab…");
+  await until(() => M("#fSky")?.sky() && M("#fSpace")?.space() && M("#fLab")?.lab.isOpen);
+  await until(() => { const c = M("#fLab").lab.context(); return !c.loading && c.exposures > 0 && c.field; }, 120000);
+  hud("warming up: the Solar System, the composition picture, the model…");
+  D("#fSpace").body.classList.add("nocard"); M("#fSpace").space().shot("11391-389871", 6.5, 600); await wait(7000);      // the star's card reads its pictures once, so that they are there in the film
+  M("#fSpace").space().shot("Jupiter", 3.1, 900);                                              // the journey starts at Jupiter
+  M("#fSky").sky().show("colours"); await wait(4000); M("#fSky").sky().show("colours");        // loads the picture and the spectra, then closes the panel again
+  await until(() => D("#fLab").querySelector("#wm-p"), 90000); await wait(1500); D("#fLab").querySelector("#bk-close")?.click();
+  M("#fLab").lab.act({ range: "1999" }); await wait(3000);
+  await document.fonts.ready; $("#vid").currentTime = 0.15; render(0); hud("ready · press Space to play"); window.__film.ready = true;
+}
+function start(rec = false) { recording = rec; if (rec) { document.body.classList.add("rec"); for (const id of ["#fSky", "#fSpace", "#fLab"]) W(id).__vt?.freeze(); vt()?.freeze(); } fired = 0; lastT = -1; t0 = now(); running = true; requestAnimationFrame(tick); }
+window.__film = { ready: false, start, duration: DUR, settle: () => new Promise((res) => { const v = $("#vid"), go = () => (window.__vt?.realRaf ?? requestAnimationFrame)(() => (window.__vt?.realRaf ?? requestAnimationFrame)(() => res(true))); if (v.seeking) v.addEventListener("seeked", go, { once: true }); else go(); }) };
+const fit = () => { const k = Math.min(innerWidth / 1920, innerHeight / 1080); $("#stage").style.transform = `scale(${k})`; }; addEventListener("resize", fit); fit();
+addEventListener("keydown", (e) => { if (e.code === "Space" && window.__film.ready && !running) { e.preventDefault(); start(false); } });
+addEventListener("load", prepare);
+</script>
+</body>
+</html>

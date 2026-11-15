@@ -2,7 +2,10 @@
 
 # MIRA — the sky is not still
 
-**NASA Space Apps Challenge 2026 · "Planet X and SPHEREx"** · team *assrar-dawla*
+**NASA Space Apps Challenge 2026 · "Planet X and SPHEREx"** · team *Mohsinin Wlad Dario* (Ben Guerir) ·
+Mohammed Ouabdrrahmane, Hamza Ba-mohammed, Hiba Nemry, Aya Driouche, Abdelmonaim Bounite
+
+**Documentation** `/docs/` · **Seven-slide deck** `/deck/` · **30-second film** `/film/` (rendered by `web/scripts/render_film.mjs`) · credits in `docs/17_credits.md`
 
 NASA's SPHEREx is photographing the whole sky in 102 infrared colours and every image is public, but one image is a
 65 MB scientific file made for specialists' software. **MIRA makes them something anyone can look at.**
@@ -19,6 +22,13 @@ NASA's SPHEREx is photographing the whole sky in 102 infrared colours and every 
     confirmed movers, that have a distance). Click one: compare three real NASA pictures (2MASS about 1999, WISE
     2010, SPHEREx today) and follow its measured path.
 
+  - **What the sky is made of**, on the Sky map: pictures of starlight, of carbon dust (the 3.3 µm band) and of hot
+    hydrogen (the 4.05 µm line) computed from SPHEREx's 102 colours, and the spectrum of the patch of sky under the
+    pointer, drawn as you move. Zoomed in, the map shows the surveys' own sharp tiles for 1999 and 2010, and a marker
+    sits on its star.
+  - **One search** for everything, with results as you type. It forgives spelling ("barnad", "jupitr") and, for those
+    who do not know a name, filters the confirmed movers by kind, motion and distance.
+
   Works in a phone browser; no install, no account.
 - **For students and teachers:** measure a star's motion on NASA's own images and check it against ESA's Gaia
   (ε Indi B: 4.70 against 4.68″ per year). A classroom needs no telescope.
@@ -30,6 +40,11 @@ NASA's SPHEREx is photographing the whole sky in 102 infrared colours and every 
 - **For mission teams and science centres:** the Sky map plays SPHEREx's survey as it really advanced, from the
   dates of its 1.6 million public exposures, and any view (a map or a Lab field) can be put on another page with one
   line of HTML (More → Copy code to embed it).
+- **For research teams and agencies:** researcher tools in the Lab (a switch in its tool list): a **watchlist** that
+  puts a list of targets through the whole chain in one run, and a **sky world model**, a small network trained on
+  our university's GPUs that forecasts a field from its 1999 and 2010 pictures and marks what moved (tested on 984
+  real fast movers it never saw: half found, 79% of those moving 1–2″ a year; it runs in the browser). Plans:
+  `docs/13_business_plan.md`.
 - **For researchers:** one click deeper, the Lab: give a position, and instruments read every SPHEREx exposure of
   that field straight from the public archive and measure it: **which sources moved** since 1999 and 2010 and how
   fast; for the nearest, a parallax; a 0.75–5 µm spectrum with its molecular bands; whether they brightened or
@@ -63,7 +78,7 @@ moving against the stars. The same tools serve any star, brown dwarf or variable
 | Tip | Where it is done |
 |---|---|
 | Easy to update with new data releases | Pixels are never copied: the browser reads NASA's archive. One script rebuilds the small exposure index after a release, and with it the dates of SPHEREx's visits to each part of the sky that the Sky map plays (`deploy/update_spherex.sh`); the Sky map reads NASA's SPHEREx all-sky cube when its wavelength slider is used; `census/build_sky_backdrop.py` refreshes the 3D map's sky |
-| The 102 bands, creatively; co-add per detector | Lab: six pictures under the image, one per detector array, each the sum of all its exposures; Colour view; Sky map: a slider through all 102 wavelengths; 3D map: SPHEREx sky in three colours |
+| The 102 bands, creatively; co-add per detector | Lab → Colours: six pictures, one per detector array, each the sum of all its exposures; Colour view; play the exposures by wavelength. Sky map → What the sky is made of: starlight, carbon dust and hydrogen pictures computed from the 102 bands, a slider through every wavelength (instant), and the spectrum of the sky under the pointer. 3D map: SPHEREx sky in three colours |
 | Spectra on the fly | Lab → Spectrograph, for any source of the field, with molecular bands and automatic methane detection |
 | Add or subtract images taken at different times | Lab → Evolution (adds each visit's exposures; one time bar with 2MASS and WISE) and Difference (later visit minus first); any exposure can be left out. Sky map: any place opens a card that plays 2MASS, WISE and each SPHEREx visit (its exposures added) |
 | Choose the field of view | Lab: 3.3′, 6.6′, 9.8′, 13.1′, with the download size shown first |

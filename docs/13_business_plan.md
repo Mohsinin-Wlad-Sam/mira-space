@@ -74,7 +74,8 @@ its funding answer is below.
 
 ## 4. Who pays, and for what
 
-Individuals never pay and are never the product: no advertising, no tracking, no data sales.
+The public never pays and is never the product: no advertising, no tracking, no data sales. What is paid for is
+work saved for institutions; the offers below are packaged as three plans (see “Plans” further down).
 
 | | Offer | Buyer | Reference point for the price |
 |---|---|---|---|
@@ -91,6 +92,27 @@ group that needs it, not as a standalone invoice. C and D follow from requests. 
 **What we have not done yet.** No customer has been interviewed and no contract exists: demand for B–D is a
 hypothesis. The first step after the hackathon is to offer the verification run, free, to two research groups and
 one citizen-science project, and to measure hours saved and candidates confirmed.
+
+### Plans: how the offers are packaged
+
+The product has three depths, and the plans follow them. The first is the whole public site. The second is a set of
+researcher tools that already exist in the Lab behind a switch (free while MIRA is a prototype). The third is work
+done for an organisation on its own data.
+
+| Plan | For | What it adds | Paid how |
+|---|---|---|---|
+| **Explorer** | everyone: the public, classrooms, volunteers | Both maps (live planets, the visitor's own sky, SPHEREx by date, what the sky is made of), the Lab with all its instruments, the catalogue, the assistant, links and embeds | Free. Kept alive by grants (offer A) |
+| **Researcher** | research groups, advanced amateurs, university courses | Watchlists (a list of targets through the Lab's whole chain in one run, exported as a table), the sky world model (a network's forecast of a field and what it did not expect), bulk exports and the data files with support, workspaces shared across a group, exercises on real NASA data in Arabic, French and English (offer D) | A seat or a site licence; free for students and for volunteers who classify. Reference points: Slooh's education tier from US$30 per student per year [10]; remote-telescope plans from US$40 per 28 days [9] |
+| **Mission** | agencies, mission teams, archives, science centres | Verification runs on the organisation's own candidate lists at each data release (offer B); the engine adapted to its archive (offer C); a world model trained on its survey, so that each new visit is compared with what the model expected and only the surprises reach a person; private deployment, kiosk mode, support | Per project, mostly as a work package inside a shared grant |
+
+Two things make the tiers credible rather than a price list. First, the researcher tools are built and run today:
+the watchlist measures a list in the browser, and the world model (trained in 24 minutes on one of our
+university's GPUs on 2,400 real picture pairs, tested on 984 real fast-moving stars it had never seen: half of
+them found, 79% of those moving 1 to 2 arcseconds a year, 0.3 false marks per field) runs in the visitor's
+browser with no server. Second, nothing in the Explorer plan is held back to sell the others: the paid plans
+sell runs, upkeep and adaptation, not access to NASA's data.
+
+**Status.** No price has been tested with a customer. The switch in the Lab is a preview, not a paywall.
 
 ### Budget scenarios (annual, our own estimates)
 

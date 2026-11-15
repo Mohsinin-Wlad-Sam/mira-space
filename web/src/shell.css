@@ -199,3 +199,5 @@ body.embed #ui .sp-info, body.embed #ui .sp-info.ver { top: 46px; max-height: ca
 
 /* ---- bare: a map with nothing on it (title slide, film) ---- */
 body.bare .mx-rail, body.bare .mx-dock, body.bare .embed-out, body.bare .sk-coords, body.bare .sk-tile, body.bare #skhint, body.bare .sp-ladder, body.bare #spscale, body.bare .sp-hint, body.bare #skintro, body.bare #spintro, body.bare .sp-key { display: none !important; }
+body.bare .sp-cap, body.bare #spinfo:empty { display: none !important; }
+body.nocard .sp-info, body.nocard .sp-leader { display: none !important; }

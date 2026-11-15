@@ -40,7 +40,7 @@ export type SpaceOpts = { /** ask the assistant a question about what is on the 
   /** "put it under the telescope": hand a selected object to the Observe section */
   onObserve?: (t: { ra: number; dec: number; name?: string; pmra?: number; pmdec?: number; epoch?: number }) => void };
 /** close(); pause(true/false) suspends rendering while another section of the observatory is in front */
-export type SpaceHandle = (() => void) & { pause: (on: boolean) => void; /** fly to an object by name or survey id; false if the map does not hold it */ focus: (nameOrId: string) => boolean;
+export type SpaceHandle = (() => void) & { pause: (on: boolean) => void; /** fly to an object by name or survey id; false if the map does not hold it */ focus: (nameOrId: string) => boolean; shot: (nameOrId: string, radii?: number, ms?: number) => boolean;
   /** what the map shows, for the assistant */ context: () => unknown; /** let the assistant operate the map */ act: (a: { fly_to?: string; show?: string; pick?: string; take_part?: boolean }) => string };
 
 function parse(buf: ArrayBuffer): Cat {
@@ -596,13 +596,13 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<Spa
     const R = radiusRsun(cat!.teff[i], cat!.M[i], cat!.cls[i]) * 2.2546e-8;
     S.sel = i; info(i); flyTo(p, dist ?? (i === 0 ? 40 * AU : Math.min(Math.max(R * 25, 2e-8), Math.max(0.004, r * 0.05))), i);
   }
-  function flyToBody(b: Body) {
+  function flyToBody(b: Body, mult?: number, dur = 3200) {
     S.sel = -1; S.body = b; bodyInfo(b);
     const r = b.kind === "planet" ? PLANETS[b.k].rkm * 3.2407792894443654e-14 : 0; const p = bodyPos(b).clone();
     // arrive on the sunlit side, three-quarter view
     const toSun = p.clone().normalize().negate(), side = new THREE.Vector3().crossVectors(toSun, new THREE.Vector3(0, 0, 1)).normalize();
     const dir = toSun.multiplyScalar(1).addScaledVector(side, 0.55).add(new THREE.Vector3(0, 0, 0.3)).normalize();
-    flyTo(p, b.kind === "planet" ? Math.max(r * (PLANETS[b.k].name === "Saturn" ? 9 : 5), 2e-9) : b.kind === "rock" ? 0.02 * AU : b.kind === "craft" ? 0.05 * AU : 2 * AU, () => bodyPos(b).clone(), 3200, dir);
+    flyTo(p, b.kind === "planet" ? Math.max(r * (mult ?? (PLANETS[b.k].name === "Saturn" ? 9 : 5)), 2e-9) : b.kind === "rock" ? 0.02 * AU : b.kind === "craft" ? 0.05 * AU : 2 * AU, () => bodyPos(b).clone(), dur, dir);
     if (b.kind === "rock") liveL.rocks.forEach((k, i) => (k.orbit.visible = i === b.k));
   }
 
@@ -1131,6 +1131,11 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<Spa
     const pk = PLANETS.findIndex((p2) => p2.name === f); if (pk >= 0) { flyToBody({ kind: "planet", k: pk }); return true; } if (f === "Sun") { flyToStar(0); return true; }
     if (deepPending) { wanted = f; return true; }       // not found yet: looked for again when the rest of the catalogue is in
     return false; };
+  /** a framed shot for the film and the deck: fly to a planet or a star and stop `mult` radii from it */
+  handle.shot = (q: string, mult = 5, dur = 3200) => {
+    const pk = PLANETS.findIndex((p2) => p2.name === q); if (pk >= 0) { flyToBody({ kind: "planet", k: pk }, mult, dur); return true; }
+    const i = /^\d+-\d+$/.test(q) ? byId(q) : named(q); if (i < 0) return false;
+    const R = radiusRsun(cat!.teff[i], cat!.M[i], cat!.cls[i]) * 2.2546e-8; S.body = null; S.sel = i; info(i); flyTo(cur(i), Math.max(R * mult, 2e-9), i, dur); return true; };
   handle.context = () => { const i = S.sel, c = cat!, k = i >= 0 && vi.length > i ? vi[i] : -1, V = k >= 0 ? ver : null;
     return { confirmed_movers_on_map: tally.movers, of_them_not_in_gaia: tally.noGaia, not_in_simbad_nor_gaia_that_visitors_can_help_look_at: todo.length + todoOff.length, of_those_placed_on_the_map: todo.length,
       selected: i >= 0 ? { name: labelText(i), kind: V ? KIND_PLAIN[V.kind[k]] ?? V.kind[k] : CLASSES[c.cls[i]], distance_light_years: farFetched(i) ? null : +(cur(i).length() * LY).toFixed(1), distance_note: farFetched(i) ? "not known yet: its place on the map is provisional" : c.src[i] === 3 ? "an estimate from its colours, not measured" : "measured",

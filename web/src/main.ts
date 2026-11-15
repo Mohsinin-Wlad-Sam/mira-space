@@ -621,7 +621,7 @@ let view: View = "blink", uniMode: UniMode = "3d", atlasP: Promise<void> | null 
 setBase(import.meta.env.BASE_URL);
 document.body.classList.toggle("embed", EMBED);
 // inside the slide deck and the film: no first-visit prompt; "bg" also hides the panels and lets the map play by itself
-const DECK = query.get("deck"); if (DECK) { try { sessionStorage.setItem("mira.skyintro", "1"); sessionStorage.setItem("mira.spintro", "1"); } catch { /* storage off */ } } document.body.classList.toggle("bare", DECK === "bg");
+const DECK = query.get("deck"); if (DECK) { try { sessionStorage.setItem("mira.skyintro", "1"); sessionStorage.setItem("mira.spintro", "1"); } catch { /* storage off */ } } document.body.classList.toggle("bare", DECK === "bg" || DECK === "film");
 if (DECK && parent !== window) addEventListener("keydown", (e) => { if (e.key === "PageDown" || e.key === "PageUp") { e.preventDefault(); parent.postMessage({ mira: "key", key: e.key }, "*"); } });       // a presenter's clicker still turns the slides
 const blink = mountBlink($("#blinkpage"), { embed: EMBED, toast, onExplain: EMBED ? undefined : (q) => explain(q),
   onAtlas: EMBED ? undefined : async (ra, dec) => { const q = `${ra.toFixed(4)} ${dec >= 0 ? "+" : ""}${dec.toFixed(4)}`; history.replaceState(null, "", location.pathname + "#sky=" + encodeURIComponent(q)); await showUniverse("map", q); },
@@ -1015,4 +1015,6 @@ function wireSheet() {
   grab.addEventListener("pointermove", (e) => { if (!on) return; dy = Math.max(0, e.clientY - y0); $("#panel").style.transform = `translateY(${dy}px)`; });
   grab.addEventListener("pointerup", () => { on = false; $("#panel").style.transition = ""; $("#panel").style.transform = ""; if (dy > 90) closePanel(); });
 }
+// the slide deck and the film drive the maps and the Lab from outside the frame they run in
+if (DECK) (window as any).__mira = { sky: () => sky, space: () => space, lab: blink, showUniverse, setView };
 boot();

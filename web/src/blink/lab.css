@@ -90,3 +90,6 @@
   @keyframes lab-up { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
   .lab-row { grid-template-columns: 1fr; }
 }
+
+/* the Lab's first screen: one question, one box */
+.bk-start { grid-template-columns: minmax(0, 1fr); justify-items: center; text-align: center; } .bk-start-l { max-width: 760px; } .bk-start p, .bk-go { margin-left: auto; margin-right: auto; } .bk-try > div { justify-content: center; }

@@ -19,6 +19,7 @@ import { drawSpectrum, drawLightCurve, drawMotion, drawHistory, drawTrack, drawL
 import { detectChanges, type FieldReport, type ChangeRow } from "./detect";
 import { BODIES, reach, halfYearShift, fmtDist } from "./planetx";
 import { fitsCube, pythonSnippet } from "./fits";
+import { packField, prebaked } from "./fieldpack";
 
 export type BlinkTarget = Target & { plx?: number; otype?: string; sptype?: string; source?: string; key?: string; note?: string };
 /** what "Save to logbook" hands over */
@@ -89,20 +90,16 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
   <div class="bk">
     <div class="bk-start" id="bk-start">
       <div class="bk-start-l">
-        <div class="eyebrow">The Lab · instruments on NASA SPHEREx exposures, read live from the archive</div>
+        <div class="eyebrow">The Lab</div>
         <h2 class="display">What moved here?</h2>
-        <p>Give a position or a name. The instruments read every SPHEREx exposure of that field and measure it: which sources moved since 1999 and 2010, how fast, how far away, what their spectrum says they are, whether they brightened or faded — and what could still hide there.</p>
+        <p>Point at any place in the sky. The Lab plays it through 27 years of NASA's pictures and answers four questions: what moved, how fast, what its light says, did it change.</p>
         <form class="bk-go" id="bk-go">
           <input id="bk-q" placeholder="A star's name, or coordinates (RA Dec)" autocomplete="off" spellcheck="false" enterkeyhint="go" aria-label="Where to point: a name or coordinates">
-          <button class="btn" type="submit">Measure this field</button>
+          <button class="btn" type="submit">Open</button>
         </form>
-        <div class="bk-try"><span>or one of the five test targets NASA set for this challenge</span>
+        <div class="bk-try"><span>NASA's five test targets open at once</span>
           <div>${CHALLENGE.map((t) => `<button class="chip" data-key="${t.key}" title="${esc(t.blurb)}">${esc(t.name)}</button>`).join("")}</div></div>
       </div>
-      <ol class="bk-chain">
-        <li><b>Evolution</b><span>1999 → 2010 → today in real pictures, at your pace</span></li><li><b>Motion detector</b><span>which sources moved, and are they known</span></li>
-        <li><b>Astrometer</b><span>proper motion, parallax, distance</span></li><li><b>Spectrograph</b><span>0.75–5 µm spectrum: what it is</span></li>
-        <li><b>Photometer</b><span>brightness since 1999</span></li><li><b>Detection limits</b><span>what could still hide here</span></li></ol>
     </div>
     <div class="bk-body lab" id="bk-body" hidden>
       <section class="lab-main">
@@ -186,15 +183,16 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
   // evolution player: a continuous clock (years) over the dated pictures and catalogue positions
   const evo = { t: 2026, range: "sx" as "sx" | "2010" | "1999", rate: 0.5, loop: false, raf: 0, last: 0, hold: 0 };
   let report: FieldReport | null = null, reportKey = "", detecting = false, masksDone = 0, masksAll = false;
-  let fromCache = 0, skipCache = false;                 // when the field on screen was read (ms), if it came from this browser's cache
+  let fromCache = 0, skipCache = false, prepared = false;                 // when the field on screen was read (ms), if it came from this browser's cache
   const fieldKey = () => `${target.ra.toFixed(5)}|${target.dec.toFixed(5)}|${(target.pmra ?? 0).toFixed(3)}|${(target.pmdec ?? 0).toFixed(3)}|${target.epoch ?? ""}|${N}|${maxFrames}`;
   /** keep what was read for this field: frames, catalogues and flag masks */
   function saveField(my: number) {
     if (my !== gen || building || !frames.length || fromCache) return;
-    fieldPut({ key: fieldKey(), saved: Date.now(), index: meta?.last ?? "", frames, plan, center, failed, flagDefs: FLAG_DEFS, catState: cat.state, gaia: cat.gaia, wise: cat.wise, tm: cat.tm,
+    fieldPut(record());
+  }
+  const record = () => ({ key: fieldKey(), saved: Date.now(), index: meta?.last ?? "", frames, plan, center, failed, flagDefs: FLAG_DEFS, catState: cat.state, gaia: cat.gaia, wise: cat.wise, tm: cat.tm,
       past: pastState === "done" ? { tm: past.tm?.img ?? null, wise: past.wise?.img ?? null } : null,
       masks: masksAll ? frames.map((f) => { const m = maskCache.get(f); return m && m !== "loading" ? m : null; }) : null });
-  }
   // pictures of the field from two earlier NASA surveys (2MASS ~1999, WISE 2010), read in the background once the field is in
   type PastImg = { key: PastKey; name: string; band: string; img: Float32Array; disp: Float32Array; pct: number };
   let past: Partial<Record<PastKey, PastImg | null>> = {}, pastState: "idle" | "loading" | "done" = "idle";
@@ -229,9 +227,11 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
     frames = []; items = []; itemsKey = ""; imgCache.clear(); lockCache.clear(); maskCache.clear(); shiftCache = new WeakMap(); analysis = null; plan = null; failed = 0; errorMsg = "";
     idx = 0; building = true; playing = false; cancelAnimationFrame(evo.raf); report = null; reportKey = ""; masksDone = 0; masksAll = false; vsKey = ""; past = {}; pastState = "idle"; cat.gaia = []; cat.wise = []; cat.tm = []; cat.state = "idle"; center = [target.ra, target.dec];
     syncControls(); renderTarget(); renderReadouts(); renderPanel(); renderData(); paint(); setLoad("Finding the SPHEREx exposures that cover this place…", 0);
-    pushState(); fromCache = 0;
+    pushState(); fromCache = 0; prepared = false;
     meta = await indexMeta().catch(() => null); if (my !== gen) return; renderData();
-    const hit = skipCache ? null : await fieldGet(fieldKey()); skipCache = false; if (my !== gen) return;
+    let hit = skipCache ? null : await fieldGet(fieldKey()); if (my !== gen) return;
+    if (!hit && !skipCache) { hit = await prebaked(import.meta.env.BASE_URL, fieldKey()); if (my !== gen) return; if (hit) prepared = true; }       // a prepared copy shipped with the site (NASA's five test targets)
+    skipCache = false;
     if (hit && hit.frames?.length && hit.index === (meta?.last ?? "")) {
       await loadLvf().catch(() => {}); setFlagDefs(hit.flagDefs); if (my !== gen) return;      // the wavelength map and flag definitions a fresh read would have loaded
       frames = hit.frames; plan = hit.plan; center = hit.center; failed = hit.failed ?? 0; building = false; fromCache = hit.saved;
@@ -683,7 +683,7 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
     el.innerHTML = !plan ? "" : `<span>${building ? "reading" : ""} <b>${frames.length}</b> / ${plan.covered} exposures${excluded.size ? ` · ${excluded.size} excluded` : ""}${failed ? ` · ${failed} unreadable` : ""}</span>
       ${frames.length ? `<span>${nv} visit${nv > 1 ? "s" : ""}</span><span>${mjdToDate(frames[0].mjd)} → ${mjdToDate(frames[frames.length - 1].mjd)}</span>` : ""}
       ${meta ? `<span title="Date of the newest SPHEREx exposure in MIRA's index; the index is rebuilt after each NASA data release">archive through ${meta.last}</span>` : ""}
-      ${fromCache ? `<span title="This field was read from NASA's archive on ${new Date(fromCache).toLocaleString()} and kept in this browser">from this browser's copy · <button class="link" id="bk-reread">read again</button></span>` : ""}${opts.embed ? `<a href="${shareUrl()}" target="_blank" rel="noopener">open in MIRA ↗</a>` : ""}`;
+      ${fromCache ? `<span title="This field was read from NASA's archive on ${new Date(fromCache).toLocaleString()} and kept in this browser">${prepared ? "prepared copy" : "from this browser's copy"} · <button class="link" id="bk-reread">read again</button></span>` : ""}${opts.embed ? `<a href="${shareUrl()}" target="_blank" rel="noopener">open in MIRA ↗</a>` : ""}`;
   }
   host.addEventListener("click", (e) => { if ((e.target as HTMLElement).id === "bk-reread") { skipCache = true; start(); } });
   function syncControls() {
@@ -1120,5 +1120,7 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
       syncControls(); renderReadouts(); renderPanel(); paint();
     },
     get isOpen() { return opened; },
+    /** everything read for the field on screen, as one file (used to prepare the test targets: web/scripts/prebake_fields.mjs) */
+    dump: async () => (!building && frames.length && masksAll && pastState === "done" && cat.state !== "loading" ? { key: fieldKey(), blob: await packField(record()) } : null),
   };
 }
