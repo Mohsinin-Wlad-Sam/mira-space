@@ -121,7 +121,7 @@ def peaks(h, thr=0.5):
     return [(int(x), int(y), float(h[y, x])) for x, y in zip(xs, ys)]
 
 @torch.no_grad()
-def test_real(net, root, dev, log):
+def test_real(net, root, dev, log, thr=0.5):
     """real fast movers, real pictures, nothing painted in"""
     mv = json.load(open(f"{root}/test/movers.json")); ids = sorted({m["tile"] for m in mv})
     ids, tm, w2 = load_set(f"{root}/test", ids); at = {p: k for k, p in enumerate(ids)}
@@ -138,7 +138,7 @@ def test_real(net, root, dev, log):
         if not (3 < r2 - y0 < S - 4 and 3 < c2 - x0 < S - 4 and 1 < r1 - y0 < S - 2 and 1 < c1 - x0 < S - 2): continue
         k = at[m["tile"]]; a = torch.from_numpy(tm[k, y0:y0 + S, x0:x0 + S].copy()).to(dev)[None]; b = torch.from_numpy(w2[k, y0:y0 + S, x0:x0 + S].copy()).to(dev)[None]
         z1, _, _ = norm_t(a); z2, _, _ = norm_t(b)
-        o = net(torch.stack([z1, z2, torch.full_like(z1, 1.39 / 4)], 1))[0]; h = torch.sigmoid(o[1]); P = peaks(h)
+        o = net(torch.stack([z1, z2, torch.full_like(z1, 1.39 / 4)], 1))[0]; h = torch.sigmoid(o[1]); P = peaks(h, thr)
         tx, ty = c2 - x0, r2 - y0; hit = [p for p in P if math.hypot(p[0] - tx, p[1] - ty) <= 2.5]
         fields += 1; fp += sum(1 for p in P if math.hypot(p[0] - tx, p[1] - ty) > 3.5)
         vtrue = (c2 - c1, r2 - r1); row = {"id": m["id"], "pm": m["pm"], "hit": bool(hit), "shift_px": math.hypot(*vtrue)}
@@ -156,7 +156,7 @@ def test_real(net, root, dev, log):
         return {"n": len(R), "recall": (len(H) / len(R)) if R else 0.0, "pm_err_median": float(np.median([r["err"] for r in H])) if H else None}
     bins = [(0.3, 0.5), (0.5, 1.0), (1.0, 2.0), (2.0, 99)]
     out = {**summ(vis), "fp_per_field": fp / max(1, fields), "all": summ(rows), "fields": fields,
-           "by_pm": [{"lo": lo, "hi": hi, **summ([r for r in vis if lo <= r["pm"] < hi])} for lo, hi in bins]}
+           "by_pm": [{"lo": lo, "hi": hi, **summ([r for r in vis if lo <= r["pm"] < hi])} for lo, hi in bins], "thr": thr}
     log(f"REAL TEST {json.dumps(out)}")
     return out, rows
 

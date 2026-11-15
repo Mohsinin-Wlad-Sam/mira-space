@@ -620,6 +620,9 @@ let catalogue: ReturnType<typeof import("./catalogue").mountCatalogue> | null = 
 let view: View = "blink", uniMode: UniMode = "3d", atlasP: Promise<void> | null = null, spaceP: Promise<SpaceHandle | null> | null = null, space: SpaceHandle | null = null;
 setBase(import.meta.env.BASE_URL);
 document.body.classList.toggle("embed", EMBED);
+// inside the slide deck and the film: no first-visit prompt; "bg" also hides the panels and lets the map play by itself
+const DECK = query.get("deck"); if (DECK) { try { sessionStorage.setItem("mira.skyintro", "1"); sessionStorage.setItem("mira.spintro", "1"); } catch { /* storage off */ } } document.body.classList.toggle("bare", DECK === "bg");
+if (DECK && parent !== window) addEventListener("keydown", (e) => { if (e.key === "PageDown" || e.key === "PageUp") { e.preventDefault(); parent.postMessage({ mira: "key", key: e.key }, "*"); } });       // a presenter's clicker still turns the slides
 const blink = mountBlink($("#blinkpage"), { embed: EMBED, toast, onExplain: EMBED ? undefined : (q) => explain(q),
   onAtlas: EMBED ? undefined : async (ra, dec) => { const q = `${ra.toFixed(4)} ${dec >= 0 ? "+" : ""}${dec.toFixed(4)}`; history.replaceState(null, "", location.pathname + "#sky=" + encodeURIComponent(q)); await showUniverse("map", q); },
   onState: (p) => { if (EMBED) p.set("embed", "1"); history.replaceState(null, "", `${location.pathname}?${p.toString()}`); },
@@ -663,6 +666,7 @@ function ensureSky(focus?: string) {
         on3D: (id) => { history.replaceState(null, "", location.pathname); showUniverse("3d", id); }, onTarget: (key) => observe(key),
         onLink: (q) => { if (view === "universe" && uniMode === "map") history.replaceState(null, "", location.pathname + location.search + (q ? "#sky=" + encodeURIComponent(q) : "#sky")); },
         onCloser: async (ra, dec) => { const c = await import("./closer"); c.openCloser($("#closer"), ra, dec, { lam: () => skyLam, onObserve: (t) => observe({ ra: t.ra, dec: t.dec } as BlinkTarget) }); } });
+      if (DECK === "bg") { const loop = () => sky?.show("story"); setTimeout(loop, 1800); setInterval(loop, 31000); }       // behind a title: the 27 years, over and over
     } catch (e) { console.warn("sky map unavailable", e); sky = null; }
     return sky;
   })());

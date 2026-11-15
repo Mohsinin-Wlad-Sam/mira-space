@@ -196,3 +196,6 @@ body.embed #ui .sp-info, body.embed #ui .sp-info.ver { top: 46px; max-height: ca
 .mx-sub .sk-speccap { min-height: 34px; } .mx-sub .sk-speccap b { color: var(--white); font-weight: 600; } .mx-sub .sk-speccap span { color: var(--faint); }
 .mx-sub .sk-layers { margin: 2px 0 6px; }
 .sk-tile { position: absolute; right: 24px; bottom: 44px; z-index: 6; font-size: 10px; letter-spacing: .06em; color: #ff9d4d; pointer-events: none; text-shadow: 0 1px 3px #000; }
+
+/* ---- bare: a map with nothing on it (title slide, film) ---- */
+body.bare .mx-rail, body.bare .mx-dock, body.bare .embed-out, body.bare .sk-coords, body.bare .sk-tile, body.bare #skhint, body.bare .sp-ladder, body.bare #spscale, body.bare .sp-hint, body.bare #skintro, body.bare #spintro, body.bare .sp-key { display: none !important; }
