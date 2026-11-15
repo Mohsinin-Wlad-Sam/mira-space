@@ -195,6 +195,13 @@ export async function openSky(host: HTMLElement, o: SkyOpts): Promise<SkyHandle>
     bodies = bodiesAt(yr).map((b) => { const [gl, gb] = toGal(b.ra, b.dec); return { ...b, gl, gb }; }); trails = {};
     for (let d = -PAST; d <= AHEAD; d += STEP) for (const b of bodiesAt(yr + d / 365.25)) if (b.kind === "planet") (trails[b.key] ??= []).push(toGal(b.ra, b.dec));
   }
+  /** wanderers that stand close together on the date shown, as sentences ("Mars and Jupiter are 1.3° apart, in the morning sky, before sunrise") */
+  function meetings(): string[] {
+    const out: string[] = [], L = bodies.filter((b) => b.kind !== "sun" && Math.abs(b.elong) > 13);
+    for (let i = 0; i < L.length; i++) for (let j = i + 1; j < L.length; j++) { const a = L[i], b = L[j], c = Math.sin(a.dec * D) * Math.sin(b.dec * D) + Math.cos(a.dec * D) * Math.cos(b.dec * D) * Math.cos((a.ra - b.ra) * D), sep = Math.acos(Math.min(1, c)) / D;
+      if (sep < 4 && Math.min(a.mag, b.mag) < 2) out.push(`${a.kind === "moon" ? "The Moon" : a.name} and ${b.name} are ${sep < 1 ? "less than a degree" : sep.toFixed(1) + "°"} apart, ${whenSeen(a.kind === "moon" ? b : a).when}`); }
+    return out;
+  }
   const ECL: [number, number][] = []; for (let lon = 0; lon <= 360; lon += 2) ECL.push(toGal(...eclToEq(lon, 0)));
   // ---- the famous ones: NASA's five test targets and the nearest brown dwarfs
   const PINS: Pin[] = [...CHALLENGE.map((t) => ({ name: t.name, sub: t.blurb, key: t.key as string | undefined, ra0: t.ra, dec0: t.dec, pmra: t.pmra ?? 0, pmdec: t.pmdec ?? 0, epoch: t.epoch ?? 2000 })),
@@ -249,7 +256,7 @@ export async function openSky(host: HTMLElement, o: SkyOpts): Promise<SkyHandle>
         const nog = V.known[k] !== 1, open = isOpenCase(V, k); if ((st.chip === "nogaia" && !nog) || (st.chip === "open" && !open)) continue;
         const x = cw / 2 - wrap(GL[k] - view.l) * s, y = ch / 2 - (GB[k] - view.b) * s; if (x < -4 || y < -4 || x > cw + 4 || y > ch + 4) continue;
         shown.push(k); const lit = !wait || (u >= 2 && day >= firstEnd[CELL[k]]);         // grey while only WISE had seen it move, in colour once SPHEREx had imaged the place
-        g.fillStyle = !lit ? "#a89a8c" : open ? "#7df0a6" : nog ? "#ff5d6c" : "#ff9d4d"; g.globalAlpha = mv * (!lit ? 0.55 : dense && !nog ? 0.5 : dense ? 0.85 : 1); g.fillRect(x - r, y - r, 2 * r, 2 * r); }
+        g.fillStyle = !lit ? "#a89a8c" : open ? "#7df0a6" : nog ? "#ff5d6c" : "#ff9d4d"; g.globalAlpha = mv * (!lit ? 0.55 : dense && !nog ? Math.min(0.75, 0.3 + 0.045 * s) : dense ? 0.85 : 1); g.fillRect(x - r, y - r, 2 * r, 2 * r); }
       g.globalAlpha = 1; } else shown = [];
     // the wanderers, with their names
     if (wanderers) { ephem();
@@ -287,7 +294,7 @@ export async function openSky(host: HTMLElement, o: SkyOpts): Promise<SkyHandle>
     const el = $("#sksub"), yr = yearAt(st.u); if (st.playing && st.panel && subKey && performance.now() - subAt < 250) return;        // while time runs, four times a second is enough
     subAt = performance.now(); el.hidden = !st.panel; $("#skrail").classList.toggle("sub", !!st.panel); if (!st.panel) { subKey = ""; el.innerHTML = ""; return; }
     if (st.panel === "planets") { ephem(); const mine = !!me && isLive(), key = `p${bodiesKey}|${mine}|${mine ? Math.round(yr * 365.25 * 288) : 0}`; if (key === subKey) return; subKey = key;
-      el.innerHTML = `<div class="mx-h">${isLive() ? "Right now" : dayText(yr)}</div><div class="mx-rows">${bodies.map((b) => `<button data-b="${b.key}"><i style="background:${b.col}"></i><b>${b.name}</b><span>${mine ? myView(b, yr) : b.kind === "sun" ? "daytime side of the sky" : `${b.kind === "moon" ? whenSeen(b).eye.split(",")[0] : whenSeen(b).when.replace(/^in the /, "").replace(/, (before sunrise|after sunset)$/, "").replace(" to see these weeks", "")}${zodiac(b) ? ` · ${zodiac(b)}` : ""}`}</span></button>`).join("")}</div>
+      el.innerHTML = `<div class="mx-h">${isLive() ? "Right now" : dayText(yr)}</div>${meetings().map((m) => `<p class="mx-call">${m}.</p>`).join("")}<div class="mx-rows">${bodies.map((b) => `<button data-b="${b.key}"><i style="background:${b.col}"></i><b>${b.name}</b><span>${mine ? myView(b, yr) : b.kind === "sun" ? "daytime side of the sky" : `${b.kind === "moon" ? whenSeen(b).eye.split(",")[0] : whenSeen(b).when.replace(/^in the /, "").replace(/, (before sunrise|after sunset)$/, "").replace(" to see these weeks", "")}${zodiac(b) ? ` · ${zodiac(b)}` : ""}`}</span></button>`).join("")}</div>
         <div class="mx-acts"><button class="btn sm ${me ? "solid" : "ghost"}" id="skme" title="Shade what is below your own horizon right now, and say which planets are up. Your position is used in this page only">${me ? "✓ My sky now" : "My sky now"}</button><button class="btn sm ghost" id="skyear" title="Let the date run through the next twelve months">▶ The coming year</button></div>
         <p class="mx-note">${mine ? "The shaded part of the map is below your horizon at this moment; the green line is the horizon, with its compass points. Your position stays in this page: it is not sent or stored. " : me ? "Press Live to see your own sky again. " : ""}Computed from JPL's orbital elements (within 10′ of JPL Horizons). The dotted line is the ecliptic, the road the planets keep to; each planet trails its last two months and points to its next one.</p>`;
       $("#skme").onclick = askWhere;
@@ -454,6 +461,7 @@ export async function openSky(host: HTMLElement, o: SkyOpts): Promise<SkyHandle>
       return { date_shown: isLive() ? "today, live" : dayText(yr), picture: st.wave >= 0 ? `SPHEREx at ${LAM[st.wave]?.toFixed(2)} µm` : st.u <= 0.5 ? "2MASS (about 1999)" : st.u <= 2 ? "WISE (2010)" : st.u < 3 ? `SPHEREx as far as it had imaged the sky by ${dayText(yr)}: ${Math.round(prog.pct * 100)}%` : "SPHEREx (2025-26)",
         centre_galactic: [+view.l.toFixed(1), +view.b.toFixed(1)], zoom: +view.z.toFixed(1),
         spherex_survey: cov ? { public_exposures: cov.exposures, first: cov.first, newest: cov.last, note: "every place is revisited about every six months" } : null,
+        close_together_in_the_sky: meetings(),
         sun_moon_planets: bodies.map((q) => ({ name: q.name, where_and_how_to_see_it: seen(q), constellation: zodiac(q) || undefined, au_from_earth: +q.dist.toFixed(3), magnitude: +q.mag.toFixed(1) })),
         selected: b ? { name: b.name, kind: b.kind, when_to_see_it: whenSeen(b).when, how: whenSeen(b).eye, constellation: zodiac(b) || undefined, au_from_earth: +b.dist.toFixed(3), light_minutes: +lightMinutes(b).toFixed(1), degrees_from_the_sun: +b.elong.toFixed(0), position_accuracy: "within 10 arcminutes (JPL orbital elements)" }
           : st.place ? { a_place_on_the_sky: hms(st.place.ra, st.place.dec), card: "pictures of this place in about 1999 (2MASS), 2010 (WISE) and at each SPHEREx visit, played as a little film" }

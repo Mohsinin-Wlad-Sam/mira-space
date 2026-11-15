@@ -166,3 +166,4 @@ body.embed #ui .sp-info, body.embed #ui .sp-info.ver { top: 46px; max-height: ca
 #ui .skymap .sp-hint { bottom: 88px; }
 /* a card that asks for an answer keeps its question in sight */
 #ui .sp-info.ver:has(.sp-vote) .pv-cv { width: min(100%, 248px); margin: 0 auto; } #ui .sp-info.ver:has(.sp-vote) .pv-note { display: none; }
+.mx-call { margin: 0; padding: 7px 9px; font-size: 12px; line-height: 1.4; color: var(--white); background: rgb(255 210 122 / .09); border-left: 2px solid #ffd27a; border-radius: 0 6px 6px 0; }
