@@ -55,10 +55,10 @@ export function mountPlaceView(host: HTMLElement, p: { ra: number; dec: number }
       const b = await build({ ra: p.ra, dec: p.dec }, { size: Ns, maxFrames: 12, concurrency: 6, signal: ac.signal, onFrame: (_f, done, total) => tick(done, total), onSkip: tick });
       if (dead) return;
       const by = new Map<number, Frame[]>(); b.frames.forEach((f) => (by.get(f.visit) ?? by.set(f.visit, []).get(f.visit)!).push(f));
-      const visits = [...by.entries()].sort((a, q) => a[0] - q[0]).map(([, L]) => L).filter((L) => L.length >= 2);
+      const all = [...by.entries()].sort((a, q) => a[0] - q[0]).map(([, L]) => L), good = all.filter((L) => L.length >= 2), visits = good.length ? good : all;      // single exposures only when no visit has two
       if (!visits.length) return fail(b.listed ? "SPHEREx's exposures of this place could not be read just now." : "No SPHEREx exposure of this place is listed yet.");
       const made: Pic[] = visits.map((L, i) => { const yr = mjdToYear(L.reduce((s, f) => s + f.mjd, 0) / L.length);
-        return { yr, stop: `${monthOf(yr)} · SPHEREx`, cap: `${monthOf(yr)} · NASA's SPHEREx, visit ${i + 1} of ${visits.length}: ${L.length} exposures combined (0.75–5 µm, 6″ pixels)`, img: disp(toGrid(robustStack(L.map((f) => f.img), Ns * Ns), Ns)), kind: "sx" as const, state: "ok" as const }; });
+        return { yr, stop: `${monthOf(yr)} · SPHEREx`, cap: `${monthOf(yr)} · NASA's SPHEREx, visit ${i + 1} of ${visits.length}: ${L.length > 1 ? L.length + " exposures combined" : "one exposure"} (0.75–5 µm, 6″ pixels)`, img: disp(toGrid(robustStack(L.map((f) => f.img), Ns * Ns), Ns)), kind: "sx" as const, state: "ok" as const }; });
       const at = v; pics = [...pics.filter((q) => q.kind !== "sx"), ...made]; sx = "done"; renderStops(); v = Math.min(at, pics.length - 1); draw();
     } catch (e) { if ((e as Error).name !== "AbortError") fail("SPHEREx's exposures of this place could not be read just now."); }
   }

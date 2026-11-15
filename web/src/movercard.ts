@@ -20,7 +20,12 @@ export const loadVerified = (base: string) => (verP ??= fetch(`${base}data/verif
 /** away from the crowded Galactic plane, no Gaia source, no SIMBAD entry: an object a visitor can help look at */
 export const isOpenCase = (V: Ver, k: number) => V.known[k] === 0 && !V.simbad[k] && Math.abs(V.glat[k]) >= 10;
 /** a confirmed mover goes by its SIMBAD name, its Gaia designation, or by none */
-export const moverName = (V: Ver, k: number) => V.simbad[k].replace(/^NAME /, "").replace(/ \(.*$/, "") || (V.known[k] === 1 && V.gaia[k] ? `Gaia DR3 ${V.gaia[k]}` : `Unnamed mover ${V.id[k]}`);
+const GREEK: Record<string, string> = { alf: "Alpha", bet: "Beta", gam: "Gamma", del: "Delta", eps: "Epsilon", zet: "Zeta", eta: "Eta", tet: "Theta", iot: "Iota", kap: "Kappa", lam: "Lambda", "mu.": "Mu", "nu.": "Nu", ksi: "Xi",
+  omi: "Omicron", "pi.": "Pi", rho: "Rho", sig: "Sigma", tau: "Tau", ups: "Upsilon", phi: "Phi", chi: "Chi", psi: "Psi", ome: "Omega" };
+/** a SIMBAD identifier as a person would write it: "* eps Ind B" -> "Epsilon Ind B", "NAME Barnard's star" -> "Barnard's star" */
+export const cleanName = (s: string) => { const bayer = /^\* /.test(s), t = s.replace(/^(NAME|\*\*|V\*|EM\*|\*) +/, "").replace(/ \(.*$/, "").replace(/\s+/g, " ").trim();
+  return bayer ? t.replace(/^([a-z]{2,3}\.?)(\d{0,2})(?= )/, (m, g, n) => (GREEK[g] ? GREEK[g] + (n ? " " + +n : "") : m)) : t; };
+export const moverName = (V: Ver, k: number) => cleanName(V.simbad[k]) || (V.known[k] === 1 && V.gaia[k] ? `Gaia DR3 ${V.gaia[k]}` : `Unnamed mover ${V.id[k]}`);
 export const moonYears = (V: Ver, k: number) => Math.round(1800 / Math.max(V.pm[k], 1e-3)).toLocaleString();
 export const gaiaLine = (V: Ver, k: number) => (V.known[k] === 1 ? "Gaia, Europe's star-mapping satellite, lists the same motion." : V.known[k] === 0 ? "Gaia, Europe's optical star-mapping satellite, lists nothing at this place." : "Gaia lists a source here, but not this motion.");
 /** the evidence, in one paragraph */

@@ -3,6 +3,7 @@
 // proper-motion diagram and a sky chart of the same rows, and for the selected object the numbers behind the verdict
 // and a button that runs the Lab on it.
 import { sexa } from "./data";
+import { cleanName } from "./movercard";
 import { plot, type Series } from "./blink/plots";
 
 type Cols = { id: string[]; ra: number[]; dec: number[]; pm: number[]; pmra: number[]; pmdec: number[]; epm: number[]; conf: number[]; snr: number[]; J: (number | null)[]; H: (number | null)[]; K: (number | null)[];
@@ -119,7 +120,7 @@ export function mountCatalogue(host: HTMLElement, ctx: CatCtx) {
     const dist = c.plx[i] && c.plx[i]! > 2 ? `${(3261.56 / c.plx[i]!).toFixed(c.plx[i]! > 50 ? 1 : 0)} light-years away (Gaia parallax)` : "";
     const dirs = ["north", "north-east", "east", "south-east", "south", "south-west", "west", "north-west"], dir = dirs[Math.round((((Math.atan2(c.pmra[i], c.pmdec[i]) * 180) / Math.PI + 360) % 360) / 45) % 8];
     el.innerHTML = `<div class="eyebrow">census ${esc(c.id[i])} · ${esc(c.kind[i])}${dist ? ` · ${dist}` : ""}</div>
-      <h2>${c.simbad[i] ? esc(c.simbad[i].replace(/^NAME /, "").replace(/ \(.*$/, "")) : c.known[i] === 1 ? `Gaia DR3 ${c.gaia[i]}` : "Not in Gaia"}</h2>
+      <h2>${c.simbad[i] ? esc(cleanName(c.simbad[i])) : c.known[i] === 1 ? `Gaia DR3 ${c.gaia[i]}` : "Not in Gaia"}</h2>
       <p class="mono">${sexa(c.ra[i], c.dec[i])} <small>(${c.yr[i].toFixed(1)})</small></p>
       <p><b>Moves ${c.pm[i].toFixed(c.pm[i] < 1 ? 3 : 2)}″ per year</b> toward ${dir}. The WISE years (2010–2020) predicted where it would be in ${c.yr[i].toFixed(0)}; on ${c.n[i]} raw SPHEREx exposures it sits <b>${c.dp[i].toFixed(1)}″</b> from that place and <b>${c.ds[i].toFixed(1)}″</b> from where it would be had it not moved (${c.conf[i].toFixed(0)}σ).
         ${c.known[i] === 1 ? `Gaia lists the same star with ${c.gpm[i]?.toFixed(3)}″ per year: the two agree.` : c.known[i] === 2 ? `A Gaia star lies within 4″ but with a different motion (${c.gpm[i]?.toFixed(3)}″ per year).` : c.known[i] === 3 ? "Gaia has a source here but measured no motion for it." : "<b class=\"hl\">Gaia DR3 has no source here.</b>"}
@@ -128,7 +129,7 @@ export function mountCatalogue(host: HTMLElement, ctx: CatCtx) {
       <div class="ct-act"><button class="btn sm" id="ct-map" title="Fly to this object on the map and compare three real pictures of it (1999, 2010, SPHEREx)">See it on the map</button><button class="btn sm ghost" id="ct-open" title="Read the SPHEREx exposures of this object now and run every instrument on it">Deep analysis in the Lab</button>
         <a class="btn sm ghost" target="_blank" rel="noopener" href="https://simbad.cfa.harvard.edu/simbad/sim-coo?Coord=${c.ra[i]}+${c.dec[i]}&Radius=20&Radius.unit=arcsec">SIMBAD ↗</a></div>`;
     ($("#ct-map") as HTMLElement).onclick = () => ctx.onMap?.(c.id[i]);
-    ($("#ct-open") as HTMLElement).onclick = () => ctx.onObserve({ ra: c.ra[i], dec: c.dec[i], pmra: c.pmra[i], pmdec: c.pmdec[i], epoch: c.yr[i], source: "The survey of the WISE years (2010–2020)", name: c.simbad[i] ? c.simbad[i].replace(/^NAME /, "").replace(/ \(.*$/, "") : c.known[i] === 1 ? `Gaia DR3 ${c.gaia[i]}` : `MIRA ${c.id[i]}` });
+    ($("#ct-open") as HTMLElement).onclick = () => ctx.onObserve({ ra: c.ra[i], dec: c.dec[i], pmra: c.pmra[i], pmdec: c.pmdec[i], epoch: c.yr[i], source: "The survey of the WISE years (2010–2020)", name: c.simbad[i] ? cleanName(c.simbad[i]) : c.known[i] === 1 ? `Gaia DR3 ${c.gaia[i]}` : `MIRA ${c.id[i]}` });
     const pts = ([[1.25, c.J[i]], [1.65, c.H[i]], [2.15, c.K[i]], [3.35, c.W1[i]], [4.6, c.W2[i]]] as [number, number | null][]).filter((p) => p[1] !== null && p[1]! > 0) as [number, number][];
     if (pts.length >= 2) { const lo = Math.min(...pts.map((p) => p[1])) / 2, hi = Math.max(...pts.map((p) => p[1])) * 2;
       plot($("#ct-sed"), { h: 190, x: { lo: 0.9, hi: 5.2, label: "Wavelength (µm)", ticks: [1, 2, 3, 4, 5] }, y: { lo, hi, label: "Flux (mJy)", log: true }, series: [{ color: "#f0f0fa", line: true, size: 3.4, pts: pts.map(([x, y]) => ({ x, y })) }] }); }

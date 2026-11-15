@@ -64,10 +64,20 @@ export function bodiesAt(yr: number): SkyBody[] {
   }
   return out;
 }
-// where the ecliptic enters each constellation (J2000 ecliptic longitude, IAU boundaries)
+// The longitudes (J2000) at which the ecliptic itself crosses the IAU constellation boundaries: exact for a body on
+// the ecliptic, such as the Sun. A body a few degrees off it can stand in the neighbouring constellation near a
+// border, so within 1.5° of a crossing both names are given, and beyond 4° of latitude none is.
 const ZODIAC: [number, string][] = [[28.7, "Aries"], [53.4, "Taurus"], [90.1, "Gemini"], [118.0, "Cancer"], [138.0, "Leo"], [173.9, "Virgo"], [217.8, "Libra"], [241.0, "Scorpius"], [247.7, "Ophiuchus"], [266.3, "Sagittarius"], [299.7, "Capricornus"], [327.5, "Aquarius"], [351.6, "Pisces"]];
-/** the constellation of the zodiac a body near the ecliptic stands in (empty when it is more than 4° off the ecliptic) */
-export function zodiac(b: { lon: number; lat: number }) { if (Math.abs(b.lat) > 4) return ""; let name = "Pisces"; for (const [l, n] of ZODIAC) if (b.lon >= l) name = n; return name; }
+/** the constellation of the zodiac a body near the ecliptic stands in ("Leo"), or "Leo–Virgo border" within 1.5° of one; empty when it is more than 4° off the ecliptic */
+export function zodiac(b: { lon: number; lat: number }) {
+  if (Math.abs(b.lat) > 4) return "";
+  const n = ZODIAC.length; let i = n - 1;                    // before Aries begins, it is still Pisces
+  for (let k = 0; k < n; k++) if (b.lon >= ZODIAC[k][0]) i = k;
+  const before = ZODIAC[(i + n - 1) % n][1], here = ZODIAC[i][1], after = ZODIAC[(i + 1) % n][1];
+  if (wrap(b.lon - ZODIAC[i][0]) < 1.5) return `${before}–${here} border`;
+  if (wrap(ZODIAC[(i + 1) % n][0] - b.lon) < 1.5) return `${here}–${after} border`;
+  return here;
+}
 const MOON_PHASES = ["new Moon", "waxing crescent", "first quarter", "waxing gibbous", "full Moon", "waning gibbous", "last quarter", "waning crescent"];
 /** when one can see it and with what, in plain words; needs no location (it only uses the angle from the Sun) */
 export function whenSeen(b: SkyBody): { when: string; eye: string } {

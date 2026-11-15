@@ -167,3 +167,7 @@ body.embed #ui .sp-info, body.embed #ui .sp-info.ver { top: 46px; max-height: ca
 /* a card that asks for an answer keeps its question in sight */
 #ui .sp-info.ver:has(.sp-vote) .pv-cv { width: min(100%, 248px); margin: 0 auto; } #ui .sp-info.ver:has(.sp-vote) .pv-note { display: none; }
 .mx-call { margin: 0; padding: 7px 9px; font-size: 12px; line-height: 1.4; color: var(--white); background: rgb(255 210 122 / .09); border-left: 2px solid #ffd27a; border-radius: 0 6px 6px 0; }
+
+/* ------------------------------------------------------------------ the first-visit prompt keeps clear of the rail, and phones keep the Sky's hint */
+@media (min-width: 761px) and (max-width: 1180px) { #ui .sp-intro, #ui .sp-cap { left: auto; right: var(--edge); transform: none; width: min(460px, calc(100vw - 272px - 3 * var(--edge))); } #ui .sp-cap.on { transform: none; } }
+@media (max-width: 760px) { #ui .skymap:has(.sp-intro:not([hidden])) .mx-rail { display: none; } #ui .skymap .sp-hint { display: block; bottom: calc(108px + env(safe-area-inset-bottom)); } #ui .skymap:has(.sp-info.open) .sp-hint, #ui .skymap:has(.sp-intro:not([hidden])) .sp-hint { display: none; } }

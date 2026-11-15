@@ -10,7 +10,7 @@ import { Exo } from "./exo";
 import { Universe } from "./universe";
 import { LiveLayer, nasaImages, rockSize, jdOf, craftAt, neoToday, type Live } from "./live";
 import { mountPastView } from "./pastview";
-import { KIND_PLAIN, VOTE_HTML, PICS_HTML, evidenceHTML, isOpenCase, loadVerified, moonYears, mountMoverCard, votes, wireVote, type Ver } from "./movercard";
+import { KIND_PLAIN, VOTE_HTML, PICS_HTML, evidenceHTML, isOpenCase, loadVerified, moonYears, mountMoverCard, votes, wireVote, type Ver, cleanName } from "./movercard";
 
 const BASE = import.meta.env.BASE_URL;
 const PCYR = 1.0227121650537077e-6;        // 1 km/s in pc/yr
@@ -506,10 +506,10 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<Spa
   const slider = $("#spslider") as HTMLInputElement, speedSel = $("#spspeed") as HTMLSelectElement;
   const REGIME = { solar: { range: 5, step: 0.002, def: 10 / 365.25, speeds: [[1 / 31557600, "real time"], [1 / 365.25, "1 day/s"], [10 / 365.25, "10 days/s"], [1 / 12, "1 month/s"], [1, "1 yr/s"]] as [number, string][], ticks: ["−5 yr", "today", "+5 yr"] },
     stars: { range: T_RANGE, step: 1, def: 1000, speeds: [[1, "1 yr/s"], [100, "100 yr/s"], [1000, "1,000 yr/s"], [5000, "5,000 yr/s"], [20000, "20,000 yr/s"]] as [number, string][], ticks: ["−250 kyr", "now", "+250 kyr"] } };
-  let regime: keyof typeof REGIME = "stars";
+  let regime: keyof typeof REGIME = "stars", tweenId = 0;
   const tRange = () => REGIME[regime].range, MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   function setRegime(r: keyof typeof REGIME, force = false) {
-    if (r === regime && !force) return; regime = r; const R = REGIME[r];
+    if (r === regime && !force) return; regime = r; tweenId++; const R = REGIME[r];
     slider.min = String(-R.range); slider.max = String(R.range); slider.step = String(R.step);
     speedSel.innerHTML = R.speeds.map(([v, t]) => `<option value="${v}"${v === R.def ? " selected" : ""}>${t}</option>`).join(""); S.speed = R.def;
     host.querySelectorAll("#spticks span").forEach((e, k) => (e.textContent = R.ticks[k]));
@@ -526,16 +526,16 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<Spa
     if (!fromSlider) slider.value = String(S.time);
     if (S.sel >= 0) info(S.sel);
   }
-  slider.oninput = () => { play(false); setTime(+slider.value, true); };
+  slider.oninput = () => { tweenId++; play(false); setTime(+slider.value, true); };
   speedSel.onchange = () => { S.speed = +speedSel.value; };
   $("#spnow").onclick = () => { play(false); tweenTime(0, 1200); };
-  function play(on: boolean) { S.playing = on; $("#spplay").textContent = on ? "❚❚" : "▶"; $("#spplay").classList.toggle("on", on); if (on && S.time >= tRange() * 0.999) setTime(regime === "solar" ? 0 : -tRange()); }
+  function play(on: boolean) { if (on) tweenId++; S.playing = on; $("#spplay").textContent = on ? "❚❚" : "▶"; $("#spplay").classList.toggle("on", on); if (on && S.time >= tRange() * 0.999) setTime(regime === "solar" ? 0 : -tRange()); }
   $("#spplay").onclick = () => play(!S.playing);
   setRegime("stars", true);
   { const h = $("#sphint"), flash = () => { h.classList.remove("show"); void h.offsetWidth; h.classList.add("show"); }; new MutationObserver(flash).observe(h, { childList: true, characterData: true, subtree: true }); flash(); }
   function tweenTime(to: number, ms: number) {
-    const from = S.time, t0 = performance.now();
-    const step = (now: number) => { const f = Math.min(1, (now - t0) / ms), e = f < 0.5 ? 2 * f * f : 1 - Math.pow(-2 * f + 2, 2) / 2; setTime(from + (to - from) * e); if (f < 1) requestAnimationFrame(step); };
+    const id = ++tweenId, from = S.time, t0 = performance.now();
+    const step = (now: number) => { if (id !== tweenId) return; const f = Math.min(1, (now - t0) / ms), e = f < 0.5 ? 2 * f * f : 1 - Math.pow(-2 * f + 2, 2) / 2; setTime(from + (to - from) * e); if (f < 1) requestAnimationFrame(step); };
     requestAnimationFrame(step);
   }
 
@@ -798,7 +798,7 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<Spa
   // the Solar System, live: home seen from above, with time running at ten days a second
   const ECL_VIEW = new THREE.Vector3(-0.0633, 0.5659, 1.0177).normalize();
   function planetsLive() {
-    const my = ++capTok; stopTour(); hideIntro(); S.sel = -1; S.body = null; info(-1); play(false); setTime(0); flyTo(new THREE.Vector3(0, 0, 0), 14 * AU, -1, 3200, ECL_VIEW);
+    const my = ++capTok; stopTour(); hideIntro(); S.sel = -1; S.body = null; info(-1); play(false); tweenId++; setTime(0); flyTo(new THREE.Vector3(0, 0, 0), 14 * AU, -1, 3200, ECL_VIEW);
     cap("<b>The Solar System, live.</b> Every planet is where JPL's ephemeris puts it today. Time now runs at ten days a second: watch them go round, then press Live to come back to today.");
     setTimeout(() => { if (my !== capTok) return; setRegime("solar"); play(true); }, 3400); setTimeout(() => { if (my === capTok) cap(""); }, 15000);
   }
@@ -940,7 +940,7 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<Spa
   }
   function labelText(i: number) {
     const c = cat!; if (c.tile[i] === 65535) return nameOf(i);
-    const k = vi.length > i ? vi[i] : -1, nm = k >= 0 && ver ? ver.simbad[k].replace(/^NAME /, "").replace(/ \(.*$/, "") : "";
+    const k = vi.length > i ? vi[i] : -1, nm = k >= 0 && ver ? cleanName(ver.simbad[k]) : "";
     if (nm) return nm;
     if (k >= 0 && ver) return ver.known[k] === 1 && ver.gaia[k] ? `Gaia DR3 ${ver.gaia[k]}` : `Unnamed mover ${c.tile[i]}-${c.obj[i]}`;       // a confirmed mover goes by its Gaia designation, or by none
     const L = c.lens[i], kind = L & 2 ? "Methane dwarf" : c.cls[i] === 2 ? "Brown dwarf" : L & 4 ? "Mover unknown to Gaia" : L & 1 ? "Confirmed mover" : c.cls[i] === 1 ? "Giant star" : "Star";

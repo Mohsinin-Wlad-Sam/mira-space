@@ -63,7 +63,7 @@ export async function openSky(host: HTMLElement, o: SkyOpts): Promise<SkyHandle>
           ${hl("open", "#7df0a6", "Help look at one", "<b id='skn3'>…</b> are in no reference database")}
         </div>
         <div class="mx-sub" id="sksub" hidden></div>
-        <div class="mx-chips" id="skshow" aria-label="What the map shows"><button data-l="movers" class="on">Movers</button><button data-l="planets" class="on">Planets</button><button data-l="marks" class="on">Landmarks</button></div>
+        <div class="mx-chips" id="skshow" aria-label="What the map shows"><button data-l="movers" class="on">Moving stars</button><button data-l="planets" class="on">Planets</button><button data-l="marks" class="on">Landmarks</button></div>
       </div>
     </aside>
     <div class="mx-dock" id="skdock">
@@ -72,6 +72,12 @@ export async function openSky(host: HTMLElement, o: SkyOpts): Promise<SkyHandle>
       <div class="mx-track"><input type="range" id="skt" min="0" max="4000" value="3000" aria-label="Date: from the 2MASS picture of 1999 to a year from now">
         <div class="mx-ticks"><button data-u="0">1999</button><button data-u="1">2010</button><button data-u="2">2025</button><button data-u="3">today</button><button data-u="4" title="Play the coming year: where the planets will go">+1 yr</button></div></div>
       <button class="mx-live on" id="sknow" title="Back to today: the newest picture, and the planets where they are right now"><i></i>Live</button>
+    </div>
+    <div class="sp-intro" id="skintro" hidden>
+      <button class="icon-btn" id="skintrox" aria-label="Hide this introduction">✕</button>
+      <b>The whole sky, tonight and since 1999.</b>
+      <p>The planets are where they are right now. Behind them is NASA's newest picture of the whole sky, and every small point is a star that was caught changing place. Start with one:</p>
+      <div><button class="btn sm solid" id="skintro1">See a star move</button><button class="btn sm ghost" id="skintro2">Where are the planets?</button><button class="btn sm ghost" id="skintro3">Play 27 years</button></div>
     </div>
     <div class="sp-hint show" id="skhint">Drag to move · scroll or pinch to zoom · click a point, a planet or any place</div>
     <div class="sk-coords mono" id="skcoords"></div>
@@ -163,8 +169,9 @@ export async function openSky(host: HTMLElement, o: SkyOpts): Promise<SkyHandle>
     return [Math.asin(Math.max(-1, Math.min(1, sa))) / D, ((Math.atan2(-Math.cos(d) * Math.sin(H), Math.sin(d) * Math.cos(ph) - Math.cos(d) * Math.sin(ph) * Math.cos(H)) / D) + 360) % 360]; };
   const COMPASS = ["north", "north-east", "east", "south-east", "south", "south-west", "west", "north-west"];
   /** "34° up in the south-east", or "below your horizon · rises about 21:40" (searched in five-minute steps over a day) */
-  function myView(b: { ra: number; dec: number }, yr: number): string {
-    const [alt, az] = altAz(b.ra, b.dec, yr); if (alt > 0) return `${alt < 10 ? "low" : alt > 60 ? "high" : Math.round(alt) + "° up"} in the ${COMPASS[Math.round(az / 45) % 8]}`;
+  function myView(b: { ra: number; dec: number; kind?: string }, yr: number): string {
+    const [alt, az] = altAz(b.ra, b.dec, yr), sun = bodies.find((q) => q.kind === "sun"), day = b.kind === "planet" && !!sun && altAz(sun.ra, sun.dec, yr)[0] > -6;      // a planet above the horizon by day cannot be seen
+    if (alt > 0) return `${alt < 10 ? "low" : alt > 60 ? "high" : Math.round(alt) + "° up"} in the ${COMPASS[Math.round(az / 45) % 8]}${day ? ", but it is daytime" : ""}`;
     for (let m = 5; m <= 1440; m += 5) if (altAz(b.ra, b.dec, yr + m / 525960)[0] > 0) return `below your horizon · rises about ${dateOf(yr + m / 525960).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
     return "does not rise for you today";
   }
@@ -297,7 +304,7 @@ export async function openSky(host: HTMLElement, o: SkyOpts): Promise<SkyHandle>
     if (st.panel === "planets") { ephem(); const mine = !!me && isLive(), key = `p${bodiesKey}|${mine}|${mine ? Math.round(yr * 365.25 * 288) : 0}`; if (key === subKey) return; subKey = key;
       el.innerHTML = `<div class="mx-h">${isLive() ? "Right now" : dayText(yr)}</div>${meetings().map((m) => `<p class="mx-call">${m}.</p>`).join("")}<div class="mx-rows">${bodies.map((b) => `<button data-b="${b.key}"><i style="background:${b.col}"></i><b>${b.name}</b><span>${mine ? myView(b, yr) : b.kind === "sun" ? "daytime side of the sky" : `${b.kind === "moon" ? whenSeen(b).eye.split(",")[0] : whenSeen(b).when.replace(/^in the /, "").replace(/, (before sunrise|after sunset)$/, "").replace(" to see these weeks", "")}${zodiac(b) ? ` · ${zodiac(b)}` : ""}`}</span></button>`).join("")}</div>
         <div class="mx-acts"><button class="btn sm ${me ? "solid" : "ghost"}" id="skme" title="Shade what is below your own horizon right now, and say which planets are up. Your position is used in this page only">${me ? "✓ My sky now" : "My sky now"}</button><button class="btn sm ghost" id="skyear" title="Let the date run through the next twelve months">▶ The coming year</button></div>
-        <p class="mx-note">${mine ? "The shaded part of the map is below your horizon at this moment; the green line is the horizon, with its compass points. Your position stays in this page: it is not sent or stored. " : me ? "Press Live to see your own sky again. " : ""}Computed from JPL's orbital elements (within 10′ of JPL Horizons). The dotted line is the ecliptic, the road the planets keep to; each planet trails its last two months and points to its next one.</p>`;
+        <p class="mx-note">${mine ? "The shaded part of the map is below your horizon at this moment; the green line is the horizon, with its compass points. Heights are good to about a degree and rise times to a few minutes (no refraction, no hills, and the Moon is placed as from the Earth's centre). Your position stays in this page: it is not sent or stored. " : me ? "Press Live to see your own sky again. " : ""}Computed from JPL's orbital elements (within 10′ of JPL Horizons). The dotted line is the ecliptic, the road the planets keep to; each planet trails its last two months and points to its next one.</p>`;
       $("#skme").onclick = askWhere;
       el.querySelectorAll<HTMLButtonElement>("[data-b]").forEach((b) => (b.onclick = () => openBody(b.dataset.b!, true)));
       $("#skyear").onclick = () => playTo(3, 4); }
@@ -305,7 +312,7 @@ export async function openSky(host: HTMLElement, o: SkyOpts): Promise<SkyHandle>
       const pct = st.u >= 3 ? 1 : st.u <= 2 ? 0 : prog.pct, vis = st.u >= 3 && cov ? cov.visits.reduce((q, v) => q + v.length / 2, 0) / cov.visits.length : st.u <= 2 ? 0 : prog.visits;
       el.innerHTML = cov ? `<div class="mx-stat"><b>${Math.round(pct * 100)}%</b><span>of the sky imaged at least once by ${dayText(Math.min(yr, nowY))} · ${vis.toFixed(1)} visits on average</span></div><div class="mx-bar"><i style="width:${(pct * 100).toFixed(1)}%"></i></div>
         <div class="mx-acts"><button class="btn sm ghost" id="skrun" title="From SPHEREx's first survey exposures to the newest public ones">▶ Play the survey</button></div>
-        <p class="mx-note">${cov.exposures.toLocaleString()} exposures are public, from ${cov.first} to ${cov.last}. The picture appears where SPHEREx had really observed by each date; the blue band is where it had just arrived. It comes back to every place about every six months. A new release needs one script. <a class="link" href="${o.base}data/sphx2/coverage.json" download="spherex_coverage_dates.json">The dates, as a file</a></p>`
+        <p class="mx-note">${cov.exposures.toLocaleString()} exposures are public, from ${cov.first} to ${cov.last}. The picture appears where SPHEREx had really observed by each date; the blue band is where it had just arrived. It comes back to every place about every six months. Dates are good to a day or two, on patches of sky 1.8° wide. A new release needs one script. <a class="link" href="${o.base}data/sphx2/coverage.json" download="spherex_coverage_dates.json">The dates, as a file</a></p>`
         : `<p class="mx-note">The dates of SPHEREx's exposures could not be read just now.</p>`;
       const run = host.querySelector("#skrun") as HTMLElement | null; if (run) run.onclick = () => playTo(2, 3); }
     else if (st.panel === "colours") { const key = `c${st.wave}|${LAM.length}`; if (key === subKey) return; subKey = key; const lam = LAM[st.wave];
@@ -347,7 +354,7 @@ export async function openSky(host: HTMLElement, o: SkyOpts): Promise<SkyHandle>
   // on a phone the card is a sheet over the lower half, so the thing it is about is put in the upper third
   const flyTo = (l: number, b: number, z: number) => { view.l = l; view.z = Math.max(view.z, z); view.b = cw < 760 ? b - (ch * 0.27) / scale() : b; clampView(); st.dirty = true; };
   function select(k: number, fly = false) {
-    closeCard(); if (k < 0 || !V) return; st.sel = k; const card = $("#skinfo"); o.onLink?.(V.id[k]);
+    closeCard(); if (k < 0 || !V) return; hideIntro(); st.sel = k; const card = $("#skinfo"); o.onLink?.(V.id[k]);
     if (fly) flyTo(GL[k], GB[k], 5);
     destroyCard = mountMoverCard(card, V, k, { lead: `At ${hms(V.ra[k], V.dec[k])} on the sky. It crosses the width of the full Moon every <b>${moonYears(V, k)} years</b>${V.known[k] === 0 ? ", and it is not in Gaia, Europe's optical star catalogue" : ""}.`,
       poolIds, next: nextCase, onClose: closeCard, onObserve: (t2) => o.onObserve({ ...t2, source: "The survey of the WISE years (2010–2020)" }), onExplain: o.onExplain, autoplay: !o.lowPower,
@@ -355,7 +362,7 @@ export async function openSky(host: HTMLElement, o: SkyOpts): Promise<SkyHandle>
         ...(o.onCloser ? [["Look closer", "Real survey tiles of this place, with CDS's Aladin", () => o.onCloser!(V!.ra[k], V!.dec[k])] as [string, string, () => void]] : [])] });
     st.dirty = true;
   }
-  function openBody(key: string, fly = false) { closeCard(); ephem(); const b = bodies.find((q) => q.key === key); if (!b) return; st.body = key; o.onLink?.(b.name); if (fly) flyTo(b.gl, b.gb, 2.5); renderBody(true); st.dirty = true; }
+  function openBody(key: string, fly = false) { closeCard(); ephem(); const b = bodies.find((q) => q.key === key); if (!b) return; hideIntro(); st.body = key; o.onLink?.(b.name); if (fly) flyTo(b.gl, b.gb, 2.5); renderBody(true); st.dirty = true; }
   let bodyKey = "";
   function renderBody(force = false) {
     const b = bodies.find((q) => q.key === st.body), card = $("#skinfo"); if (!b) return; const key = `${b.key}|${bodiesKey}`; if (!force && key === bodyKey) return; bodyKey = key;
@@ -365,7 +372,7 @@ export async function openSky(host: HTMLElement, o: SkyOpts): Promise<SkyHandle>
       <div class="eyebrow">${b.kind === "planet" ? "Planet" : b.kind === "moon" ? "The Moon" : "Our star"} · ${live ? "where it is right now" : "on " + dayText(yearAt(st.u))}</div>
       <h3 class="display">${b.name}</h3>
       <p class="sp-lead">${b.kind === "sun" ? "The Sun hides this part of the sky: whatever lies behind it is up during the day. Six months from now the same stars will be overhead at midnight."
-        : `${b.name} is <b>${w.when}</b>${z ? `, in the direction of the constellation ${z}` : ""}. ${w.eye[0].toUpperCase() + w.eye.slice(1)}.`}</p>
+        : `${b.name} is <b>${w.when}</b>${z ? `, in the direction of ${z.endsWith("border") ? "the " + z : "the constellation " + z}` : ""}. ${w.eye[0].toUpperCase() + w.eye.slice(1)}.`}</p>
       <div class="facts">
         <div class="fact"><b>${b.kind === "moon" ? Math.round(km).toLocaleString() + " km" : b.dist.toFixed(2) + " au"}</b><span>from Earth${b.kind === "moon" ? "" : ` (${(km / 1e6).toFixed(0)} million km)`}</span></div>
         <div class="fact"><b>${mins < 1 ? (mins * 60).toFixed(1) + " s" : mins < 100 ? mins.toFixed(0) + " min" : (mins / 60).toFixed(1) + " h"}</b><span>ago its light left</span></div>
@@ -379,7 +386,7 @@ export async function openSky(host: HTMLElement, o: SkyOpts): Promise<SkyHandle>
     if (bx) bx.onclick = () => o.onExplain!(`Explain in everyday words where ${b.name === "Sun" || b.name === "Moon" ? "the " + b.name : b.name} is in the sky ${live ? "right now" : "on " + dayText(yearAt(st.u))}, when and how I can see it, and one thing worth knowing about it.`);
   }
   function openPlace(ra: number, dec: number, name?: string, sub?: string, opt: { field?: number; key?: string } = {}) {
-    closeCard(); st.place = { ra, dec }; const card = $("#skinfo"), [l, b] = toGal(ra, dec); flyTo(l, b, 3); o.onLink?.(name ?? `${ra.toFixed(4)} ${dec >= 0 ? "+" : ""}${dec.toFixed(4)}`); card.classList.add("open", "hud", "ver");
+    closeCard(); hideIntro(); st.place = { ra, dec }; const card = $("#skinfo"), [l, b] = toGal(ra, dec); flyTo(l, b, 3); o.onLink?.(name ?? `${ra.toFixed(4)} ${dec >= 0 ? "+" : ""}${dec.toFixed(4)}`); card.classList.add("open", "hud", "ver");
     card.innerHTML = `<button class="icon-btn" id="skbx" aria-label="Close">✕</button>
       <div class="eyebrow">${name ? "On the sky at " + hms(ra, dec) : "A place in the sky"}</div><h3 class="display">${name ? esc(name) : hms(ra, dec)}</h3>
       <p class="sp-lead">${sub ? esc(sub) : "Three NASA surveys have photographed this place. Play them one after another: what changes place is moving."}</p>
@@ -431,6 +438,7 @@ export async function openSky(host: HTMLElement, o: SkyOpts): Promise<SkyHandle>
   host.querySelectorAll<HTMLButtonElement>(".mx-ticks button").forEach((b) => (b.onclick = () => (b.dataset.u === "4" ? playTo(3, 4) : jump(+b.dataset.u!))));
   const whole = () => { closeCard(); view.l = 0; view.b = 0; view.z = 1; clampView(); };          // the whole sky in view, for the stories told on it
   function show(what: string): boolean {
+    hideIntro();
     if (what === "planets" || what === "spherex" || what === "colours") { const open = st.panel !== what; st.panel = open ? what : ""; if (what !== "colours" && st.wave >= 0) st.wave = -1;
       if (open && what === "planets") { st.show.planets = true; if (st.u < 2) jump(3); } if (open && what === "spherex") { whole(); playTo(2, 3); } if (!open && what === "colours") st.wave = -1; sync(); return true; }
     if (what === "story") { st.panel = ""; whole(); playTo(0, 3); return true; }
@@ -439,13 +447,21 @@ export async function openSky(host: HTMLElement, o: SkyOpts): Promise<SkyHandle>
   }
   host.querySelectorAll<HTMLButtonElement>("#skhl .mx-hl").forEach((b) => (b.onclick = () => show(b.dataset.h!)));
   host.querySelectorAll<HTMLButtonElement>("#skshow button").forEach((b) => (b.onclick = () => { const k = b.dataset.l!; st.show[k] = !st.show[k]; sync(); }));
+  // the introduction is shown once per visit, and not when the address already names something to open
+  const intro = $("#skintro"); let introSeen = false, wantShowcase = false; try { introSeen = sessionStorage.getItem("mira.skyintro") === "1"; } catch { /* storage off */ }
+  function hideIntro() { if (intro.hidden) return; intro.hidden = true; try { sessionStorage.setItem("mira.skyintro", "1"); } catch { /* storage off */ } }
+  /** one clear case to begin with: a nearby brown dwarf that crosses 4.7″ of sky a year, its three pictures playing */
+  function showcase() { if (!V) { wantShowcase = true; return; } let k = V.id.indexOf("11391-389871"); if (k < 0) { let best = 0; for (let q = 0; q < V.id.length; q++) if (Math.abs(V.glat[q]) >= 10 && V.pm[q] > best) { best = V.pm[q]; k = q; } } if (k >= 0) select(k, true); }
+  intro.hidden = introSeen || !!o.focus || document.body.classList.contains("embed");
+  $("#skintrox").onclick = hideIntro; $("#skintro1").onclick = () => { hideIntro(); showcase(); };
+  $("#skintro2").onclick = () => { if (st.panel !== "planets") show("planets"); else hideIntro(); }; $("#skintro3").onclick = () => show("story");
   const rail = $("#skrail"), fold = $("#skfold"); if (innerWidth < 760) rail.classList.add("shut");
   fold.onclick = () => { rail.classList.toggle("shut"); fold.setAttribute("aria-expanded", String(!rail.classList.contains("shut"))); };
   // ---- the verified catalogue
   loadVerified(o.base).then((v) => { if (!v) return; V = v; GL = new Float32Array(v.id.length); GB = new Float32Array(v.id.length); let n = 0, ng = 0, op = 0;
     for (let k = 0; k < v.id.length; k++) { const [l, b] = toGal(v.ra[k], v.dec[k]); GL[k] = l; GB[k] = b; if (Math.abs(v.glat[k]) >= 10) { n++; if (v.known[k] !== 1) ng++; if (isOpenCase(v, k)) op++; } }
     if (cov) CELL = Uint16Array.from(v.ra, (ra, k) => ang2pixNest(Math.round(Math.sqrt(cov!.visits.length / 12)), ra, v.dec[k]));
-    $("#skn1").textContent = n.toLocaleString(); $("#skn2").textContent = ng.toLocaleString(); $("#skn3").textContent = op.toLocaleString(); st.dirty = true; if (o.focus) handle.focus(o.focus); });
+    $("#skn1").textContent = n.toLocaleString(); $("#skn2").textContent = ng.toLocaleString(); $("#skn3").textContent = op.toLocaleString(); st.dirty = true; if (o.focus) handle.focus(o.focus); else if (wantShowcase) { wantShowcase = false; showcase(); } });
   const handle: SkyHandle = {
     pause(on) { st.paused = on; cancelAnimationFrame(st.raf); if (!on) { resize(); st.dirty = true; st.last = performance.now(); st.raf = requestAnimationFrame(loop); } },
     show,
