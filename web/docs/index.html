@@ -47,15 +47,23 @@ footer { max-width: 1180px; margin: 0 auto; padding: 24px; border-top: .8px soli
 .atlas-tip { position: absolute; z-index: 2; padding: 6px 10px; background: #111116; border: .8px solid rgb(240 240 250 / .25); border-radius: 6px; font-family: var(--mono); font-size: 11px; line-height: 1.5; white-space: nowrap; pointer-events: none; }
 .atlas-key { display: flex; flex-wrap: wrap; gap: 6px 22px; margin: 0 0 14px; font-family: var(--mono); font-size: 11px; color: var(--dim); } .atlas-key i { display: inline-block; width: 9px; height: 9px; margin-right: 7px; border-radius: 50%; vertical-align: -1px; } .atlas-key i.open { border: 1.4px solid #b48cff; }
 h3 { margin: 30px 0 8px; font-family: var(--display); font-weight: 700; font-size: 22px; text-transform: uppercase; letter-spacing: .01em; }
+ol.steps { margin: 6px 0 14px; padding-left: 22px; } ol.steps li { margin: 7px 0; line-height: 1.55; }
+.try { margin: 8px 0 18px; padding: 14px; border: .8px solid var(--hair); border-radius: 12px; background: #07070a; } .try-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.try select, .try input, .try button { height: 38px; padding: 0 12px; background: #000; color: var(--white); border: .8px solid rgb(240 240 250 / .28); border-radius: 6px; font-family: var(--mono); font-size: 12.5px; } .try input { flex: 1 1 280px; min-width: 0; }
+.try button { font-family: var(--body); font-weight: 700; font-size: 12px; letter-spacing: .12em; text-transform: uppercase; background: var(--white); color: #000; cursor: pointer; }
+.try-url { margin: 10px 0 6px; font-size: 11.5px; color: var(--dim); word-break: break-all; } .try pre { max-height: 340px; margin: 0; overflow: auto; }
 </style>
 </head>
 <body>
-<header><a class="logo" href="/">MIRA</a><nav><a href="/explore/#sky">Sky</a><a href="/explore/">Space</a><a href="/explore/#lab">Lab</a><a href="/explore/#catalogue">Catalogue</a><a href="/deck/">Deck</a></nav></header>
+<header><a class="logo" href="/">MIRA</a><nav><a href="/explore/#sky">Sky</a><a href="/explore/">Space</a><a href="/explore/#lab">Lab</a><a href="/explore/#catalogue">Catalogue</a><a href="#api">API</a><a href="/deck/">Deck</a><a href="https://github.com/Mohsinin-Wlad-Sam/assrar-dawla">GitHub</a></nav></header>
 <div class="wrap">
 <aside id="toc">
-  <div class="g">Use it</div><a href="#start">Start here</a><a href="#sky">Sky map</a><a href="#space">Space map</a><a href="#lab">The Lab</a><a href="#search">Search</a><a href="#catalogue">Catalogue</a><a href="#assistant">Assistant</a>
+  <div class="g">Get started</div><a href="#start">Overview</a><a href="#quick">Quick start</a><a href="#install">Install and run</a><a href="#layout">Project layout</a>
+  <div class="g">Guides</div><a href="#sky">Sky map</a><a href="#space">Space map</a><a href="#lab">The Lab</a><a href="#five">NASA's five targets</a><a href="#search">Search</a><a href="#catalogue">Catalogue</a><a href="#assistant">Assistant</a>
   <div class="g">Trust it</div><a href="#accuracy">Accuracy</a><a href="#limits">Known limits</a><a href="#worldmodel">World models</a><a href="#atlas">V-JEPA 2 atlas</a>
-  <div class="g">Build on it</div><a href="#link">Link and embed</a><a href="#data">Data files</a><a href="#update">New data releases</a><a href="#plans">Plans</a><a href="#credits">Credits</a>
+  <div class="g">Reference</div><a href="#api">API</a><a href="#link">Link and embed</a><a href="#data">Data files</a><a href="#config">Configuration</a>
+  <div class="g">Operate</div><a href="#update">New data releases</a><a href="#deploy">Deploy</a>
+  <div class="g">Project</div><a href="#plans">Plans</a><a href="#roadmap">Roadmap</a><a href="#contrib">Contributing</a><a href="#faq">FAQ</a><a href="#credits">Credits</a>
 </aside>
 <main>
 <h1>Documentation</h1>
@@ -70,6 +78,51 @@ h3 { margin: 30px 0 8px; font-family: var(--display); font-weight: 700; font-siz
 <tr><td><b>Lab</b></td><td>Point at any place. See it through time in real pictures and get four answers: what moved, how fast, what its light says, did it change. Tools open when you ask for them.</td><td>curious people, students, researchers</td></tr>
 <tr><td><b>Catalogue</b></td><td>17,604 stars whose motion was re-measured on raw SPHEREx exposures, with the evidence for each.</td><td>researchers, volunteers</td></tr></table>
 <p>Press <kbd>/</kbd> anywhere to search. Press <b>Ask</b> to have the assistant explain what is on screen or operate it for you.</p>
+
+<h2 id="quick">Quick start</h2>
+<p>Nothing to install. Three minutes:</p>
+<ol class="steps">
+<li><b>Open the Sky.</b> <a href="/explore/#sky">/explore/#sky</a>. Drag the time bar at the bottom from 1999 to today.</li>
+<li><b>Click any place</b>, then <b>Watch this place through time</b>: three NASA surveys of that spot, as a little film.</li>
+<li><b>Measure it in the Lab.</b> The inspector on the right answers four questions: what moved, how fast, what its light says, did it change. Click an answer to open the tool that produced it.</li>
+<li><b>Search</b> with <kbd>/</kbd>, or press <b>Ask</b> and let the assistant explain what is on screen.</li>
+</ol>
+<p>Or start from a star that moved: <a href="/explore/?target=eps-indi-b">Epsilon Indi B</a>, <a href="/explore/?target=barnard">Barnard's Star</a>, <a href="/explore/?target=wise-0855">WISE 0855</a>.</p>
+
+<h2 id="install">Install and run</h2>
+<p>MIRA is a static site built with Vite, plus one small Node process for the assistant and the API. You need Node 20 or newer.</p>
+<pre>git clone https://github.com/Mohsinin-Wlad-Sam/assrar-dawla.git
+cd assrar-dawla/web
+npm ci
+npm run dev            # http://127.0.0.1:5173   landing /   app /explore/   docs /docs/   API /api/v1</pre>
+<table><tr><th>Step</th><th>Command</th><th>Notes</th></tr>
+<tr><td><b>Data</b></td><td><code>./sync_data.sh</code></td><td>The measured data (<code>web/public/data/</code>, about 0.6 GB) are not in git: they are produced on our cluster. With cluster access the script pulls them; otherwise ask the team for the data pack and unpack it there. Without it the landing page, this documentation and the deck open; the maps and the Lab need it.</td></tr>
+<tr><td><b>Build</b></td><td><code>npm run build</code></td><td>Type-checks, then writes the site to <code>web/dist/</code>.</td></tr>
+<tr><td><b>Preview</b></td><td><code>npx vite preview --port 4173</code></td><td>Serves <code>dist/</code> with the assistant and the API, as in production.</td></tr>
+<tr><td><b>Assistant</b></td><td><code>web/.env.local</code></td><td>Optional. One line, <code>MIRA_LLM_KEY=…</code>, for an OpenAI-compatible endpoint. Never commit it. Without it the assistant says it is offline; everything else works.</td></tr>
+<tr><td><b>Checks</b></td><td><code>npx tsc --noEmit -p .</code></td><td>Also <code>web/scripts/test_ephem.mts</code> (planets against JPL Horizons) and <code>web/scripts/test_registration.py</code> (pictures against star coordinates).</td></tr></table>
+
+<h2 id="layout">Project layout</h2>
+<pre>web/src/main.ts            the app's shell: header, views, search, assistant
+web/src/skymap.ts          the Sky map; hipsmap.ts draws real survey tiles when zoomed
+web/src/space.ts           the Universe (3D)
+web/src/blink/             the Lab
+    engine.ts                reads SPHEREx exposures from NASA's archive (range requests, WCS, cutouts)
+    detect.ts                the motion detector: sources, calibration on Gaia, motion and brightness
+    view.ts, lab.css         the workspace: rail, picture, timeline, inspector
+    plots.ts                 the plots (axes, units, error bars)
+    worldmodel.ts            the sky model that runs in the browser
+    watchlist.ts             a list of targets in one run
+web/src/search.ts          the search index and its matching
+web/src/landing/           the landing page (React)
+web/docs  web/deck  web/film   this documentation, the seven slides, the film's director page
+web/server/assistant.mjs   the assistant's server side (keeps the model key)
+web/server/api.mjs         the data API
+web/scripts/               renderers (film, deck) and tests
+census/                    the pipeline run on the cluster: the survey, the verification, the models
+deploy/                    Caddyfile, nginx.conf, Dockerfile, the server process, update_spherex.sh
+docs/                      written documents: business plan, deployment, AI-use log, credits
+media/                     the film and the deck as files</pre>
 
 <h2 id="sky">Sky map</h2>
 <h3>The time bar</h3>
@@ -106,6 +159,15 @@ h3 { margin: 30px 0 8px; font-family: var(--display); font-weight: 700; font-siz
 <tr><td><b>Watchlist</b> <span class="tag">researcher</span></td><td>The same chain for a list of targets</td><td>Up to 25 names or positions per run, one table, CSV or JSON.</td></tr>
 <tr><td><b>Sky world model</b> <span class="tag">researcher</span></td><td>What a network says moved here, against what the Lab measured</td><td>One large picture with five steps (1999, 2010, the model's forecast, the real picture, the difference); a ring on each source the model marks; a table of the model's motion beside the Lab's and Gaia's. See <a href="#worldmodel">below</a>.</td></tr></table>
 <p>NASA's five test targets open at once: the site carries a prepared copy of each (rebuilt after every data release). Any other field is read live from NASA's archive, which takes 10 to 40 seconds the first time while the picture fills in, and is then kept in your browser, so opening it again is instant.</p>
+
+<h2 id="five">NASA's five test targets</h2>
+<p>The challenge names five objects to test on. Each opens at once from a prepared copy.</p>
+<table><tr><th>Target</th><th>What to look at</th><th>MIRA's reading</th></tr>
+<tr><td><a href="/explore/?target=barnard"><b>Barnard's Star</b></a></td><td>The fastest star in the sky. Play the time bar: it crosses most of the field.</td><td>10.46 ± 0.05″ a year (Gaia: 10.39)</td></tr>
+<tr><td><a href="/explore/?target=eps-indi-b"><b>Epsilon Indi B</b></a></td><td>A pair of brown dwarfs 12 light-years away. Open the Spectrograph: the gap at 3.3 µm is methane.</td><td>4.70 ± 0.02″ a year (Gaia: 4.68)</td></tr>
+<tr><td><a href="/explore/?target=wise-0855"><b>WISE 0855−0714</b></a></td><td>The coldest known brown dwarf, too faint for Gaia. It shows only at the longest wavelengths.</td><td>8.21 ± 0.05″ a year (Kirkpatrick et al. 2021: 8.15)</td></tr>
+<tr><td><a href="/explore/?target=rw-aur"><b>RW Aurigae</b></a></td><td>A young star that dims deeply at times, most likely behind dust of its own disc. Open the Photometer.</td><td>Brightness since 1999, and between SPHEREx visits</td></tr>
+<tr><td><a href="/explore/?target=r-dra"><b>R Draconis</b></a></td><td>A pulsating giant, very bright in the infrared. Switch on NASA's flags in the Layers tool, then look at its brightness from one visit to the next.</td><td>Brightness between visits at matched wavelengths</td></tr></table>
 
 <h2 id="search">Search</h2>
 <p>Results appear as you type, from the planets, NASA's five test targets, landmarks, the 17,604 confirmed movers (by name, Gaia number or kind), 1,125 bright stars, 4,834 stars with planets, and MIRA's own tools and pages. It forgives spelling (“barnad”, “jupitr”, “epsilon indi” all work). If you do not know a name, open the filters and search by kind, motion and distance: for example every T dwarf within 65 light-years. Anything else is looked up in the CDS star databases when you press Enter.</p>
@@ -155,6 +217,55 @@ h3 { margin: 30px 0 8px; font-family: var(--display); font-weight: 700; font-siz
 <li><b>Marked as what it is.</b> Every picture a network draws carries the label “AI-generated · prediction”.</li></ul>
 <p>Where this goes: the same recipe, on each new SPHEREx release, predicts every visit from the earlier ones and passes on only what it did not expect. That is the search a ninth planet needs: a faint source that is in no catalogue and is not where anything was before.</p>
 
+<h2 id="api">API</h2>
+<p>Everything MIRA measured and indexed can be asked for by a program. The API is served by the same host under <code>/api/v1</code>; it answers in JSON, and the list endpoints also in CSV (<code>format=csv</code>). Positions are ICRS degrees, motions arcseconds a year. No key on this site; 300 calls per ten minutes per address.</p>
+<table><tr><th>Endpoint</th><th>What it returns</th><th>Parameters</th></tr>
+<tr><td><code>GET /status</code></td><td>What data the server carries: exposures indexed, dates, movers, marks</td><td>–</td></tr>
+<tr><td><code>GET /movers</code></td><td>The verified catalogue: a cone search (nearest first) or a filtered list (fastest first)</td><td><code>ra dec radius</code> (deg) · <code>min_pm max_pm</code> · <code>kind</code> · <code>gaia=absent|listed</code> · <code>limit</code> · <code>format</code></td></tr>
+<tr><td><code>GET /movers/{id}</code></td><td>One confirmed mover, every column, with the sky model's opinion and a link to the Lab</td><td>the catalogue id</td></tr>
+<tr><td><code>GET /exposures</code></td><td>The SPHEREx Level-2 exposures whose footprint holds a position, with their addresses on NASA's public bucket</td><td><code>ra dec</code> · <code>detector</code> (1–6) · <code>mjd_min mjd_max</code> · <code>limit</code> · <code>format</code></td></tr>
+<tr><td><code>GET /coverage</code></td><td>When SPHEREx visited a position, and about when it comes back</td><td><code>ra dec</code></td></tr>
+<tr><td><code>GET /scout</code></td><td>Places the sky model marked where the catalogue has nothing, each with the Gaia check and V-JEPA 2's score</td><td><code>ra dec radius</code> (optional) · <code>gaia=absent|listed</code> · <code>limit</code></td></tr>
+<tr><td><code>POST /crossmatch</code></td><td>A list of up to 5,000 positions against the catalogue, the survey and the sky model: one result each</td><td>JSON body <code>{ "positions": [{ "id", "ra", "dec" }], "radius_arcsec": 30 }</code></td></tr>
+<tr><td><code>GET /targets</code></td><td>NASA's five test targets</td><td>–</td></tr>
+<tr><td><code>GET /openapi.json</code></td><td>This interface as OpenAPI 3, for Postman, Swagger or a code generator</td><td>–</td></tr></table>
+
+<h3>Try it</h3>
+<div class="try">
+  <div class="try-row"><select id="api-ep" aria-label="Endpoint"><option value="status">GET /status</option><option value="movers" selected>GET /movers</option><option value="exposures">GET /exposures</option><option value="coverage">GET /coverage</option><option value="scout">GET /scout</option><option value="crossmatch">POST /crossmatch</option><option value="targets">GET /targets</option></select>
+    <input id="api-q" aria-label="Parameters" spellcheck="false" value="ra=331.0966&dec=-56.8007&radius=0.5"><button id="api-go">Send</button></div>
+  <div class="try-url mono" id="api-url"></div>
+  <pre id="api-out">Press Send.</pre>
+</div>
+
+<h3>Examples</h3>
+<pre># every confirmed T dwarf that Gaia does not list, as a table
+curl "https://YOUR-HOST/api/v1/movers?kind=T%20dwarf&gaia=absent&format=csv"
+
+# which SPHEREx exposures hold Barnard's Star, detector 5 only
+curl "https://YOUR-HOST/api/v1/exposures?ra=269.452&dec=4.693&detector=5"
+
+# a list of candidates against the catalogue, the survey and the sky model
+curl -X POST "https://YOUR-HOST/api/v1/crossmatch" -H "Content-Type: application/json" \
+     -d '{"positions":[{"id":"a","ra":331.0966,"dec":-56.8007},{"id":"b","ra":10,"dec":10}],"radius_arcsec":30}'</pre>
+<pre># Python: the movers around a position as an Astropy table, then one exposure's cutout
+import requests, astropy.units as u
+from astropy.table import Table
+from astropy.io import fits
+from astropy.wcs import WCS
+from astropy.nddata import Cutout2D
+from astropy.coordinates import SkyCoord
+
+HOST = "https://YOUR-HOST"
+movers = Table(requests.get(f"{HOST}/api/v1/movers", params={"ra": 331.1, "dec": -56.8, "radius": 2}).json()["movers"])
+print(movers["id", "motion_arcsec_yr", "kind", "gaia"])
+
+exp = requests.get(f"{HOST}/api/v1/exposures", params={"ra": 331.0966, "dec": -56.8007, "detector": 5}).json()["exposures"][0]
+with fits.open(exp["url"], use_fsspec=True) as hdul:          # reads only the part of the 65 MB file it needs
+    wcs = WCS(hdul["IMAGE"].header)
+    cut = Cutout2D(hdul["IMAGE"].section, SkyCoord(331.0966, -56.8007, unit="deg"), 3 * u.arcmin, wcs=wcs)</pre>
+<p><b>Errors</b> are JSON too, <code>{ "error": "…" }</code>, with status 400 (a parameter), 401 (a key is asked for), 404, 429 (too many calls) or 503 (the server does not carry that file). <b>Private deployments</b> can ask for a key: set <code>MIRA_API_KEYS</code> and callers send <code>X-API-Key</code>. <b>A purely static copy</b> of the site has no API: the same answers are in the <a href="#data">data files</a>. <b>Planned</b> for the Mission plan: <code>POST /measure</code>, the Lab's whole chain on a position, run on the server (the engine already runs without a browser in our verification pipeline), and a call-back at each data release.</p>
+
 <h2 id="link">Link and embed</h2>
 <pre>/explore/#sky=Barnard's Star              the Sky map, flown to a name, catalogue number or "RA Dec"
 /explore/?ra=269.452&amp;dec=4.693&amp;fov=6.6    the Lab on a position (degrees); add pmra, pmdec, epoch, name
@@ -177,6 +288,33 @@ h3 { margin: 30px 0 8px; font-family: var(--display); font-weight: 700; font-siz
 <h2 id="update">New data releases</h2>
 <p>One script, <code>deploy/update_spherex.sh</code>, rebuilds the exposure index, the coverage dates and the composition pictures from NASA's archive. The site itself reads exposures live, so a new release shows in the Lab as soon as the index is rebuilt. <code>web/scripts/prebake_fields.mjs</code> then prepares the five test fields again.</p>
 
+<h2 id="config">Configuration</h2>
+<table><tr><th>Setting</th><th>Where</th><th>What it does</th></tr>
+<tr><td><code>MIRA_LLM_KEY</code></td><td>server environment, or <code>web/.env.local</code> in development</td><td>Key of the assistant's model service. Never in the repository or in the built site</td></tr>
+<tr><td><code>MIRA_LLM_URL</code> · <code>MIRA_LLM_MODEL</code></td><td>server</td><td>Any OpenAI-compatible endpoint and model (default: IFM K2 Horizon)</td></tr>
+<tr><td><code>MIRA_LLM_PER10MIN</code> · <code>MIRA_LLM_DAILY</code></td><td>server</td><td>Assistant limits: 40 questions per ten minutes per address, 4,000 a day</td></tr>
+<tr><td><code>MIRA_DATA</code></td><td>server</td><td>Folder of the data files for the API (for example <code>/srv/mira/data</code>)</td></tr>
+<tr><td><code>MIRA_API_PER10MIN</code> · <code>MIRA_API_KEYS</code></td><td>server</td><td>API limit (300), and optional keys for a private deployment</td></tr>
+<tr><td><code>MIRA_ANSWERS_FILE</code></td><td>server</td><td>Where visitors' answers on unstudied movers are appended</td></tr>
+<tr><td><code>MIRA_PROXY_PORT</code></td><td>server</td><td>Port of the server process (8787); the web server forwards <code>/api/</code> to it</td></tr>
+<tr><td><code>?embed=1</code> · <code>?deck=1</code></td><td>address</td><td>Without the header, for an iframe; without first-visit prompts, for a presentation</td></tr></table>
+
+<h2 id="deploy">Deploy</h2>
+<pre>cd web && npm ci && npm run build                       # -> web/dist
+rsync -az --delete web/dist/ user@host:/srv/mira/       # the site and its data
+rsync -az web/server deploy user@host:/opt/mira/        # the server process (assistant and API)
+# on the host: Caddy serves /srv/mira with HTTPS and forwards /api/ to 127.0.0.1:8787
+MIRA_DATA=/srv/mira/data MIRA_LLM_KEY=… node /opt/mira/deploy/assistant-proxy.mjs</pre>
+<p>The full procedure, with nginx and Docker variants, is in the repository: <code>docs/14_deployment_and_updates.md</code>.</p>
+<h3>Sizing on the AWS free plan</h3>
+<table><tr><th>Item</th><th>Choice</th><th>Why</th></tr>
+<tr><td><b>Instance</b></td><td>EC2 <b>t4g.small</b> (2 vCPU, 2 GB, Arm); t3.small if x86 is wanted</td><td>The site is static files and one Node process of about 40 MB. A t4g.micro (1 GB) is enough when the build is done elsewhere</td></tr>
+<tr><td><b>Disk</b></td><td><b>30 GB</b> gp3</td><td>Site 0.7 GB (0.4 without the older feeds), the system, and room for the index of the next releases</td></tr>
+<tr><td><b>Network</b></td><td>One public IPv4 address; ports 80 and 443 open, 22 from your address only</td><td>Caddy obtains the certificate once a domain name points at the address</td></tr>
+<tr><td><b>System</b></td><td>Ubuntu 24.04 (arm64), Caddy, Node 20 or newer</td><td>No database</td></tr>
+<tr><td><b>Optional</b></td><td>CloudFront in front</td><td>A first visit to both maps downloads about 40 MB; a cache keeps that off the instance</td></tr></table>
+<p class="note"><b>Cost against the credits.</b> About US$18 a month at list prices (instance about 12, disk 2.4, the address 3.7; the first 100 GB a month sent out are free), so about US$110 over the plan's six months: inside the US$100 given at sign-up plus part of the US$100 earned by the first tasks. With a t4g.micro, about US$12 a month. Prices are the public us-east-1 list as we know them: check them in AWS's calculator before launching. Accounts opened after 15 July 2025 get the credits and a plan that ends after six months or when the credits run out; t4g.small, t3.small, t4g.micro and t3.micro are among the instance types that plan allows (<a href="https://aws.amazon.com/about-aws/whats-new/2025/07/aws-free-tier-credits-month-free-plan" target="_blank" rel="noopener">AWS announcement</a>, <a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-free-tier-usage.html" target="_blank" rel="noopener">EC2 documentation</a>).</p>
+
 <h2 id="plans">Plans</h2>
 <p class="note"><b>Prototype.</b> Everything is free today: the Researcher tools are behind one switch at the foot of the Lab's tool rail (PRO). Each plan contains the one before it. No price has been tested with a customer yet.</p>
 <div class="plans">
@@ -185,6 +323,32 @@ h3 { margin: 30px 0 8px; font-family: var(--display); font-weight: 700; font-siz
 <div class="plan"><div class="k">Agencies · missions · science centres</div><h4>Mission</h4><div class="p">Per project</div><ul><li>Everything in Researcher</li><li>The verification pipeline on your candidate lists at each data release</li><li>A scout trained on your survey; V-JEPA 2 fine-tuned on your objects</li><li>Instruments built for the project</li><li>Private deployment, single sign-on</li><li>Every number traced to its exposures; a data-quality report per release</li><li>Your own name on the public pages; training and support</li></ul></div>
 </div>
 <p>The full business plan is in the repository: <code>docs/13_business_plan.md</code>.</p>
+
+<h2 id="roadmap">Roadmap</h2>
+<table><tr><th>Next</th><th>What</th></tr>
+<tr><td><b>At each SPHEREx release</b></td><td>Rebuild the index and the prepared fields (one script), re-measure the catalogue, re-run the scout</td></tr>
+<tr><td><b>Measurement as a service</b></td><td><code>POST /api/v1/measure</code>: the Lab's chain on the server, for lists longer than a browser should run</td></tr>
+<tr><td><b>Watching</b></td><td>Re-runs of a watchlist at each release, and a message when a target changed</td></tr>
+<tr><td><b>The models</b></td><td>Measure the 124 marks Gaia does not confirm; feed the false ones back as examples; predict each new visit from the earlier ones</td></tr>
+<tr><td><b>Classrooms</b></td><td>Exercises on real NASA data in Arabic, French and English</td></tr>
+<tr><td><b>Phones</b></td><td>The Lab's layout on small screens has been checked in emulation only</td></tr></table>
+
+<h2 id="contrib">Contributing</h2>
+<ul><li><b>Report</b> a wrong number or a broken view as an issue on GitHub, with the address of the page (it carries the position and the tool).</li>
+<li><b>Change</b> on a branch; <code>npm run build</code> must pass. Keep the words on screen plain, give every number its unit and its source, and add no dependency that a few lines can replace.</li>
+<li><b>Claims</b> need a check on real data that the claim did not come from: see how the detector was tested blind (<a href="#accuracy">Accuracy</a>).</li>
+<li><b>AI tools</b> are welcome and logged: add a row to <code>docs/07_si_usage_log.md</code> saying what was made and how it was checked.</li>
+<li><b>Licence.</b> The team has not chosen one yet; until it does, ask before reusing the code. NASA's and ESA's data keep their own terms (<a href="#credits">Credits</a>).</li></ul>
+
+<h2 id="faq">FAQ</h2>
+<table><tr><th>Question</th><th>Answer</th></tr>
+<tr><td>Is MIRA part of NASA?</td><td>No. It is a NASA Space Apps Challenge 2026 project that reads NASA's public data. It is not affiliated with or endorsed by NASA.</td></tr>
+<tr><td>Do I need an account?</td><td>No. Nothing about you is stored on a server; your cases and settings stay in your browser.</td></tr>
+<tr><td>Why does a new field take 10 to 40 seconds?</td><td>Each SPHEREx exposure is a 65 MB file on NASA's archive. MIRA reads only the part it needs from each, in your browser. The second time the field is instant.</td></tr>
+<tr><td>Is a mark of the sky model a discovery?</td><td>No. It is a place to look at. 276 of the 400 strongest are stars Gaia already lists; the others are open until measured.</td></tr>
+<tr><td>Why are some tools behind PRO?</td><td>They are the tools a researcher needs and a visitor rarely does. The switch is free while MIRA is a prototype.</td></tr>
+<tr><td>Which browsers?</td><td>Current Chrome, Edge, Safari and Firefox. The Universe needs WebGL; everything else works without it.</td></tr>
+<tr><td>Can it find Planet Nine?</td><td>Not by itself. The Detection limits tool shows that Planet Nine as proposed is far too faint for one SPHEREx field; MIRA makes the search for nearer, warmer bodies something anyone can follow.</td></tr></table>
 
 <h2 id="credits">Credits</h2>
 <ul><li><b>Data.</b> NASA SPHEREx (Level-2 exposures and the DR1 all-sky cube) from NASA/IPAC IRSA; 2MASS and WISE/AllWISE (NASA/IPAC, UMass, UCLA, JPL); ESA Gaia DR3; SIMBAD, VizieR and Aladin (CDS, Strasbourg); NASA Exoplanet Archive; NASA JPL Horizons (for checks) and JPL's approximate planetary elements.</li>
@@ -205,6 +369,17 @@ fetch('/data/wm/scout.json').then((r) => r.ok ? r.json() : null).then((sc) => { 
   el.innerHTML = `<b>Scout, on the fifth of the sky kept for testing.</b> ${sc.copies.length} networks, ${w.toFixed(0)} million weights together. Of ${t.n.toLocaleString('en-US')} real movers faster than 0.4″ a year it found <b>${Math.round(100 * t.recall)}%</b>${fast ? ` (<b>${Math.round(100 * fast.recall)}%</b> of those above 1″)` : ''}, with ${t.false_per_sqdeg.toFixed(2)} marks per square degree on nothing the catalogue knows, and read their motion to ${t.pm_err_median.toFixed(2)}″ a year. Over the whole sky it marks ${sc.sky.marks.toLocaleString('en-US')} places, ${sc.sky.marks_on_catalogue_stars.toLocaleString('en-US')} of them catalogue stars.`
     + (sc.gaia_check ? ` <b>Checked against Gaia.</b> Of the ${sc.gaia_check.asked} strongest places it marked where MIRA's catalogue has nothing, <b>${sc.gaia_check.with_a_gaia_fast_mover}</b> have a star in ESA's Gaia DR3 moving at least ${sc.gaia_check.min_pm_arcsec_yr}″ a year within ${sc.gaia_check.radius_arcsec}″ (the model read their motion to ${sc.gaia_check.model_motion_error_median}″ a year, median); <b>${sc.gaia_check.without}</b> have none and stay open.` : '')
     + (cmp ? ` <b>Against V-JEPA 2</b> on the same ${cmp.patches.toLocaleString('en-US')} test patches, one star each, half of them real movers (0.5 is chance, 1 is perfect): V-JEPA 2 as published ${cmp.vjepa2_probe_auc.toFixed(2)} (its zero-shot surprise ${cmp.vjepa2_surprise_auc.toFixed(2)}); MIRA's scout ${cmp.mira_auc.toFixed(2)}${ft ? `; V-JEPA 2 fine-tuned on MIRA's movers <b>${ft.auc_test.toFixed(2)}</b>` : ''}.${ft && ft.marks_scored ? ` The fine-tuned V-JEPA 2 also calls ${ft.marks_agree} of those ${ft.marks_scored} marks movers, including the ones Gaia does not confirm: it agrees with the scout, it does not replace the check against a catalogue.` : ''}` : ''); }).catch(() => {});
+(() => { const ep = document.getElementById('api-ep'), q = document.getElementById('api-q'), go = document.getElementById('api-go'), out = document.getElementById('api-out'), urlEl = document.getElementById('api-url');
+  const EX = { status: '', movers: 'ra=331.0966&dec=-56.8007&radius=0.5', exposures: 'ra=269.452&dec=4.693&detector=5&limit=5', coverage: 'ra=133.8189&dec=-7.247', scout: 'gaia=absent&limit=5', targets: '',
+    crossmatch: '{"positions":[{"id":"a","ra":331.0966,"dec":-56.8007},{"id":"b","ra":10,"dec":10}],"radius_arcsec":30}' };
+  const url = () => `/api/v1/${ep.value}${ep.value !== 'crossmatch' && q.value.trim() ? '?' + q.value.trim() : ''}`, show = () => { urlEl.textContent = (ep.value === 'crossmatch' ? 'POST ' : 'GET ') + location.origin + url(); };
+  ep.onchange = () => { q.value = EX[ep.value]; show(); }; q.oninput = show; show();
+  const run = async () => { out.textContent = '…'; try { const r = await fetch(url(), ep.value === 'crossmatch' ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: q.value } : undefined), t = await r.text();
+      if ((r.headers.get('content-type') || '').includes('html')) { out.textContent = 'This copy of the site is static: it has no server process, so the API is not here. The same answers are in the data files below.'; return; }
+      let txt = t; try { txt = JSON.stringify(JSON.parse(t), null, 2); } catch (e) { /* CSV */ } out.textContent = `${r.status}\n` + (txt.length > 6000 ? txt.slice(0, 6000) + '\n… (cut here; the full answer is at the address above)' : txt); }
+    catch (e) { out.textContent = 'The API could not be reached from this page.'; } };
+  go.onclick = run; q.onkeydown = (e) => { if (e.key === 'Enter') run(); };
+})();
 fetch('/data/wm/vjepa_atlas.json').then((r) => r.ok ? r.json() : null).then((A) => { const cv = document.getElementById('atlas-cv'), rd = document.getElementById('atlas-read'), tip = document.getElementById('atlas-tip'); if (!A) { rd.textContent = 'This server does not carry the map yet.'; return; }
   const g = cv.getContext('2d'), W = cv.width, H = cv.height, pad = 46, X = (i) => pad + A.x[i] * (W - 2 * pad), Y = (i) => pad + A.y[i] * (H - 2 * pad), n = A.x.length;
   const draw = (hot) => { g.clearRect(0, 0, W, H);

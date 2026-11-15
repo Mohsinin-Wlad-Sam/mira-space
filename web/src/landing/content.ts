@@ -5,7 +5,9 @@
 // Types
 // ---------------------------------------------------------------------------
 export interface SiteImage {
-  /** Unsplash CDN id, e.g. "photo-1464802686167-b939a6910659" */
+  /** A picture served by this site (a still recorded from MIRA itself); when set, `src` is not used */
+  local?: string
+  /** Unsplash CDN id, e.g. "photo-1464802686167-b939a6910659" (not used any more: every picture is MIRA's own) */
   src: string
   alt: string
   author: string
@@ -112,72 +114,15 @@ export function coverSizes(image: SiteImage): string {
 }
 
 export const images = {
-  hero: {
-    src: 'photo-1464802686167-b939a6910659',
-    width: 5005,
-    height: 3417,
-    alt: 'The Milky Way glowing in blue and purple across a dense field of stars',
-    author: 'Jeremy Thomas',
-    page: 'https://unsplash.com/photos/E0AHdsENmDg',
-  },
-  survey: {
-    src: 'photo-1446776811953-b23d57bd21aa',
-    width: 4928,
-    height: 3280,
-    alt: 'A satellite in orbit above the clouds and oceans of Earth',
-    author: 'NASA',
-    page: 'https://unsplash.com/photos/yZygONrUBe8',
-  },
-  bands: {
-    src: 'photo-1462332420958-a05d1e002413',
-    width: 5200,
-    height: 2500,
-    alt: 'A colourful nebula of glowing gas and dust lit by young stars',
-    author: 'NASA',
-    page: 'https://unsplash.com/photos/-hI5dX2ObAs',
-    position: '30% 50%',
-  },
-  motion: {
-    src: 'photo-1504966981333-1ac8809be1ca',
-    width: 4272,
-    height: 2848,
-    alt: 'Long-exposure star trails circling the sky above dark water',
-    author: 'Reign Abarintos',
-    page: 'https://unsplash.com/photos/-cKXtsJWU-I',
-  },
-  evidence: {
-    src: 'photo-1727034393564-dc7b0275686d',
-    width: 2951,
-    height: 3934,
-    alt: 'An observatory dome beneath a star-filled night sky',
-    author: 'Ahmed Atef',
-    page: 'https://unsplash.com/photos/b7lnMZqv1YE',
-    position: '50% 70%',
-  },
-  stats: {
-    src: 'photo-1451187580459-43490279c0fa',
-    width: 4256,
-    height: 2832,
-    alt: 'Earth at night seen from orbit, with the glow of the horizon',
-    author: 'NASA',
-    page: 'https://unsplash.com/photos/Q1p7bh3SHj8',
-  },
-  galaxy: {
-    src: 'photo-1543722530-d2c3201371e7',
-    width: 5412,
-    height: 3594,
-    alt: 'The Andromeda Galaxy surrounded by a dense field of stars',
-    author: 'Guillermo Ferla',
-    page: 'https://unsplash.com/photos/Oze6U2m1oYU',
-  },
-  starfield: {
-    src: 'photo-1475274047050-1d0c0975c63e',
-    width: 5456,
-    height: 3632,
-    alt: 'A deep, dark sky scattered with countless faint stars',
-    author: 'Paul Lichtblau',
-    page: 'https://unsplash.com/photos/qVotvbsuM_c',
-  },
+  // every picture below was recorded from MIRA itself, on NASA data: nothing here is a stock photograph
+  hero: { local: '/deck/shot_title.jpg', src: '', width: 1600, height: 900, alt: 'The whole sky as NASA’s SPHEREx sees it, on MIRA’s Sky map', author: 'MIRA, on NASA data', page: '/docs/#credits' },
+  motion: { local: '/land/sky.jpg', src: '', width: 1920, height: 804, alt: 'The Milky Way across the whole sky in SPHEREx’s infrared colours', author: 'MIRA, on NASA data', page: '/docs/#credits' },
+  survey: { local: '/land/field.jpg', src: '', width: 1042, height: 804, alt: 'Epsilon Indi B in a SPHEREx picture, with the path it followed since 1999', author: 'MIRA, on NASA data', page: '/docs/#credits', position: '62% 50%' },
+  bands: { local: '/land/spectrum.jpg', src: '', width: 1920, height: 804, alt: 'The SPHEREx spectrum of Epsilon Indi B drawn by MIRA’s Spectrograph', author: 'MIRA, on NASA data', page: '/docs/#credits', position: '12% 50%' },
+  evidence: { local: '/land/count.jpg', src: '', width: 1920, height: 804, alt: 'The whole sky with the 17,604 stars MIRA caught moving', author: 'MIRA, on NASA data', page: '/docs/#credits', position: '0% 50%' },
+  galaxy: { local: '/land/movers.jpg', src: '', width: 1920, height: 804, alt: 'The sky with every star MIRA caught moving marked in orange', author: 'MIRA, on NASA data', page: '/docs/#credits' },
+  stats: { local: '/land/movers.jpg', src: '', width: 1920, height: 804, alt: 'The sky with every star MIRA caught moving marked in orange', author: 'MIRA, on NASA data', page: '/docs/#credits' },
+  starfield: { local: '/deck/shot_scout.jpg', src: '', width: 1360, height: 850, alt: 'The places the sky model marked, on MIRA’s Sky map', author: 'MIRA, on NASA data', page: '/docs/#credits', position: '0% 50%' },
 } satisfies Record<string, SiteImage>
 
 // One credit per photographer (links to their first photo used here).
@@ -191,12 +136,12 @@ export const unsplashHome = 'https://unsplash.com/' + REF
 // Navigation
 // ---------------------------------------------------------------------------
 export const navLinks: NavLink[] = [
-  { label: 'See it move', href: '/#map' },
-  { label: 'Take part', href: '/#take-part' },
-  { label: 'Classrooms', href: '/#learn' },
-  { label: 'Researchers', href: '/#research' },
+  { label: 'Sky', href: '/#map' },
+  { label: 'Lab', href: '/#learn' },
   { label: 'Evidence', href: '/#evidence' },
-  { label: 'Plan', href: '/#plan' },
+  { label: 'AI scout', href: '/#research' },
+  { label: 'Take part', href: '/#take-part' },
+  { label: 'Plans', href: '/#plan' },
   { label: 'Team', href: '/#team' },
   { label: 'Docs', href: '/docs/' },
 ]
@@ -210,11 +155,11 @@ export const navLinks: NavLink[] = [
 // ---------------------------------------------------------------------------
 export const hero = {
   /** Shown in the eyebrow until the live census numbers arrive. */
-  eyebrow: 'NASA SPHEREx · open to everyone, in your browser',
+  eyebrow: 'NASA Space Apps 2026',
   title: 'The sky is not still',
-  sub: 'Tonight’s planets, live · 27 years of NASA’s sky on one slider · real stars caught changing place',
+  sub: 'Point at any place · watch 27 years of NASA pictures · see what moved',
   cta: { label: 'Open the sky', href: viewer.sky } satisfies Cta,
-  tour: { label: 'Fly around the Sun', href: viewer.home } satisfies Cta,
+  tour: { label: 'Watch the film · 30 s', href: '/film/mira_film_720.mp4' } satisfies Cta,
   image: images.hero as SiteImage,
 }
 
@@ -222,87 +167,79 @@ export const features: Feature[] = [
   {
     id: 'map',
     align: 'left',
-    eyebrow: 'For everyone',
-    title: 'Planets move in days. Stars move in decades. See both.',
+    eyebrow: 'The Sky',
+    title: 'One time bar. 1999 to tonight.',
     body:
-      'NASA’s newest sky survey, SPHEREx, is photographing the whole sky in 102 infrared colours. Its images are ' +
-      'public, but each is a 65-megabyte scientific file made for specialists’ software. Mira turns them into two ' +
-      'maps anyone can use. On the Sky, the Sun, the Moon and the planets stand where they are right now; one tap ' +
-      'shades what is below your own horizon and tells you which planets are up tonight. Slide back in time and ' +
-      'three NASA surveys follow one another from 1999, the last of them, SPHEREx, filling in on the very dates ' +
-      'it was taken. In Space, every point is a real star at its distance from the Sun, and the orange ones were ' +
-      'caught changing place: click one and three real NASA pictures show it move. No install, no account, and it ' +
-      'works on a phone.',
+      'The whole sky as NASA’s SPHEREx sees it, with tonight’s planets where they are right now. Slide back ' +
+      'through three NASA surveys.',
     cta: { label: 'Open the sky', href: viewer.sky },
     image: images.motion,
   },
   {
-    id: 'take-part',
-    align: 'right',
-    eyebrow: 'Take part',
-    title: 'Help look at the ones in no reference database',
-    body:
-      'The coldest objects near the Sun give off almost no visible light. They are found because they move. In ' +
-      'NASA’s Backyard Worlds project, 150,000 volunteers looking for moving dots in older images have helped find ' +
-      'about 3,000 brown dwarfs. Mira tries the same idea on its own catalogue, as a prototype: 635 confirmed ' +
-      'movers have no Gaia source and no entry in SIMBAD, astronomy’s reference database. Open one, compare its ' +
-      'three pictures, and say what you see. No account, and nothing about you is kept.',
-    cta: { label: 'Look at one', href: viewer.takePart },
-    image: images.galaxy,
-  },
-  {
     id: 'learn',
     align: 'left',
-    eyebrow: 'For classrooms',
-    title: 'A telescope for every classroom',
+    eyebrow: 'The Lab',
+    title: 'Point at a star. Watch it move.',
     body:
-      'A school needs no telescope and no dark sky. Students pick a star, measure how fast it crosses the sky on ' +
-      'NASA’s own images, and compare their number with the Gaia space observatory’s: for the brown dwarf Epsilon ' +
-      'Indi B the Lab finds 4.70 arcseconds a year, Gaia 4.68. It is free, it runs in a browser, and an assistant ' +
-      'explains each result in plain words.',
-    cta: { label: 'Measure a star', href: viewer.methane },
+      'Any place plays as a little film of real NASA pictures. Epsilon Indi B crossed this field in 27 years: ' +
+      '4.70 arcseconds a year measured here, 4.68 in ESA’s Gaia.',
+    cta: { label: 'Open this star', href: viewer.methane },
     image: images.survey,
   },
   {
-    id: 'research',
-    align: 'right',
-    eyebrow: 'For researchers and agencies',
-    title: 'Instruments, not screenshots',
+    id: 'light',
+    align: 'left',
+    eyebrow: 'Its light',
+    title: 'Methane. A brown dwarf.',
     body:
-      'Behind the maps is a working Lab: a motion detector, an astrometer, a spectrograph, a photometer and ' +
-      'detection limits, reading SPHEREx exposures straight from NASA’s archive for any field of the sky, on a ' +
-      'laptop: no cluster, no install. Tested ' +
-      'blind on 459 fields, the detector found 92% of known moving stars and raised no false alarm among 5,757 ' +
-      'still ones. For a mission team or a science centre, the Sky map plays the survey as it really advanced, ' +
-      'from the index of its 1.6 million public exposures, and any view can be put on another page with one line.',
-    cta: { label: 'Open the Lab', href: viewer.lab },
+      'SPHEREx splits light into 102 colours. The gap at 3.3 µm is methane: this one is a brown dwarf, 12 ' +
+      'light-years away.',
+    cta: { label: 'Open its spectrum', href: '/explore/?target=eps-indi-b&tool=spectrum' },
     image: images.bands,
   },
   {
     id: 'evidence',
-    align: 'left',
-    eyebrow: 'Our approach',
-    title: 'Verified, not just claimed',
+    align: 'right',
+    eyebrow: 'Evidence',
+    title: 'Measured, not claimed.',
     body:
-      'Sixteen years of WISE data gave 1.56 million claims of motion or change. We re-measured more than 200,000 ' +
-      'of them on raw SPHEREx exposures. About 17,600 motions pass; away from the crowded Milky Way, nearly nine ' +
-      'in ten are stars Gaia knows with the same motion. The lists that did not survive are gone, and every ' +
-      'number on the site leads back to the images behind it.',
-    cta: { label: 'See the method', href: viewer.about },
+      '17,604 motions confirmed on raw SPHEREx exposures. Tested blind, the detector found 92% of known ' +
+      'movers and raised no false alarm.',
+    cta: { label: 'How it was checked', href: '/docs/#accuracy' },
     image: images.evidence,
   },
   {
-    id: 'plan',
+    id: 'research',
     align: 'right',
-    eyebrow: 'Sustainability',
-    title: 'Free for everyone, built to last',
+    eyebrow: 'Research preview',
+    title: 'An AI scout for the whole sky.',
     body:
-      'SPHEREx cost about US$488 million of public money; Mira makes its images something the public can look ' +
-      'at. The browser reads NASA’s archive directly, so serving it costs a few dollars a month. Free and open; ' +
-      'sustained by research and education grants and by work for archives and universities that want the same ' +
-      'instruments on their own data.',
-    cta: { label: 'Read the plan', href: links.plan },
-    image: images.stats,
+      'A network looked at every patch of sky three times. Of its 400 strongest new marks, 276 are fast ' +
+      'movers in ESA’s Gaia. Meta’s V-JEPA 2, fine-tuned, gives the second opinion.',
+    cta: { label: 'How it was tested', href: '/docs/#worldmodel' },
+    image: images.starfield,
+  },
+  {
+    id: 'take-part',
+    align: 'left',
+    eyebrow: 'Take part',
+    title: 'Help look at one.',
+    body:
+      '635 confirmed movers are in no reference database. Open one, compare its three pictures, say what ' +
+      'you see. No account.',
+    cta: { label: 'Look at one', href: viewer.takePart },
+    image: images.galaxy,
+  },
+  {
+    id: 'plan',
+    align: 'left',
+    eyebrow: 'Plans',
+    title: 'Free for everyone. More for those who measure.',
+    body:
+      'Explorer is free. Researcher adds the fit, the files, lists of targets and the models. Mission runs ' +
+      'the pipeline on an agency’s own survey.',
+    cta: { label: 'See the plans', href: '/docs/#plans' },
+    image: images.hero,
   },
 ]
 
@@ -310,27 +247,29 @@ export const features: Feature[] = [
 export const stats: { image: SiteImage; items: Stat[] } = {
   image: images.stats,
   items: [
-    { value: 12329, suffix: '', label: 'Moving stars on the map, each confirmed on SPHEREx images' },
-    { value: 150000, suffix: '', label: 'Volunteers in NASA’s Backyard Worlds: the precedent we follow' },
-    { value: 635, suffix: '', label: 'Confirmed movers with no Gaia source and no SIMBAD entry, waiting for a first look' },
+    { value: 17604, suffix: '', label: 'Stars caught moving' },
+    { value: 276, suffix: '', label: 'Of the AI scout’s 400 new finds, confirmed by Gaia' },
+    { value: 635, suffix: '', label: 'Movers in no reference database' },
   ],
 }
 
 export const team: Feature = {
   id: 'team',
   align: 'left',
-  eyebrow: 'NASA Space Apps Challenge 2026',
+  eyebrow: 'Team Mohsinin Wlad Dario',
   title: 'Built for Planet X & SPHEREx',
   body:
-    'Mira is our answer to the Planet X and SPHEREx challenge: a public tool that shows SPHEREx images of any ' +
-    'place over time so that moving objects are easy to spot, two maps that make the sky and what was found in it visible to ' +
-    'everyone, and a survey of sixteen years of infrared sky checked, claim by claim, on NASA’s raw exposures.',
+    'Ben Guerir, Morocco. Mohammed Ouabdrrahmane, Ibn Zohr University · Hamza Ba-mohammed, College of Computing, ' +
+    'UM6P Rabat · Hiba Nemry, SHBM, UM6P Benguerir · Aya Driouche, UEMF · Abdelmonaim Bounite, MBZUAI.',
   cta: { label: 'View the challenge', href: links.challenge },
-  image: images.starfield,
+  image: images.motion,
 }
 
 export const footerLinks: NavLink[] = [
-  { label: 'Space (3D)', href: viewer.home },
+  { label: 'Documentation', href: '/docs/' },
+  { label: 'Film', href: '/film/mira_film_720.mp4' },
+  { label: 'Deck', href: '/deck/' },
+  { label: 'Universe (3D)', href: viewer.home },
   { label: 'Sky', href: viewer.sky },
   { label: 'The Lab', href: viewer.lab },
   { label: 'Catalogue', href: viewer.catalogue },

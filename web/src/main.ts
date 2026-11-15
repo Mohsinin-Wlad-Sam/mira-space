@@ -13,7 +13,6 @@ import { mountLightCurve } from "./lightcurve";
 import { mountTwins, sparkline } from "./twins";
 import { SkyLayer, REF_YEAR, WISE_EPOCH, type Row } from "./sky";
 import { smoothZoom, onTap } from "./controls";
-import { openingWave } from "./wave";
 import { loadSettings, saveSettings, DEFAULTS, SURVEYS, LADDER, COLORMAPS, PROJECTIONS, LOW_POWER, type Settings, type SurveyKey } from "./settings";
 
 const FLIP_IDS: Record<string, string> = { "Barnard's Star": "barnard", "Epsilon Indi B": "eps-indi-b", "WISE 0855-0714": "wise-0855", "WISE 0855−0714": "wise-0855", "RW Aurigae": "rw-aur", "R Draconis": "r-dra" };
@@ -635,10 +634,9 @@ const markNav = (v: string = view) => { document.querySelectorAll<HTMLElement>("
 /** point the telescope at a name, at coordinates, or at a ready-made target (`fallback` is used if a name cannot be resolved) */
 function observe(t: BlinkTarget | string, fallback?: BlinkTarget) { setView("blink"); if (typeof t === "string") blink.go(t, undefined, fallback); else blink.open(t); }
 
-// One site: going from one of its views to another is a short dissolve, and the Sky and the Universe open behind a
-// wave that leaves from where the visitor clicked (wave.ts). Neither plays inside a deck, a film or another site's frame.
-let shown = "", lastTap: [number, number] | null = null;
-addEventListener("pointerdown", (e) => { lastTap = [e.clientX, e.clientY]; }, { capture: true, passive: true });
+// One site: going from one of its views to another is a short dissolve. It does not play inside a deck, a film or
+// another site's frame.
+let shown = "";
 async function setView(v: View, arg?: string) {
   closeAbout();
   setBlink(false); play(false); endTour(); closePanel(); $("#drawer").classList.remove("open");
@@ -646,7 +644,6 @@ async function setView(v: View, arg?: string) {
   if (v !== "blink") blink.pause();
   view = v;
   const key = v === "universe" ? `universe-${uniMode}` : v, changed = key !== shown, plain = !!DECK || EMBED, mode = uniMode; shown = key;
-  const wave = changed && !plain && v === "universe" ? openingWave(lastTap) : null;
   const apply = () => {
     for (const k of ["universe", "blink", "cat", "log"]) document.body.classList.toggle(`v-${k}`, k === v);
     document.body.classList.toggle("m-3d", v === "universe" && mode === "3d"); document.body.classList.toggle("m-sky", v === "universe" && mode === "map");      // (the class m-map belonged to the retired atlas and is never set)
@@ -657,11 +654,11 @@ async function setView(v: View, arg?: string) {
     markNav();
   };
   const doc = document as Document & { startViewTransition?: (f: () => void) => unknown };
-  if (changed && !plain && !wave && doc.startViewTransition && !matchMedia("(prefers-reduced-motion: reduce)").matches) { let ran = false; const once = () => { if (!ran) { ran = true; apply(); } }; try { doc.startViewTransition(once); } catch { once(); } }
+  if (changed && !plain && doc.startViewTransition && !matchMedia("(prefers-reduced-motion: reduce)").matches) { let ran = false; const once = () => { if (!ran) { ran = true; apply(); } }; try { doc.startViewTransition(once); } catch { once(); } }
   else apply();
   if (v === "universe") {
-    if (uniMode === "3d") { const sp = await ensureSpace(); if (sp && view === "universe" && uniMode === "3d") { sp.pause(false); if (arg && !sp.focus(arg)) toast("Not on the map: its distance is not known yet. Open it in the Lab instead."); } requestAnimationFrame(() => requestAnimationFrame(() => wave?.go(document.querySelector<HTMLCanvasElement>("#space canvas")))); }
-    else { space?.pause(true); const first = !sky; const sk = await ensureSky(arg); if (sk && view === "universe" && uniMode === "map") { sk.pause(false); if (arg && !first) sk.focus(arg); } requestAnimationFrame(() => requestAnimationFrame(() => wave?.go(document.querySelector<HTMLCanvasElement>("#skymap canvas")))); }
+    if (uniMode === "3d") { const sp = await ensureSpace(); if (sp && view === "universe" && uniMode === "3d") { sp.pause(false); if (arg && !sp.focus(arg)) toast("Not on the map: its distance is not known yet. Open it in the Lab instead."); } }
+    else { space?.pause(true); const first = !sky; const sk = await ensureSky(arg); if (sk && view === "universe" && uniMode === "map") { sk.pause(false); if (arg && !first) sk.focus(arg); } }
   } else if (v === "blink") blink.resume();
   else if (v === "cat") { await ensureCatalogue(); }
   else { const m = await import("./logbook"); if (view === "log") m.mountLogbook($("#logpage"), { onObserve: observe, toast }); }

@@ -7,6 +7,8 @@ Mohammed Ouabdrrahmane, Hamza Ba-mohammed, Hiba Nemry, Aya Driouche, Abdelmonaim
 
 **Documentation** `/docs/` · **Seven-slide deck** `/deck/` (PDF: `media/MIRA_deck.pdf`) · **30-second film** `media/mira_film_30s.mp4` (director page `/film/`) · credits in `docs/17_credits.md`
 
+**Run it:** `cd web && npm ci && npm run dev` (Node 20+; the data pack goes in `web/public/data/`). **API:** `/api/v1` (cone search of the verified movers, SPHEREx exposures at a position, visit dates, the sky model's marks, batch cross-match; reference and console at `/docs/#api`).
+
 NASA's SPHEREx is photographing the whole sky in 102 infrared colours and every image is public, but one image is a
 65 MB scientific file made for specialists' software. **MIRA makes them something anyone can look at.**
 

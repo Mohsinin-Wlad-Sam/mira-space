@@ -10,23 +10,11 @@ import './Sections.css'
 const format = (n: number, decimals = 0) =>
   n.toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals })
 
-/** Big counts in a compact form that fits a 4-up row: 1.2 M, 183 K, 9,876. */
-function compact(n: number): Pick<Stat, 'value' | 'decimals' | 'suffix'> {
-  if (n >= 1e9) return { value: n / 1e9, decimals: 1, suffix: ' B' }
-  if (n >= 1e6) return { value: n / 1e6, decimals: 1, suffix: ' M' }
-  if (n >= 1e5) return { value: n / 1e3, decimals: 0, suffix: ' K' }
-  return { value: n, decimals: 0, suffix: '' }
-}
 
 /** Live census numbers (same as the viewer's old intro), or null to keep the static set. */
-function liveStats(s: CensusSummary | null): Stat[] | null {
-  if (!s || !s.n_det) return null
-  return [
-    { ...compact(s.n_det), label: 'WISE detections linked' },
-    { ...compact(s.n_rows), label: 'Objects measured by SPHEREx' },
-    { ...compact(s.n_reliable_motion), label: '16-year motions' },
-    { value: 100 * s.sky_fraction, suffix: '%', label: 'Of the sky processed · live' },
-  ]
+function liveStats(_s: CensusSummary | null): Stat[] | null {
+  // the figures of the first whole-sky pass are no longer shown: the verified catalogue's are (content.ts)
+  return null
 }
 
 interface CountUpProps {

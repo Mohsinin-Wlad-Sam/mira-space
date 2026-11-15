@@ -44,6 +44,32 @@ the `<iframe>` for the view on screen. The `allow="geolocation"` attribute in th
 The data under `web/public/data/` are not in git (they are produced on the cluster); `web/sync_data.sh` pulls them.
 For a deployment without cluster access, copy `web/public/data/` from a machine that has them.
 
+### Sizing on the AWS free plan
+
+| Item | Choice | Why |
+|---|---|---|
+| Instance | EC2 **t4g.small** (2 vCPU, 2 GB, Arm); t3.small if x86 is wanted | Static files and one Node process of about 40 MB. A t4g.micro (1 GB) is enough when the build is done elsewhere |
+| Disk | **30 GB** gp3 | Site 0.7 GB (0.4 without the older feeds), the system, room for the index of the next releases |
+| Network | One public IPv4 address; ports 80 and 443 open, 22 from your own address only | Caddy obtains the certificate once a domain name points at the address |
+| System | Ubuntu 24.04 (arm64), Caddy, Node 20 or newer | No database |
+| Optional | CloudFront in front | A first visit to both maps downloads about 40 MB; a cache keeps that off the instance |
+
+Cost against the credits: about US$18 a month at list prices (instance about 12, disk 2.4, the address 3.7; the
+first 100 GB a month sent out are free), so about US$110 over the plan's six months, inside the US$100 given at
+sign-up plus part of the US$100 earned by the first tasks. With a t4g.micro, about US$12 a month. The prices are
+the public us-east-1 list as we know them: check them in AWS's calculator before launching. Accounts opened after
+15 July 2025 get the credits and a plan that ends after six months or when the credits run out; t4g.small,
+t3.small, t4g.micro and t3.micro are among the instance types that plan allows
+([AWS announcement](https://aws.amazon.com/about-aws/whats-new/2025/07/aws-free-tier-credits-month-free-plan),
+[EC2 documentation](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-free-tier-usage.html)).
+
+### The data API (same process as the assistant)
+
+`deploy/assistant-proxy.mjs` also answers `/api/v1/*` (`web/server/api.mjs`): cone search of the verified catalogue,
+the SPHEREx exposures that hold a position, visit dates, the sky model's marks, a batch cross-match. It reads the
+same files the site serves: start it with `MIRA_DATA=/srv/mira/data`. `MIRA_API_KEYS` (comma-separated) makes it ask
+for a key; `MIRA_API_PER10MIN` sets the limit per address (300). Reference and a console: `/docs/#api`.
+
 ### The assistant (optional)
 
 ```bash

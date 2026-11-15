@@ -1,4 +1,4 @@
-import { footerLinks, imageCredits, unsplashHome } from "../content";
+import { footerLinks } from "../content";
 import "./Footer.css";
 
 export default function Footer() {
@@ -20,22 +20,8 @@ export default function Footer() {
       </ul>
 
       <p className="site-footer__credits">
-        Photos:{" "}
-        {imageCredits.map((c, i) => (
-          <span key={c.href}>
-            <a href={c.href} target="_blank" rel="noopener noreferrer">
-              {c.author}
-            </a>
-            {i < imageCredits.length - 1 ? ", " : ""}
-          </span>
-        ))}{" "}
-        on{" "}
-        <a href={unsplashHome} target="_blank" rel="noopener noreferrer">
-          Unsplash
-        </a>
-        . Sky images and catalogs: NASA SPHEREx DR1 and WISE/NEOWISE (unWISE), served
-        by NASA/IPAC IRSA. A NASA Space Apps Challenge 2026 project — not affiliated
-        with or endorsed by NASA.
+        Every picture on this page was recorded from MIRA itself, on NASA data: SPHEREx, 2MASS and WISE, served by
+        NASA/IPAC IRSA; ESA Gaia. A NASA Space Apps Challenge 2026 project, not affiliated with or endorsed by NASA.
       </p>
     </footer>
   );

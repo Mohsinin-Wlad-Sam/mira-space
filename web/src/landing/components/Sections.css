@@ -237,7 +237,7 @@
 
 .stat__value {
   margin: 0;
-  font-size: clamp(64px, 9vw, 120px);
+  font-size: clamp(44px, 6.2vw, 92px);
   line-height: 1;
   font-variant-numeric: tabular-nums;
 }
