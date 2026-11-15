@@ -94,12 +94,19 @@ export async function renderWorldModel(el: HTMLElement, api: Api) {
   const compass = (d: number) => ["N", "NE", "E", "SE", "S", "SW", "W", "NW"][Math.round(((d + 360) % 360) / 45) % 8];
   const vs = top.map((q, n) => { const r = match(q), g = r?.gaia && r.gaia.pmra !== null && r.gaia.pmdec !== null ? Math.hypot(r.gaia.pmra, r.gaia.pmdec) : null, lab = r?.pm && r.pm.base > 5 ? r.pm.tot : null;
     return `<tr><td><i class="wm-n">${n + 1}</i></td><td><b>${q.pm.toFixed(q.pm < 1 ? 2 : 1)}″</b> ${compass(q.dir)}</td><td>${lab !== null ? `<b>${lab.toFixed(2)}″</b>${r!.isTarget ? " · your target" : ""}` : `<span class="dim">not measured</span>`}</td><td>${g !== null ? `${g.toFixed(2)}″` : "–"}</td></tr>`; }).join("");
+  // the forecast, scored: where the model put each source for today, from the two old pictures alone, against where
+  // the Lab finds it in SPHEREx's picture. A source that stayed put would make any forecast look good, so the
+  // distance it travelled since 2010 is given beside the miss: that is what a guess of "nothing moves" gets wrong.
+  const chk = top.map((q, k) => { const r = match(q); if (!r) return ""; const [x, y] = at(q, t3), off = Math.hypot(r.x - x, r.y - y) * px, gone = q.pm * (t3 - t2);
+    return `<li><i class="wm-n">${k + 1}</i><span>The forecast for <b>${y0}</b> lands <b>${off < px ? `within one pixel (${px.toFixed(0)}″)` : `${off.toFixed(0)}″`}</b> ${off < px ? "of" : "from"} where SPHEREx found it${r.isTarget ? " (your target)" : ""}. Since 2010 it had moved <b>${gone.toFixed(0)}″</b>${gone > 2 * off && gone > 3 ? `: a guess that nothing moves would be off by that much` : ""}.</span></li>`; }).filter(Boolean).join("");
   const STEPS: [typeof which, string][] = [["a", String(Y1)], ["b", "2010"], ["p", "Forecast"], ["s", sx ? String(y0) : "Today"], ["d", "Surprise"]];
   el.innerHTML = `<p class="bk-reading"><b>Sky model</b> It was shown this field in <b>${Y1}</b> and <b>2010</b> only. ${top.length ? `It says <b class="hl">${peaks.length} source${peaks.length > 1 ? "s" : ""} moved</b> and draws where ${peaks.length > 1 ? "they are" : "it is"} later.` : "It sees nothing moving here."}</p>
     <div class="wm-steps" id="wm-steps" role="tablist">${STEPS.map(([k, t]) => `<button role="tab" data-w="${k}">${t}</button>`).join("")}</div>
     <div class="wm-big"><canvas id="wm-big"></canvas><svg id="wm-ov" viewBox="0 0 ${N} ${N}" aria-hidden="true"></svg><span class="wm-mark" id="wm-ai" hidden></span></div>
     <p class="wm-cap" id="wm-capt"></p>
     <div class="wm-f"><span class="eyebrow">Forecast year</span><input type="range" id="wm-yr" min="${y0}" max="2080" step="1" value="${year}" aria-label="Year to forecast"><output id="wm-yo">${year}</output></div>
+    <p class="wm-then" id="wm-then"></p>
+    ${chk ? `<h3 class="bk-h sec">The forecast, checked against SPHEREx</h3><ul class="wm-chk">${chk}</ul>` : ""}
     ${top.length ? `<h3 class="bk-h sec">The model against the measurement</h3><table class="bk-table wm-vs"><thead><tr><th></th><th>model reads, a year</th><th>the Lab measured</th><th>Gaia</th></tr></thead><tbody>${vs}</tbody></table>` : ""}
     <p class="bk-cap show">The model only looks at pictures; the Lab measures. Tested on ${mm.test?.n ?? "—"} real movers it never saw: ${mm.test ? `${Math.round(100 * mm.test.recall)}% found, ${mm.test.fp_per_field.toFixed(2)} false marks per field` : "—"}. Runs in your browser in ${ms.toFixed(0)} ms. <a href="/docs/#worldmodel" target="_blank" rel="noopener">How it works</a></p>`;
   const big = el.querySelector("#wm-big") as HTMLCanvasElement, ov = el.querySelector("#wm-ov") as SVGElement, ai = el.querySelector("#wm-ai") as HTMLElement, capt = el.querySelector("#wm-capt") as HTMLElement;
@@ -115,6 +122,9 @@ export async function renderWorldModel(el: HTMLElement, api: Api) {
     ov.innerHTML = top.map((q, n) => { const [xa, ya] = at(q, t1), [xb, yb] = at(q, Math.max(t3, te)), [x, y] = at(q, te);
       return `<line x1="${xa.toFixed(2)}" y1="${ya.toFixed(2)}" x2="${xb.toFixed(2)}" y2="${yb.toFixed(2)}"/><circle cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" r="${(N / 26).toFixed(2)}"/><text x="${(x + N / 20).toFixed(2)}" y="${(y - N / 28).toFixed(2)}" font-size="${(N / 17).toFixed(2)}">${n + 1}</text>`; }).join("");
     el.querySelectorAll<HTMLButtonElement>("#wm-steps button").forEach((b) => b.classList.toggle("on", b.dataset.w === which));
+    // what the year on the slider means for the first source: how far from today's place, in arcseconds and in SPHEREx pixels
+    const then = el.querySelector("#wm-then") as HTMLElement | null, q0 = top[0];
+    if (then) then.innerHTML = q0 && year > y0 ? `By <b>${year}</b> the model puts source 1 <b>${(q0.pm * (year - t3)).toFixed(0)}″</b> past where it is today: ${((q0.pm * (year - t3)) / 6.2).toFixed(1)} SPHEREx pixels. Move the slider to choose when to look again.` : q0 ? "Move the slider: the model draws the field for that year, and says how far the source will have gone." : "";
   };
   el.querySelectorAll<HTMLButtonElement>("#wm-steps button").forEach((b) => (b.onclick = () => { which = b.dataset.w as typeof which; show(); }));
   let tmr = 0; (el.querySelector("#wm-yr") as HTMLInputElement).oninput = (e) => { year = +(e.target as HTMLInputElement).value; (el.querySelector("#wm-yo") as HTMLElement).textContent = String(year); which = "p"; clearTimeout(tmr); tmr = window.setTimeout(show, 40); };

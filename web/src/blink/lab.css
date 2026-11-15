@@ -191,3 +191,7 @@
 @media (max-width: 900px) { .lx-top { padding: 12px 14px 10px; } .labx .bk-target { padding: 0; } .lx-tabs, .lx-sel { border-left: 0; padding: 0; } .lx-time { padding: 10px 14px; } .lx-trans { padding: 0; border-right: 0; } .labx .bk-strip { margin: 0; } .lx-time > .bk-rate, .lx-time > select { margin-right: 0; }
   .lx-status { padding: 8px 14px 14px; } .labx .bk-data > span, .labx .bk-data > a { padding: 0 12px 0 0; border-right: 0; } .labx .bk-data > span:first-child { padding-left: 0; } .lx-rail { border-right: 0; border-top: 1px solid var(--hl); } .lx-insp { border-left: 0; } }
 .labx a.lab-fact.ai { display: grid; grid-template-columns: minmax(0, 1fr); text-decoration: none; color: inherit; border-color: rgb(0 240 255 / .38); background: rgb(0 240 255 / .05); } .labx a.lab-fact.ai > * { display: block; } .labx a.lab-fact.ai .k { color: #7ff6ff; } .labx a.lab-fact.ai:hover { border-color: #00f0ff; }
+
+/* the sky model's forecast, scored against SPHEREx, and what the chosen year means */
+.wm-chk { margin: 0 0 14px; padding: 0; list-style: none; font-size: 13.5px; line-height: 1.5; color: var(--dim); } .wm-chk li { display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: 10px; align-items: start; padding: 9px 0; border-bottom: .8px solid rgb(240 240 250 / .12); } .wm-chk li .wm-n { margin-top: 2px; } .wm-chk b { color: var(--white); font-weight: 600; }
+.wm-then { margin: 4px 0 14px; min-height: 38px; font-size: 13.5px; line-height: 1.45; color: var(--dim); } .wm-then b { color: #ff9d4d; font-weight: 600; }
