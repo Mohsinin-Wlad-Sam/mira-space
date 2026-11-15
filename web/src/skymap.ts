@@ -62,7 +62,8 @@ export async function openSky(host: HTMLElement, o: SkyOpts): Promise<SkyHandle>
           ${hl("planets", "#ffd27a", "Planets, live", "Where the Sun, the Moon and the planets are right now")}
           ${hl("spherex", "#5be3ff", "SPHEREx, day by day", "Its survey filling the sky on the real dates, up to NASA's newest public images")}
           ${hl("story", "#f0f0fa", "27 years in 25 seconds", "Three NASA surveys of the whole sky: 1999, 2010, today")}
-          ${hl("colours", "#c58cff", "What the sky is made of", "Starlight, carbon dust, hydrogen: read off SPHEREx's 102 colours")}
+          ${hl("colours", "#c58cff", "The sky in 102 colours", "Slide through SPHEREx's wavelengths; bring out starlight, carbon dust, hydrogen")}
+          ${hl("place", "#9fe8c8", "Play any place as a film", "Click anywhere on the map, or start here with a star that moved")}
           ${hl("all", "#ff9d4d", "Stars caught moving", "<b id='skn1'>…</b> confirmed on SPHEREx images")}
           ${hl("nogaia", "#ff5d6c", "Not in Gaia", "<b id='skn2'>…</b> missing from Europe's star catalogue")}
           ${hl("open", "#7df0a6", "Help look at one", "<b id='skn3'>…</b> are in no reference database")}
@@ -572,6 +573,7 @@ export async function openSky(host: HTMLElement, o: SkyOpts): Promise<SkyHandle>
       if (open && what !== "spherex") { rail.classList.remove("shut"); fold.setAttribute("aria-expanded", "true"); }       // its panel must be in sight (on a phone the list starts folded)
       if (open && what === "planets") { st.show.planets = true; if (st.u < 2) jump(3); } if (open && what === "spherex") { whole(); playTo(2, 3); } if (!open && what === "colours") { st.wave = -1; st.layer = ""; specPin = false; } if (open && what === "colours" && !st.layer && st.wave < 0) { st.layer = "mix"; st.u = 3; loadLayer("mix"); } sync(); return true; }
     if (what === "story") { st.panel = ""; whole(); playTo(0, 3); return true; }
+    if (what === "place") { openPlace(331.09671, -56.80068, "Epsilon Indi B", "A pair of brown dwarfs 12 light-years away: 27 years of NASA pictures of this place"); return true; }
     if (what === "scout") { const open = st.panel !== "scout"; st.panel = open ? "scout" : ""; st.chip = open ? "scout" : "all"; st.wave = -1; st.layer = ""; st.playing = false; if (st.u < 2.999 || st.u > 3) { nowY = yearOf(); st.u = 3; }
       if (open) { rail.classList.remove("shut"); fold.setAttribute("aria-expanded", "true"); loadScout(o.base).then((j) => { scout = j; scoutGal = j ? j.marks.map((m) => toGal(m.ra, m.dec)) : []; subKey = ""; sync(); }); } sync(); return true; }
     if (what === "all" || what === "nogaia" || what === "open") { st.show.movers = true; st.panel = ""; st.wave = -1; if (what === "open" && st.chip === "open") { nextCase(); return true; } st.chip = what; if (st.u < 2) jump(3); sync(); if (what === "open") nextCase(); return true; }
