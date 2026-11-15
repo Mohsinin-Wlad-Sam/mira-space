@@ -306,7 +306,7 @@ export class Bodies {
       const m = pl.mesh.material as THREE.ShaderMaterial, f = iauFrame(k, jd); m.uniforms.uP.value.copy(f.P); m.uniforms.uM.value.copy(f.M); m.uniforms.uE.value.copy(f.E);
       planetPos(k, year, pl.pos); const ov = this.override?.(k); if (ov) pl.pos.copy(ov); pl.mesh.position.copy(pl.pos);
       const d = camera.position.distanceTo(pl.pos), px = PLANETS[k].rkm * KM / Math.max(d, 1e-14) * pxPerRad;
-      pl.glowDot.position.copy(pl.pos); pl.glowDot.quaternion.copy(camera.quaternion); pl.glowDot.scale.setScalar(6 / pxPerRad * d); pl.glowDot.visible = px < 2.5;
+      pl.glowDot.position.copy(pl.pos); pl.glowDot.quaternion.copy(camera.quaternion); pl.glowDot.scale.setScalar(12 / pxPerRad * d); pl.glowDot.visible = px < 2.5;
       pl.mesh.visible = px >= 0.4;
     });
     PROBES.forEach((_, k) => probePos(k, year, this.probes[k]));

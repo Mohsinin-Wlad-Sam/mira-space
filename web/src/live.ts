@@ -145,12 +145,12 @@ export class LiveLayer {
     return this.cmes.length;
   }
   /** jdShown: timeline date; nowMs: wall clock for CMEs (they are a live, present-day phenomenon) */
-  update(jdShown: number, camera: THREE.Camera, nowMs: number, show: boolean) {
+  update(jdShown: number, camera: THREE.Camera, nowMs: number, show: boolean, /** draw the passing asteroids (they crowd a view of the whole Solar System) */ rocksShown = true) {
     this.group.visible = show; if (!show || !this.dots) return;
     const pos = this.dots.geometry.getAttribute("position") as THREE.BufferAttribute, a = pos.array as Float32Array;
     this.crafts.forEach((k, i) => { const p = craftAt(k.c, jdShown); k.pos = p ? ecl2gal(p[0] * AU, p[1] * AU, p[2] * AU, k.pos ?? new THREE.Vector3()) : null; const v = k.pos ?? new THREE.Vector3(1e9, 0, 0); a.set([v.x, v.y, v.z], i * 3); });
     const off = this.crafts.length;
-    this.rocks.forEach((k, i) => { const p = rockAt(k.r, jdShown); ecl2gal(p[0] * AU, p[1] * AU, p[2] * AU, k.pos); a.set([k.pos.x, k.pos.y, k.pos.z], (off + i) * 3); });
+    this.rocks.forEach((k, i) => { const p = rockAt(k.r, jdShown); ecl2gal(p[0] * AU, p[1] * AU, p[2] * AU, k.pos); a.set(rocksShown ? [k.pos.x, k.pos.y, k.pos.z] : [1e9, 0, 0], (off + i) * 3); });
     pos.needsUpdate = true;
     // CMEs: front at 21.5 solar radii at time21_5, moving outward at the measured speed; direction in Stonyhurst coordinates (lon 0 = toward Earth)
     const earth = planetPos(2, yearOfJd(jdOf(2000 + (nowMs / 864e5 + 2440587.5 - 2451545) / 365.25)), new THREE.Vector3()).normalize();

@@ -1,4 +1,5 @@
 import "./style.css";
+import "./shell.css";
 import { load, fmt, sexa, key, loadDetail, BASE, type Summary, type Target, type Obj } from "./data";
 import { drawSpectrum } from "./spectrum";
 import { spectrumStory, lightStory } from "./explain";
@@ -6,6 +7,7 @@ import { mountBlink, type BlinkTarget } from "./blink/view";
 import { parseCoords, CHALLENGE } from "./blink/catalogs";
 import type { SpaceHandle } from "./space";
 import { setBase } from "./blink/engine";
+import { bodiesAt, seen, yearOf, zodiac } from "./ephem";
 import { mountLightCurve } from "./lightcurve";
 import { mountTwins, sparkline } from "./twins";
 import { SkyLayer, REF_YEAR, WISE_EPOCH, type Row } from "./sky";
@@ -49,23 +51,28 @@ document.body.classList.toggle("saver", set.saver);
 // ============================================================================ layout
 ui.innerHTML = `
 <header class="top">
-  <a class="logo" href="/" aria-label="Mira home">
+  <a class="logo" href="/" aria-label="MIRA: what it is and who it is for">
     <img src="/brand/mira-mark.png" width="59" height="32" alt="">
-    <span>MIRA<small>Digital research observatory</small></span></a>
-  <nav class="mainnav" aria-label="The observatory">
-    <button data-view="universe" title="Everything found, where it is: fly to a star, see it move in real pictures, help look at the unnamed ones">Map</button>
-    <button data-view="blink" title="Deep analysis: point at any field of the sky and measure it with the instruments">Lab</button>
-    <button data-view="cat" title="The data behind the map: every confirmed motion, to filter, sort and export">Catalogue</button>
-    <button data-view="log" title="Your saved measurements, lists and notes">Cases</button>
+    <span>MIRA</span></a>
+  <nav class="mainnav" aria-label="MIRA">
+    <button data-view="universe" data-m="3d" title="Space: the Sun's neighbourhood in 3D, from the planets, live, to the edge of sight">Space</button>
+    <button data-view="universe" data-m="map" title="Sky: the whole sky as a map, from 1999 to today, with the planets where they are right now">Sky</button>
+    <button data-view="blink" title="Lab: point at any place in the sky and measure it with the instruments">Lab</button>
+    <button data-view="cat" title="Catalogue: every confirmed motion, to filter, sort and export">Catalogue</button>
+    <div class="more" id="more"><button id="morebtn" aria-haspopup="true" aria-expanded="false" title="Cases, method, about">More</button>
+      <div class="more-menu" id="moremenu" hidden>
+        <button data-view="log"><b>Cases</b><small>Your saved measurements, lists and notes</small></button>
+        <button id="aboutbtn"><b>Method</b><small>How it works, how well, and the questions people ask</small></button>
+        <a href="/"><b>About MIRA</b><small>What it is and who it is for</small></a>
+      </div></div>
   </nav>
-  <form class="search" id="search" role="search"><input id="q" placeholder="Find a star, or any position in the sky" autocomplete="off" enterkeyhint="search" aria-label="Find a star by name, or give coordinates to measure that field"></form>
-  <button class="btn ghost sm" id="asstbtn" title="Ask the assistant: it reads this page and can operate the instruments">Assistant</button>
-  <button class="btn ghost sm" id="aboutbtn">Method</button>
+  <form class="search" id="search" role="search"><input id="q" placeholder="Search a planet, a star, or any place in the sky" autocomplete="off" enterkeyhint="search" aria-label="Search: a planet, a star by name, or coordinates">
+    <div class="suggest" id="suggest" hidden></div></form>
+  <button class="btn ghost sm" id="asstbtn" title="Ask the assistant: it reads this page, explains it in everyday words and can operate the map and the instruments">Ask</button>
 </header>
 <section class="catpage" id="catpage"></section>
 <aside class="asst" id="asst" hidden></aside>
 
-<div class="unimode seg" id="unimode" role="tablist" aria-label="Two maps"><button data-m="3d" title="Around the Sun in 3D: every object at its distance">Around the Sun<span> · 3D</span></button><button data-m="map" title="The whole sky as a flat map: three NASA surveys by year, SPHEREx's 102 colours, every confirmed mover"><span>The </span>whole sky</button></div>
 <section class="blinkpage" id="blinkpage"></section>
 <section class="logpage" id="logpage"></section>
 
@@ -613,7 +620,7 @@ document.body.classList.toggle("embed", EMBED);
 const blink = mountBlink($("#blinkpage"), { embed: EMBED, toast, onExplain: EMBED ? undefined : (q) => explain(q),
   onState: (p) => { if (EMBED) p.set("embed", "1"); history.replaceState(null, "", `${location.pathname}?${p.toString()}`); },
   onSave: EMBED ? undefined : (snap) => { import("./logbook").then((m) => { m.saveSnapshot(snap); toast("Saved to your cases"); }); } });
-const markNav = (v: string = view) => document.querySelectorAll<HTMLElement>(".mainnav button").forEach((b) => b.classList.toggle("on", b.dataset.view === v));
+const markNav = (v: string = view) => { document.querySelectorAll<HTMLElement>(".mainnav [data-view]").forEach((b) => b.classList.toggle("on", b.dataset.view === v && (!b.dataset.m || b.dataset.m === uniMode))); document.querySelector("#morebtn")?.classList.toggle("on", v === "log"); };
 
 /** point the telescope at a name, at coordinates, or at a ready-made target (`fallback` is used if a name cannot be resolved) */
 function observe(t: BlinkTarget | string, fallback?: BlinkTarget) { setView("blink"); if (typeof t === "string") blink.go(t, undefined, fallback); else blink.open(t); }
@@ -649,7 +656,7 @@ function ensureSky(focus?: string) {
       fetch("https://irsa.ipac.caltech.edu/data/hips/SPHEREx/spherex_allsky_cube/properties").then((r) => r.text()).then((t) => { const q = t.match(/data_cube_crval3_arr\s*=\s*([^\n]+)/); if (q) skyLam = q[1].trim().split(/\s+/).map(Number); }).catch(() => {});
       sky = await m.openSky($("#skymap"), { base: import.meta.env.BASE_URL, lowPower: set.saver || LOW_POWER, focus, onExplain: explain, toast,
         onObserve: (t) => (t.pmra !== undefined ? observe({ ...t, name: t.name ?? "Confirmed mover" } as BlinkTarget) : observe({ ra: t.ra, dec: t.dec } as BlinkTarget)),
-        on3D: (id) => showUniverse("3d", id),
+        on3D: (id) => { history.replaceState(null, "", location.pathname); showUniverse("3d", id); }, onTarget: (key) => observe(key),
         onCloser: async (ra, dec) => { const c = await import("./closer"); c.openCloser($("#closer"), ra, dec, { lam: () => skyLam, onObserve: (t) => observe({ ra: t.ra, dec: t.dec } as BlinkTarget) }); } });
     } catch (e) { console.warn("sky map unavailable", e); sky = null; }
     return sky;
@@ -906,29 +913,48 @@ function preload() {
 }
 /** what the assistant can read and operate */
 const asstCtx = () => ({ view: () => view, lab: () => blink.context(), labAct: (a: any) => blink.act(a), catalogue: async () => (await ensureCatalogue()).context(), catalogueAct: async (a: any) => (await ensureCatalogue()).act(a),
-  observe: (q: string) => observe(q), go: (v: string) => (v === "universe" ? showUniverse("3d") : setView(v as View)), method: renderAbout, map: () => (uniMode === "map" ? sky?.context() ?? null : space?.context() ?? null), mapAct: (a: any) => { if (uniMode === "map" && sky && a?.fly_to) { sky.focus(String(a.fly_to)); return `showing ${a.fly_to} on the sky map`; } return space?.act(a); } });
+  observe: (q: string) => observe(q), go: (v: string) => (v === "universe" ? showUniverse("3d") : setView(v as View)), method: renderAbout, map: () => (uniMode === "map" ? sky?.context() ?? null : space ? { ...(space.context() as object), sun_moon_planets_in_the_sky_today: bodiesAt(yearOf()).map((b) => ({ name: b.name, where_and_how_to_see_it: seen(b), constellation: zodiac(b) || undefined, magnitude: +b.mag.toFixed(1) })) } : null), mapAct: (a: any) => { if (uniMode === "map" && sky) { if (a?.fly_to) { sky.focus(String(a.fly_to)); return `showing ${a.fly_to} on the sky map`; }
+      const m = a?.take_part || a?.pick === "unnamed" ? "open" : ({ planets: "planets", spherex: "spherex", missions: "story", confirmed: "all", unknown_to_gaia: "nogaia" } as Record<string, string>)[a?.show ?? ""];
+      if (m && sky.show(m)) return m === "story" ? "playing the three NASA surveys from 1999 to today" : m === "spherex" ? "playing SPHEREx's survey as it imaged the sky" : m === "planets" ? "showing where the Sun, the Moon and the planets are" : "done"; return "nothing to do"; }
+    return space?.act(a); } });
+/** the main things, one click from the search box: [heading, [label, what to search]] */
+const SUGGEST: [string, [string, string][]][] = [
+  ["In the sky right now", [["Moon", "Moon"], ["Venus", "Venus"], ["Mars", "Mars"], ["Jupiter", "Jupiter"], ["Saturn", "Saturn"]]],
+  ["NASA's five test targets", CHALLENGE.map((t) => [t.name, t.key] as [string, string])],
+  ["Worth a look", [["Luhman 16", "Luhman 16"], ["Orion Nebula", "Orion Nebula"], ["Andromeda galaxy", "Andromeda galaxy"], ["Centre of the Milky Way", "Centre of the Milky Way"], ["Large Magellanic Cloud", "Large Magellanic Cloud"]]],
+];
+const WANDERER = /^(the )?(sun|moon|mercury|venus|mars|jupiter|saturn|uranus|neptune)$/i;
+async function searchGo(q: string) {
+  endTour();
+  if (view === "universe" && uniMode === "3d" && space && !parseCoords(q) && space.focus(q)) return;
+  if (view === "universe") { await showUniverse("map"); if (sky && !(await sky.focus(q.replace(/^the /i, "")))) toast(`Could not find "${q}"`); history.replaceState(null, "", location.pathname + "#sky"); return; }
+  if (WANDERER.test(q)) { await showUniverse("map"); sky?.focus(q.replace(/^the /i, "")); history.replaceState(null, "", location.pathname + "#sky"); return; }      // a planet belongs on the sky map
+  observe(q);
+}
 /** "Explain it to me": the assistant opens with the question already asked */
 async function explain(q: string) { const m = await import("./assistant"); m.askAssistant($("#asst"), asstCtx(), q); $("#asstbtn").classList.add("on"); }
 async function boot() {
-  document.querySelectorAll<HTMLButtonElement>(".mainnav button").forEach((b) => b.onclick = () => { const v = b.dataset.view as View;
+  const closeMore = () => { $("#moremenu").hidden = true; $("#morebtn").setAttribute("aria-expanded", "false"); };
+  document.querySelectorAll<HTMLButtonElement>(".mainnav [data-view]").forEach((b) => b.onclick = () => { const v = b.dataset.view as View, m = (b.dataset.m as UniMode | undefined) ?? uniMode; closeMore();
     // the address follows the section, so that a reload comes back to it; a field's parameters belong to the Lab only
-    history.replaceState(null, "", location.pathname + (v === "blink" ? location.search || "#lab" : v === "cat" ? "#catalogue" : v === "log" ? "#cases" : ""));
-    if (v === "universe") showUniverse(uniMode); else setView(v); });
-  document.querySelectorAll<HTMLButtonElement>("#unimode button").forEach((b) => b.onclick = () => showUniverse(b.dataset.m as UniMode));
-  $("#aboutbtn").onclick = () => ($("#about").classList.contains("open") ? closeAbout() : renderAbout());
+    history.replaceState(null, "", location.pathname + (v === "blink" ? location.search || "#lab" : v === "cat" ? "#catalogue" : v === "log" ? "#cases" : m === "map" ? "#sky" : ""));
+    if (v === "universe") showUniverse(m); else setView(v); });
+  $("#morebtn").onclick = (e) => { e.stopPropagation(); const m = $("#moremenu"); m.hidden = !m.hidden; $("#morebtn").setAttribute("aria-expanded", String(!m.hidden)); };
+  document.addEventListener("click", (e) => { if (!(e.target as HTMLElement).closest("#more")) closeMore(); });
+  $("#aboutbtn").onclick = () => { closeMore(); if ($("#about").classList.contains("open")) closeAbout(); else renderAbout(); };
   $("#asstbtn").onclick = async () => { const m = await import("./assistant"); m.toggleAssistant($("#asst"), asstCtx()); $("#asstbtn").classList.toggle("on", !$("#asst").hidden); };
   $("#pclose").onclick = closePanel;
   wireSheet();
   $("#tourbtn").onclick = async () => { await showUniverse("map"); renderStep(0); };
   $("#viewbtn").onclick = () => ($("#drawer").classList.contains("open") ? $("#drawer").classList.remove("open") : renderDrawer());
-  // one search for the whole observatory: on the sky map it flies the map there; everywhere else it points the telescope
-  $("#search").onsubmit = async (e) => {
-    e.preventDefault(); const inp = $("#q") as HTMLInputElement, q = inp.value.trim(); if (!q) return; endTour(); inp.blur();
-    // on the map a name flies there; anything the map does not hold (and any coordinates) goes to the Lab to be measured
-    if (inp) { inp.value = ""; if (view === "universe" && uniMode === "3d" && space && !parseCoords(q) && space.focus(q)) return;
-      if (view === "universe" && uniMode === "map" && sky) { if (!(await sky.focus(q))) toast(`Could not find "${q}"`); return; }
-      observe(q); return; }
-  };
+  // one search for everything: a planet goes to the Sky, a star flies the map it is on, and anything the maps do
+  // not hold (and any coordinates typed in the Lab) is shown as a place or measured
+  $("#search").onsubmit = (e) => { e.preventDefault(); const inp = $("#q") as HTMLInputElement, q = inp.value.trim(); if (!q) return; inp.value = ""; inp.blur(); searchGo(q); };
+  const sug = $("#suggest"), inp = $("#q") as HTMLInputElement;
+  sug.innerHTML = SUGGEST.map(([t, items]) => `<div class="sg-h">${t}</div><div class="sg-row">${items.map(([n, q]) => `<button type="button" data-q="${esc(q)}">${esc(n)}</button>`).join("")}</div>`).join("");
+  sug.querySelectorAll<HTMLButtonElement>("button").forEach((b) => (b.onmousedown = (e) => { e.preventDefault(); sug.hidden = true; inp.blur(); searchGo(b.dataset.q!); }));
+  inp.onfocus = () => { sug.hidden = !!inp.value; }; inp.oninput = () => { sug.hidden = !!inp.value; }; inp.onblur = () => setTimeout(() => (sug.hidden = true), 120);
+  inp.onkeydown = (e) => { if (e.key === "Escape") { sug.hidden = true; inp.blur(); } };
   const h = hashParams();
   if (EMBED || query.has("ra") || query.has("target") || query.has("name")) { await setView("blink"); blink.openFromParams(query); }
   else if (h.get("ra") && h.has("inspect")) observe({ ra: +h.get("ra")!, dec: +h.get("dec")! });

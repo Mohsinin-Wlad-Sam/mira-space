@@ -13,7 +13,7 @@ const SUGGEST: Record<string, string[]> = {
   blink: ["What moved in this field?", "Explain the selected source in plain words", "Is this object already known?", "Open Luhman 16 and tell me how fast it moves"],
   cat: ["Show confirmed movers with no Gaia motion", "Which objects have a methane dip?", "What does the diagram tell me?", "Open the fastest red object in the Lab"],
   log: ["What can I do with my saved cases?", "Open Epsilon Indi B in the Lab"],
-  universe: ["What am I looking at?", "Show me a brown dwarf that is not in Gaia", "Help me look at one that is in no reference database", "Fly to Barnard's Star"],
+  universe: ["What am I looking at?", "Which planets can I see tonight?", "Show me a brown dwarf that is not in Gaia", "Help me look at one that is in no reference database"],
 };
 const DOING: Record<string, string> = { open_field: "Pointing the Lab and reading NASA's exposures", lab_control: "Operating the Lab", catalogue_query: "Querying the catalogue", map_control: "Flying the map", navigate: "Changing section", get_page: "Reading the page" };
 

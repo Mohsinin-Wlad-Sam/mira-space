@@ -156,20 +156,20 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<Spa
     <div class="sp-intro" id="spintro" hidden>
       <button class="icon-btn" id="spintrox" aria-label="Hide this introduction">✕</button>
       <b>The sky is not still.</b>
-      <p>This is a model of the space around the Sun: every point is a real star, placed at its measured or estimated distance. The orange ones were caught moving between pictures taken years apart, and each was confirmed on the images of NASA's newest sky survey, SPHEREx. A few hundred of them are in no optical star catalogue.</p>
-      <div><button class="btn sm solid" id="spintro1">Show me one</button><button class="btn sm ghost" id="spintro2">Two-minute tour</button><button class="btn sm ghost" id="spintro3">Help look at one that is in no reference database</button></div>
+      <p>Every point is a real star at its distance from the Sun. The planets move in days; the orange stars were caught moving over years, each confirmed on the images of NASA's newest sky survey, SPHEREx.</p>
+      <div><button class="btn sm solid" id="spintro1">Show me a star that moved</button><button class="btn sm ghost" id="spintro4">Planets, live</button><button class="btn sm ghost" id="spintro3">Help look at one</button><button id="spintro2" hidden></button></div>
     </div>
-    <aside class="sp-ctl" id="spctl">
-      <div class="sp-find" id="spfind">
-        <div class="eyebrow">Caught moving · confirmed on NASA's SPHEREx images</div>
-        <button class="sp-findbtn" data-f="all" title="Show only the objects whose motion was confirmed, coloured by what they are"><b id="spfn1">…</b><span>stars and brown dwarfs on this map</span></button>
-        <button class="sp-findbtn" data-f="nogaia" title="Confirmed movers that Gaia, Europe's optical star catalogue, does not list with this motion. Missing from Gaia can mean very cold, very faint, or simply missed"><b id="spfn2">…</b><span>of them not in Gaia, Europe's optical star catalogue</span></button>
-        <button class="sp-findbtn hl" data-f="help" title="Confirmed movers that are in the WISE catalogues but have no entry in SIMBAD (the database of objects in the astronomical literature) and no Gaia source. Fly to one, compare its pictures and say what you see"><b id="spfn3">…</b><span>not in SIMBAD, astronomy's reference database · help look at one</span></button>
-        <div class="sp-key" aria-label="What the colours mean"><span><i style="background:#ff9d4d"></i>caught moving</span><span><i style="background:#ff5d6c"></i>not in Gaia</span><span><i style="background:#e58cff"></i>cold and red</span><span><i style="background:#6a7080"></i>other stars</span><span class="w">rings: distance from the Sun · drag to turn, scroll to zoom</span></div>
-      </div>
-      <div class="eyebrow">Zoom out from home</div><div class="sp-dest" id="spdest"></div>
-      <div class="sp-row2"><button class="btn sm" id="sptour">▶ Guided tour</button><button class="btn sm ghost" id="spfree" title="Free flight (F)">Free flight</button></div>
-      <form id="spsearch" class="sp-search"><input id="spq" list="spnames" placeholder="Fly to: Saturn, Sirius, Voyager 1…" autocomplete="off"><datalist id="spnames"></datalist></form>
+    <aside class="mx-rail sp-ctl" id="spctl" aria-label="Highlights of the 3D map">
+      <button class="mx-fold" id="spfold" title="Hide or show the highlights" aria-expanded="true">Highlights</button>
+      <div class="mx-body">
+        <div class="mx-list" id="spfind">
+          <button class="mx-hl" id="spplanets" title="Fly home: the planets on their real orbits for today's date, moving"><i style="--c:#ffd27a"></i><span><b>Planets, live</b><small>The Solar System today, moving on its real orbits</small></span></button>
+          <button class="mx-hl" data-f="all" title="Show only the objects whose motion was confirmed, coloured by what they are"><i style="--c:#ff9d4d"></i><span><b>Stars caught moving</b><small><b id="spfn1">…</b> confirmed on SPHEREx images</small></span></button>
+          <button class="mx-hl" data-f="nogaia" title="Confirmed movers that Gaia, Europe's optical star catalogue, does not list with this motion. Missing from Gaia can mean very cold, very faint, or simply missed"><i style="--c:#ff5d6c"></i><span><b>Not in Gaia</b><small><b id="spfn2">…</b> missing from Europe's star catalogue</small></span></button>
+          <button class="mx-hl" data-f="help" title="Confirmed movers that are in the WISE catalogues but have no entry in SIMBAD (the database of objects in the astronomical literature) and no Gaia source. Fly to one, compare its pictures and say what you see"><i style="--c:#7df0a6"></i><span><b>Help look at one</b><small><b id="spfn3">…</b> are in no reference database</small></span></button>
+          <button class="mx-hl" id="sptour" title="A narrated flight from the planets to the edge of sight"><i style="--c:#f0f0fa"></i><span><b id="sptourt">Guided tour</b><small>From home to the edge of sight in two minutes</small></span></button>
+        </div>
+        <form id="spsearch" class="sp-search"><input id="spq" list="spnames" placeholder="Fly to: Saturn, Sirius, Voyager 1…" autocomplete="off"><datalist id="spnames"></datalist></form>
       <details class="sp-fold" id="splive"><summary><span class="dotlive"></span>Live from NASA</summary><div id="splivebody" class="mono">loading…</div></details>
       <details class="sp-fold"><summary>More places</summary><div class="sp-dest" id="spdest2"></div></details>
       <details class="sp-fold"><summary>Display</summary>
@@ -185,22 +185,26 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<Spa
         <label class="row"><span>Backdrop</span><select id="spbg"><option value="spherex">SPHEREx (NASA, 2025–26)</option><option value="2mass">Near-IR (2MASS, ~1999)</option><option value="wise">Mid-IR (WISE, 2010)</option><option value="dss">Visible (DSS)</option><option value="none">None</option></select></label>
         <div class="sp-legend" id="splegend"></div>
       </details>
-      <button id="splab" hidden></button>
+        <div class="sp-key" aria-label="What the colours mean"><span><i style="background:#ff9d4d"></i>caught moving</span><span><i style="background:#ff5d6c"></i>not in Gaia</span><span><i style="background:#e58cff"></i>cold and red</span><span><i style="background:#6a7080"></i>other stars</span></div>
+        <div class="mx-chips"><button id="spfree" title="Fly freely with the keyboard or the on-screen arrows (F)">Free flight</button></div>
+        <button id="splab" hidden></button>
+      </div>
     </aside>
-    <div class="sp-time">
-      <button class="btn sm play" id="spplay">▶</button>
-      <div class="yearbox"><b id="spyear">AD 2026</b><small id="spyl">now · SPHEREx epoch</small></div>
-      <div class="tslide"><input type="range" id="spslider" min="${-T_RANGE}" max="${T_RANGE}" step="1" value="0">
-        <div class="sp-ticks"><span>−250 kyr</span><span>now</span><span>+250 kyr</span></div></div>
-      <select id="spspeed"><option value="0.0027">1 day/s</option><option value="0.0833">1 month/s</option><option value="1">1 yr/s</option><option value="100">100 yr/s</option><option value="1000" selected>1,000 yr/s</option><option value="5000">5,000 yr/s</option><option value="20000">20,000 yr/s</option></select>
-      <button class="btn sm ghost" id="spnow">Now</button>
+    <nav class="sp-ladder" id="spdest" aria-label="Scale: from Earth to the edge of sight"></nav>
+    <div class="mx-dock sp-time" id="sptime">
+      <button class="mx-play" id="spplay" aria-label="Let time run" title="Let time run">▶</button>
+      <div class="mx-date yearbox"><b id="spyear">AD 2026</b><small id="spyl">now · SPHEREx epoch</small></div>
+      <div class="mx-track tslide"><input type="range" id="spslider" min="${-T_RANGE}" max="${T_RANGE}" step="1" value="0" aria-label="Time, before and after today">
+        <div class="mx-ticks sp-ticks" id="spticks"><span>−250 kyr</span><span>now</span><span>+250 kyr</span></div></div>
+      <select id="spspeed" class="mx-speed" aria-label="How fast time runs"></select>
+      <button class="mx-live on" id="spnow" title="Back to today: everything where it is right now"><i></i>Live</button>
     </div>
     <div class="sp-info" id="spinfo"></div>
     <div class="sp-cap" id="spcap"></div>
     <div class="sp-tip" id="sptip"></div>
     <div class="sp-flyhud" id="spflyhud"><b>FREE FLIGHT</b><span id="spflyspd"></span><small>drag to look · W/S or ▲▼ forward/back · A/D Q/E sideways · scroll = speed · Shift = boost · F or Esc to land</small>
       <div class="flybtns"><button data-k="w">▲</button><button data-k="s">▼</button></div></div>
-    <div class="sp-hint" id="sphint">Drag to orbit · scroll or pinch to zoom · click to select, double-click to fly · W A S D / Q E to cruise</div>
+    <div class="sp-hint" id="sphint">Drag to turn · scroll or pinch to zoom · click a point to open it</div>
     <div class="sp-scale mono" id="spscale"></div>`;
   const $ = (s: string) => host.querySelector(s) as HTMLElement;
   host.classList.add("open");
@@ -465,8 +469,10 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<Spa
     if (ver) for (let i = 0; i < c.n; i++) { const k = vi[i]; if (k >= 0 && ver.known[k] === 0 && ver.pm[k] > 1 && ver.simbad[k]) pool.push(i); }
     const i = pool.length ? pool[Math.floor(Math.random() * pool.length)] : byId("6275-47643"); if (i >= 0) flyToStar(i); };
   $("#spintro2").onclick = () => { hideIntro(); $("#sptour").click(); };
+  $("#spintro4").onclick = () => { hideIntro(); $("#spplanets").click(); };
+  { const rail = $("#spctl"), fold = $("#spfold"); if (innerWidth < 760) rail.classList.add("shut"); fold.onclick = () => { rail.classList.toggle("shut"); fold.setAttribute("aria-expanded", String(!rail.classList.contains("shut"))); }; }
   $("#spintro3").onclick = () => { hideIntro(); (host.querySelector('#spfind [data-f="help"]') as HTMLElement).click(); };
-  host.querySelectorAll<HTMLButtonElement>("#spfind .sp-findbtn").forEach((b) => (b.onclick = () => {
+  host.querySelectorAll<HTMLButtonElement>("#spfind [data-f]").forEach((b) => (b.onclick = () => {
     const f = b.dataset.f;
     if (f === "help") { const v = votes(), all: [boolean, number][] = [...todo.map((i) => [true, i] as [boolean, number]), ...todoOff.map((k) => [false, k] as [boolean, number])];
       const idOf = ([on, q]: [boolean, number]) => (on ? `${cat!.tile[q]}-${cat!.obj[q]}` : ver!.id[q]), left = all.filter((q) => !v[idOf(q)]), from = left.length ? left : all; if (!from.length) return;
@@ -496,20 +502,37 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<Spa
   ($("#spunc") as HTMLInputElement).onchange = () => buildUnc();
   ($("#spbg") as HTMLSelectElement).onchange = (e) => setBackdrop((e.target as HTMLSelectElement).value);
 
-  // time
-  const slider = $("#spslider") as HTMLInputElement;
+  // time: among the planets it runs in days, among the stars in millennia
+  const slider = $("#spslider") as HTMLInputElement, speedSel = $("#spspeed") as HTMLSelectElement;
+  const REGIME = { solar: { range: 5, step: 0.002, def: 10 / 365.25, speeds: [[1 / 31557600, "real time"], [1 / 365.25, "1 day/s"], [10 / 365.25, "10 days/s"], [1 / 12, "1 month/s"], [1, "1 yr/s"]] as [number, string][], ticks: ["−5 yr", "today", "+5 yr"] },
+    stars: { range: T_RANGE, step: 1, def: 1000, speeds: [[1, "1 yr/s"], [100, "100 yr/s"], [1000, "1,000 yr/s"], [5000, "5,000 yr/s"], [20000, "20,000 yr/s"]] as [number, string][], ticks: ["−250 kyr", "now", "+250 kyr"] } };
+  let regime: keyof typeof REGIME = "stars";
+  const tRange = () => REGIME[regime].range, MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  function setRegime(r: keyof typeof REGIME, force = false) {
+    if (r === regime && !force) return; regime = r; const R = REGIME[r];
+    slider.min = String(-R.range); slider.max = String(R.range); slider.step = String(R.step);
+    speedSel.innerHTML = R.speeds.map(([v, t]) => `<option value="${v}"${v === R.def ? " selected" : ""}>${t}</option>`).join(""); S.speed = R.def;
+    host.querySelectorAll("#spticks span").forEach((e, k) => (e.textContent = R.ticks[k]));
+    $("#spplanets").classList.toggle("on", r === "solar");
+    if (r === "stars") play(false);                          // millennia per second must not start by surprise
+    setTime(Math.abs(S.time) > R.range ? 0 : S.time);
+  }
   function setTime(t: number, fromSlider = false) {
-    S.time = Math.max(-T_RANGE, Math.min(T_RANGE, t)); mat.uniforms.uTime.value = S.time + DT0; uncMat.uniforms.uTime.value = S.time + DT0; figMat.uniforms.uTime.value = S.time + DT0;
-    $("#spyear").textContent = Math.abs(S.time) < 2 ? new Date(Date.now() + S.time * 365.25 * 864e5).toISOString().slice(0, 10) : fmtYear(NOW_Y + S.time);
-    $("#spyl").textContent = Math.abs(S.time) < 1 / 365 ? "today · live" : Math.abs(S.time) < 2 ? `${S.time > 0 ? "+" : "−"}${Math.round(Math.abs(S.time) * 365.25)} days` : `${S.time > 0 ? "+" : "−"}${Math.abs(Math.round(S.time)).toLocaleString()} yr · straight-line motion`;
+    S.time = Math.max(-tRange(), Math.min(tRange(), t)); mat.uniforms.uTime.value = S.time + DT0; uncMat.uniforms.uTime.value = S.time + DT0; figMat.uniforms.uTime.value = S.time + DT0;
+    const a = Math.abs(S.time), near = a < 6, live = a < 1 / 365, sign = S.time > 0 ? "+" : "−", d = new Date(Date.now() + S.time * 365.25 * 864e5);
+    $("#spyear").textContent = near ? `${d.getUTCDate()} ${MON[d.getUTCMonth()]} ${d.getUTCFullYear()}` : fmtYear(NOW_Y + S.time);
+    $("#spyl").textContent = live ? "today · live" : a < 0.25 ? `${sign}${Math.round(a * 365.25)} days` : near ? `${sign}${a.toFixed(1)} years` : `${sign}${Math.round(a).toLocaleString()} yr · straight-line motion`;
+    $("#spnow").classList.toggle("on", live);
     if (!fromSlider) slider.value = String(S.time);
     if (S.sel >= 0) info(S.sel);
   }
   slider.oninput = () => { play(false); setTime(+slider.value, true); };
-  ($("#spspeed") as HTMLSelectElement).onchange = (e) => { S.speed = +(e.target as HTMLSelectElement).value; };
+  speedSel.onchange = () => { S.speed = +speedSel.value; };
   $("#spnow").onclick = () => { play(false); tweenTime(0, 1200); };
-  function play(on: boolean) { S.playing = on; $("#spplay").textContent = on ? "❚❚" : "▶"; $("#spplay").classList.toggle("on", on); if (on && S.time >= T_RANGE - 1) setTime(-T_RANGE); }
+  function play(on: boolean) { S.playing = on; $("#spplay").textContent = on ? "❚❚" : "▶"; $("#spplay").classList.toggle("on", on); if (on && S.time >= tRange() * 0.999) setTime(regime === "solar" ? 0 : -tRange()); }
   $("#spplay").onclick = () => play(!S.playing);
+  setRegime("stars", true);
+  { const h = $("#sphint"), flash = () => { h.classList.remove("show"); void h.offsetWidth; h.classList.add("show"); }; new MutationObserver(flash).observe(h, { childList: true, characterData: true, subtree: true }); flash(); }
   function tweenTime(to: number, ms: number) {
     const from = S.time, t0 = performance.now();
     const step = (now: number) => { const f = Math.min(1, (now - t0) / ms), e = f < 0.5 ? 2 * f * f : 1 - Math.pow(-2 * f + 2, 2) / 2; setTime(from + (to - from) * e); if (f < 1) requestAnimationFrame(step); };
@@ -772,7 +795,16 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<Spa
     "<b>As far as we can see.</b> Not the edge of the universe: the edge of sight. Light from beyond this shell has not had time to reach us, and every observer sits at the centre of a shell like it. The pattern is the cosmic microwave background (ESA Planck); the rings mark when the light set out.",
   ];
   let capTok = 0;
-  $("#spdest").innerHTML = dests.map(([n], k) => `<button class="rungx" data-k="${k}"><i></i>${n}</button>`).join("");
+  // the Solar System, live: home seen from above, with time running at ten days a second
+  const ECL_VIEW = new THREE.Vector3(-0.0633, 0.5659, 1.0177).normalize();
+  function planetsLive() {
+    const my = ++capTok; stopTour(); hideIntro(); S.sel = -1; S.body = null; info(-1); play(false); setTime(0); flyTo(new THREE.Vector3(0, 0, 0), 14 * AU, -1, 3200, ECL_VIEW);
+    cap("<b>The Solar System, live.</b> Every planet is where JPL's ephemeris puts it today. Time now runs at ten days a second: watch them go round, then press Live to come back to today.");
+    setTimeout(() => { if (my !== capTok) return; setRegime("solar"); play(true); }, 3400); setTimeout(() => { if (my === capTok) cap(""); }, 15000);
+  }
+  $("#spplanets").onclick = planetsLive;
+  const RUNGS = ["Earth", "Solar System", "Nearest stars", "Milky Way", "Galaxies", "Cosmic web", "Edge of sight"];
+  $("#spdest").innerHTML = dests.map(([n], k) => `<button class="rungx" data-k="${k}" title="${n}"><i></i>${RUNGS[k] ?? n}</button>`).join("");
   host.querySelectorAll<HTMLButtonElement>("#spdest button").forEach((b) => b.onclick = () => { const k = +b.dataset.k!, my = ++capTok; stopTour(); dests[k][1](); cap(RUNG_CAPS[k]); setTimeout(() => { if (my === capTok) cap(""); }, 14000); });
   $("#spdest2").innerHTML = dests2.map(([n], k) => `<button class="btn sm ghost" data-k="${k}">${n}</button>`).join("");
   host.querySelectorAll<HTMLButtonElement>("#spdest2 button").forEach((b) => b.onclick = () => dests2[+b.dataset.k!][1]());
@@ -785,7 +817,7 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<Spa
   const showOnly = (bits: number[] | null) => host.querySelectorAll<HTMLButtonElement>("#spshow .chip").forEach((el) => {
     const b = +el.dataset.b!; const on = !bits || bits.includes(b) || (b >= 100 && !bits.some((x) => x >= 100)); if (on !== S.show.has(b)) el.click(); });
   async function tour() {
-    const id = ++tourId; $("#sptour").textContent = "■ Stop tour"; play(false); setTime(0);
+    const id = ++tourId; $("#sptourt").textContent = "■ Stop the tour"; play(false); setTime(0);
     const steps: [string, () => void, number][] = [
       ["<b>Home.</b> The eight planets on their real orbits for this date. Voyager 1, our most distant probe, has only just left them behind.", () => { S.sel = -1; S.body = null; info(-1); flyTo(new THREE.Vector3(0, 0, 0), 45 * AU, -1, 3500); }, 7500],
       ["<b>The Sun's neighbourhood.</b> Every point is a real star or brown dwarf at its measured distance, coloured by temperature and as bright as it would look from where you are.", () => { S.sel = -1; info(-1); flyTo(new THREE.Vector3(0, 0, 0), 25, -1, 3500); }, 7000],
@@ -800,9 +832,9 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<Spa
     for (const [txt, act, ms] of steps) { if (id !== tourId) return; cap(txt); act(); if (!(await wait(ms, id))) return; }
     stopTour();
   }
-  function stopTour() { tourId++; cap(""); $("#sptour").textContent = "▶ Guided tour"; setExp(0); }
+  function stopTour() { tourId++; cap(""); $("#sptourt").textContent = "Guided tour"; setExp(0); }
   function setExp(v: number) { S.exp = v; ($("#spexp") as HTMLInputElement).value = String(v); }
-  $("#sptour").onclick = () => (/Stop/.test($("#sptour").textContent ?? "") ? stopTour() : tour());
+  $("#sptour").onclick = () => (/Stop/.test($("#sptourt").textContent ?? "") ? stopTour() : tour());
 
   // ---------------------------------------------------------------- lab
   $("#splab").onclick = () => { stopTour(); opts.onLab?.(); };
@@ -930,7 +962,7 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<Spa
   const covered = (x: number, y: number) => panels.some((r) => x + 130 >= r.left && x <= r.right + 4 && y >= r.top - 8 && y <= r.bottom + 8);   // label runs ~130 px right of its star
   function labels() {
     const hr = host.getBoundingClientRect();
-    panels = [...host.querySelectorAll<HTMLElement>(".sp-ctl, .sp-info.open, .sp-time, .sp-head")].map((e) => { const r = e.getBoundingClientRect(); return new DOMRect(r.left - hr.left, r.top - hr.top, r.width, r.height); });
+    panels = [...host.querySelectorAll<HTMLElement>(".mx-rail, .sp-info.open, .mx-dock, .sp-ladder, .sp-cap.on")].map((e) => { const r = e.getBoundingClientRect(); return new DOMRect(r.left - hr.left, r.top - hr.top, r.width, r.height); });
     const cand: { key: string; txt: string; x: number; y: number; score: number; dim?: boolean }[] = [];
     const magA = geom.getAttribute("mag").array as Float32Array, lim = mat.uniforms.uLim.value, W = canvas.clientWidth, Hh = canvas.clientHeight;
     const vis = geom.getAttribute("vis").array as Float32Array;
@@ -939,6 +971,7 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<Spa
       if (!vis[i] && i !== S.sel) return;
       const p = cur(i, new THREE.Vector3()); const r = p.distanceTo(camera.position); const m = magA[i] + 5 * Math.log10(Math.max(r, 1e-9)) - 5;
       const isSel = i === S.sel || i === S.hover;
+      if (!isSel && regime === "solar") return;                                 // among the planets, the names of far-away stars would read as planets
       if (!isSel && m > lim - (named ? 0.5 : 3.5)) return;                      // only reasonably bright objects get names
       const txt = labelText(i); if (!isSel && /^(Gaia DR3|HIP) /.test(txt)) return;      // catalogue numbers only on demand
       if (!named && !isSel && (/^(Star|Fast mover|Giant star) /.test(txt) || ++nCensus > 6)) return;   // census ids: only the interesting few
@@ -999,7 +1032,7 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<Spa
   function loop(now: number) {
     raf = requestAnimationFrame(loop);
     const dt = Math.min(0.1, (now - last) / 1000); last = now;
-    if (S.playing) { let t = S.time + S.speed * dt; if (t >= T_RANGE) { t = T_RANGE; play(false); } setTime(t); }
+    if (S.playing) { let t = S.time + S.speed * dt; if (t >= tRange()) { t = tRange(); play(false); } setTime(t); }
     if (fly) {
       const f = Math.min(1, (now - fly.t0) / fly.dur), e = f < 0.5 ? 4 * f * f * f : 1 - Math.pow(-2 * f + 2, 3) / 2;
       const T1 = fly.follow ? fly.follow() : fly.T1;
@@ -1036,7 +1069,7 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<Spa
     bodies.update(NOW_Y + S.time, camera, pxPerRad, now / 1000, dist);
     gcLine.visible = dist > 0.02;
     setFadeView(dist);
-    liveL.update(jdOf(NOW_Y + S.time), camera, Date.now() + S.time * 365.25 * 864e5, S.show.has(300) && camera.position.length() < 0.2);
+    liveL.update(jdOf(NOW_Y + S.time), camera, Date.now() + S.time * 365.25 * 864e5, S.show.has(300) && camera.position.length() < 0.2, dist < 2.5 * AU);
     exo.setScale(Math.max(dist, 0.5));
     if (exo.sysHost >= 0) { const k = exo.sysHost, h = exo.hosts[k]; exo.update(NOW_Y + S.time, exo.star[k] >= 0 ? cur(exo.star[k]) : new THREE.Vector3(h[1], h[2], h[3]), camera, pxPerRad); }
     if ((frame % 12) === 0) scanNear();
@@ -1067,8 +1100,8 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<Spa
     renderer.render(scene, camera); drawLeader();
     if ((frame++ & 1) === 0) labels();
     if ((frame & 15) === 0) { const nm = uni.scaleName(Math.max(camera.position.length(), dist)), rung = nm === "Solar System" ? (dist < 2e-9 ? 0 : 1) : nm === "Around the Sun" || nm === "Stellar neighbourhood" ? 2 : nm === "Milky Way" ? 3 : nm === "Local Group" ? 4 : nm === "Cosmic web" ? 5 : 6;
-      host.querySelectorAll("#spdest .rungx").forEach((b, k) => b.classList.toggle("on", k === rung)); }
-    if ((frame & 15) === 0) $("#spscale").innerHTML = `<b>${uni.scaleName(Math.max(camera.position.length(), dist))}</b> · view ≈ ${fmtSpan(2 * dist * Math.tan(camera.fov * Math.PI / 360))} across · camera ${fmtSpan(camera.position.length())} from the Sun`;
+      host.querySelectorAll("#spdest .rungx").forEach((b, k) => b.classList.toggle("on", k === rung)); setRegime(nm === "Solar System" ? "solar" : "stars"); }
+    if ((frame & 15) === 0) $("#spscale").textContent = `view ≈ ${fmtSpan(2 * dist * Math.tan(camera.fov * Math.PI / 360))} across`;
   }
   raf = requestAnimationFrame(loop);
   setTime(0);
@@ -1104,6 +1137,7 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<Spa
   };
   handle.act = (a) => {
     const click = (f: string) => (host.querySelector(`#spfind [data-f="${f}"]`) as HTMLElement | null)?.click();
+    if (a.show === "planets") { planetsLive(); return "flying home: the Solar System as it is today, with time running at ten days a second"; }
     if (a.show === "confirmed") click("all"); else if (a.show === "unknown_to_gaia") click("nogaia"); else if (a.show === "everything") showOnly(null);
     if (a.take_part || a.pick === "unnamed") { click("help"); return "flying to a confirmed mover nobody has named"; }
     if (a.pick === "cold_world") { ($("#spintro1") as HTMLElement).click(); return "flying to a known brown dwarf that is not listed in the Gaia optical catalogue"; }
