@@ -18,7 +18,7 @@ Deadline: Sunday 15 November 2026, 23:59 in the local event's time (Morocco). Ch
 
 | File | What | Use |
 |---|---|---|
-| `media/mira_film_30s.mp4` | The film, fourth cut: 1920x1080, 60 pictures a second, **29.0 s** (the limit is 30), 21 MB. The 3840x2160 master (`mira_film_4k60.mp4`, 72 MB) is in the repository's release | The demo link (upload it; YouTube takes the 4K master too) |
+| `media/mira_film_30s.mp4` | The film, fifth cut: 1920x1080, 60 pictures a second, **29.0 s** (the limit is 30). The 3840x2160 master (`mira_film_4k60.mp4`) is in the repository's release | The demo link (upload it; YouTube takes the 4K master too) |
 | `media/mira_film_30s_small.mp4` | The same at 720p, 30 pictures a second | When the upload is slow |
 | `media/submission/mira_film_subtitles.srt` | The film's words as a subtitle file (they are also on the picture) | YouTube: Subtitles → Upload file |
 | `media/submission/cover_1920x1080.jpg` | Title with the team's names | Project image |
@@ -31,18 +31,13 @@ Deadline: Sunday 15 November 2026, 23:59 in the local event's time (Morocco). Ch
 
 MIRA — The sky is not still
 
-**High-level summary**
+**High-level summary** (150 words)
 
-NASA's SPHEREx photographs the whole sky every six months in 102 colours of infrared light. The images are public,
-but each is a 65-megabyte scientific file made for specialists. MIRA makes them something anyone can use in a
-browser. Point at any place in the sky and it plays 27 years of NASA pictures of that place as a little film (2MASS
-in 1999, WISE in 2010, then every SPHEREx visit), so that what moved is easy to spot. The Lab then measures it: how
-fast it moves, what its light says it is, whether its brightness changed, each with its error and checked against
-ESA's Gaia. A Sky map puts the whole survey on one time bar, with tonight's planets. Behind it are a catalogue of
-17,604 moving stars, each re-measured on raw SPHEREx exposures; an AI scout that searched the whole sky, of whose
-400 strongest new finds 393 are fast-moving stars that Gaia or SIMBAD already list; a second model that estimates
-the distance and temperature of 387 movers Gaia cannot see; a data API; and full documentation. NASA's five test targets
-open at once. No install, no account.
+MIRA is a public web observatory built on NASA's SPHEREx. Point anywhere in the sky and it plays 27 years of NASA pictures of it as a film, so whatever moved is plain to see.
+
+The Sky map carries the whole survey on one time bar, in SPHEREx's 102 infrared colours, with tonight's planets. The Space map is a 3D model of the Sun's neighbourhood. The Lab is an experimental workbench in the browser: motion detector, astrometer, spectrograph, photometer, detection limits and exports, all on NASA's raw exposures.
+
+AI runs through it: world models that compare pictures years apart, mark what moved and simulate where it goes next; a scout network that searched the whole sky; Meta's V-JEPA 2 as a second opinion; estimates of each object's kind and distance; an assistant that operates the instruments. A catalogue of 17,604 confirmed moving stars, an open API and documentation complete it.
 
 **Link to project demo**
 
@@ -116,9 +111,9 @@ Yes. AI coding assistants (Claude Code; Codex and Antigravity as reviewers) wrot
 text and layout under the team's direction; every use is logged in `docs/07_si_usage_log.md` with what was checked
 afterwards. A language model (K2 Horizon) runs the in-product assistant: it explains and operates the page and is
 restricted to numbers the instruments computed. A small network trained by the team draws forecast pictures of a
-field: these are AI-generated and carry a visible "AI-generated · prediction" label in the Lab. The film shows no
-AI-generated picture: its opening is drawn by the film's own code from ESA Gaia star positions, and the rest is
-recorded from the running site on NASA data. Two more networks
+field: these are AI-generated and carry a visible "AI-generated · prediction" label in the Lab. The film's opening
+(6.5 seconds) is an artist's rendering computed by a program written with an AI coding assistant; it is marked on
+screen as computer-generated with AI assistance. The rest of the film is recorded from the running site on NASA data. Two more networks
 only point at places (a whole-sky scout trained by the team, and Meta's V-JEPA 2, fine-tuned): their marks are
 checked against ESA's Gaia catalogue and shown as what they are. The idea, the scientific choices and the
 validation are the team's. No NASA logo or mission identifier is used.
