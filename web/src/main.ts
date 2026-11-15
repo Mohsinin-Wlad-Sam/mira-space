@@ -3,7 +3,7 @@ import { load, fmt, sexa, key, loadDetail, BASE, type Summary, type Target, type
 import { drawSpectrum } from "./spectrum";
 import { spectrumStory, lightStory } from "./explain";
 import { mountBlink, type BlinkTarget } from "./blink/view";
-import { parseCoords, resolveName, CHALLENGE } from "./blink/catalogs";
+import { parseCoords, CHALLENGE } from "./blink/catalogs";
 import type { SpaceHandle } from "./space";
 import { setBase } from "./blink/engine";
 import { mountLightCurve } from "./lightcurve";
@@ -636,7 +636,7 @@ async function setView(v: View, arg?: string) {
   else { const m = await import("./logbook"); if (view === "log") m.mountLogbook($("#logpage"), { onObserve: observe, toast }); }
 }
 /** the Universe section: `mode` "3d" (fly through space) or "map" (the whole sky from Earth); `focus` = an object to fly to in 3D */
-async function showUniverse(mode: UniMode = uniMode, focus?: string) { uniMode = mode; await setView("universe", focus); }
+async function showUniverse(_mode: UniMode = uniMode, focus?: string) { uniMode = "3d"; await setView("universe", focus); }      // the old all-sky atlas, with its unverified lists, is retired: the map is always the 3D one
 async function loadBasics() {
   if (S.summary) return;
   S.summary = await load<Summary>("summary", true); S.lam = S.summary?.lam_um ?? []; S.targets = (await load<Target[]>("targets", true)) ?? [];
@@ -651,7 +651,7 @@ function ensureSpace(): Promise<SpaceHandle | null> {
     try {
       const { openSpace } = await import("./space");
       space = await openSpace(host, { lowPower: set.saver || LOW_POWER,
-        onObserve: (t) => { if (t.pmra !== undefined) { observe({ ra: t.ra, dec: t.dec, pmra: t.pmra, pmdec: t.pmdec, epoch: t.epoch, name: t.name ?? "Confirmed mover" } as BlinkTarget); return; } const pos = `${t.ra.toFixed(5)} ${t.dec >= 0 ? "+" : ""}${t.dec.toFixed(5)}`; if (t.name) observe(t.name, { ra: t.ra, dec: t.dec, name: t.name, epoch: REF_YEAR }); else observe(pos); },
+        onObserve: (t) => { if (t.pmra !== undefined) { observe({ ra: t.ra, dec: t.dec, pmra: t.pmra, pmdec: t.pmdec, epoch: t.epoch, name: t.name ?? "Confirmed mover", source: "The survey of the WISE years (2010–2020)" } as BlinkTarget); return; } const pos = `${t.ra.toFixed(5)} ${t.dec >= 0 ? "+" : ""}${t.dec.toFixed(5)}`; if (t.name) observe(t.name, { ra: t.ra, dec: t.dec, name: t.name, epoch: REF_YEAR }); else observe(pos); },
       });
     } catch (e) { console.warn("3D universe unavailable", e); space = null; }
     if (!space) mountHero(host, true);
@@ -719,7 +719,7 @@ function closeAbout() { if (!$("#about").classList.contains("open")) return; $("
 async function renderAbout() {
   await loadBasics();
   const check: [string, string][] = [
-    ["A public tool, so that moving objects are easy to spot", "The first screen is a <b>map</b> anyone can use: confirmed movers are marked, and a click shows two real pictures of the object (2MASS about 1999, WISE 2010) on a slider with its measured path to today. For the ones nobody has named, three buttons let a visitor say what they see."],
+    ["A public tool, so that moving objects are easy to spot", "The first screen is a <b>map</b> anyone can use: confirmed movers are marked, and a click shows three real pictures of the object on a slider (2MASS about 1999, WISE 2010, and SPHEREx's own, read from NASA's archive when asked for) with its measured path. For the ones nobody has named, three buttons let a visitor say what they see."],
     ["Enter RA and Dec, get a series of images “like a little video”", "The <b>Lab</b> takes coordinates in any common notation, or a name. <b>Evolution</b> shows one deep image per SPHEREx visit on a time bar you steer (drag, step from date to date, choose the speed), preceded by the pictures NASA's WISE (2010) and 2MASS (~1999) took of the same field, so that 27 years pass in a few seconds and a moving object walks across the frame; <b>Exposures</b> shows every single 2-minute exposure, in time or wavelength order."],
     ["Make moving objects easy to spot", "The <b>Motion detector</b> measures every source of the field and lists the ones that moved, with their significance and whether Gaia knows them; their dated positions since 1999 are drawn on the image. <b>Follow target</b>, Gaia positions at each date and <b>Difference</b> are there for the eye."],
     ["Test on Barnard's Star, ε Indi B, WISE 0855, RW Aur, R Dra", "One click each on the Lab's start screen; results in the tables below. Typing the challenge's 2010 coordinates for WISE 0855 is recognised and followed to where it is now."],
@@ -736,7 +736,7 @@ async function renderAbout() {
   $("#about").innerHTML = `<button class="icon-btn aclose" id="aclose" aria-label="Close">✕</button>
     <div class="about-in">
     <div class="eyebrow">Method</div><h2 class="display">What MIRA measures, and how far to trust it</h2>
-    <p class="lead">MIRA has two layers. The <b>map</b> is for everyone: the Sun's neighbourhood in 3D, where each star caught moving has a card in plain words with two real NASA pictures that show it move, and where anyone can help look at the ones nobody has named. The <b>Lab</b> is the deep analysis behind it: a research observatory in the browser whose instruments read NASA's SPHEREx exposures directly from the public archive and answer one chain of questions about any field of the sky: what moved, how fast and how far away it is, what it is, whether it changed, and what could still hide there. The motivating case is the search for unknown cold bodies near the Sun ("Planet X"); the instruments work on any star, brown dwarf or variable source.</p>
+    <p class="lead">MIRA has two layers. The <b>map</b> is for everyone: the Sun's neighbourhood in 3D, where each star caught moving has a card in plain words with three real NASA pictures of it (1999, 2010, SPHEREx today), and where anyone can help look at the ones nobody has named. The <b>Lab</b> is the deep analysis behind it: a research observatory in the browser whose instruments read NASA's SPHEREx exposures directly from the public archive and answer one chain of questions about any field of the sky: what moved, how fast and how far away it is, what it is, whether it changed, and what could still hide there. The motivating case is the search for unknown cold bodies near the Sun ("Planet X"); the instruments work on any star, brown dwarf or variable source.</p>
 
     <div class="eyebrow sec">How a field is measured</div>
     <ol class="steps">
@@ -877,7 +877,10 @@ function preload() {
   idle(() => { import("./catalogue"); import("./logbook"); import("./assistant"); for (const f of ["meta", "objects", "changes"]) fetch(`${import.meta.env.BASE_URL}data/verified/${f}.json`).catch(() => {}); }, 1500);
 }
 async function boot() {
-  document.querySelectorAll<HTMLButtonElement>(".mainnav button").forEach((b) => b.onclick = () => { const v = b.dataset.view as View; history.replaceState(null, "", location.pathname + location.search); if (v === "universe") showUniverse(uniMode); else setView(v); });
+  document.querySelectorAll<HTMLButtonElement>(".mainnav button").forEach((b) => b.onclick = () => { const v = b.dataset.view as View;
+    // the address follows the section, so that a reload comes back to it; a field's parameters belong to the Lab only
+    history.replaceState(null, "", location.pathname + (v === "blink" ? location.search || "#lab" : v === "cat" ? "#catalogue" : v === "log" ? "#cases" : ""));
+    if (v === "universe") showUniverse(uniMode); else setView(v); });
   document.querySelectorAll<HTMLButtonElement>("#unimode button").forEach((b) => b.onclick = () => showUniverse(b.dataset.m as UniMode));
   $("#aboutbtn").onclick = () => ($("#about").classList.contains("open") ? closeAbout() : renderAbout());
   $("#asstbtn").onclick = async () => { const m = await import("./assistant"); m.toggleAssistant($("#asst"), { view: () => view, lab: () => blink.context(), labAct: (a) => blink.act(a), catalogue: async () => (await ensureCatalogue()).context(), catalogueAct: async (a) => (await ensureCatalogue()).act(a),
@@ -891,14 +894,6 @@ async function boot() {
     e.preventDefault(); const inp = $("#q") as HTMLInputElement, q = inp.value.trim(); if (!q) return; endTour(); inp.blur();
     // on the map a name flies there; anything the map does not hold (and any coordinates) goes to the Lab to be measured
     if (inp) { inp.value = ""; if (view === "universe" && uniMode === "3d" && space && !parseCoords(q) && space.focus(q)) return; observe(q); return; }
-    const xy = parseCoords(q);
-    if (xy) { flyTo(xy[0], xy[1], 0.2); setTimeout(() => openPosition(xy[0], xy[1]), 2400); return; }
-    const norm = (x: string) => x.toLowerCase().replace(/\beps\b/g, "epsilon").replace(/\balf\b/g, "alpha").replace(/[^a-z0-9]/g, "");
-    const t = S.targets.find((x) => norm(x.name).includes(norm(q)));
-    if (t?.census) { flyTo(t.census.ra_sx, t.census.dec_sx, 0.5); setTimeout(() => openObject(t.census!, undefined, t.name), 3500); return; }
-    const r = await resolveName(q).catch(() => null);
-    if (r) { flyTo(r.ra, r.dec, 0.2); setTimeout(() => openPosition(r.ra, r.dec, r), 2400); toast(`${r.name ?? q} · found in SIMBAD`); return; }
-    toast(`Could not find "${q}" — try RA Dec in degrees`);
   };
   const h = hashParams();
   if (EMBED || query.has("ra") || query.has("target") || query.has("name")) { await setView("blink"); blink.openFromParams(query); }

@@ -27,10 +27,10 @@ const SOURCES = ["–", "Gaia DR3 parallax", "UltracoolSheet parallax", "AI: SPH
 // What the map says about an object comes from the verified catalogue only (motions confirmed on raw SPHEREx
 // exposures). The labels the 3D file was first built with ("vanished", "brightened", survey-level methane) did not
 // survive that verification and are no longer read.
-const LENS = [{ bit: 2, name: "Methane dip", c: "#c792ff" }, { bit: 4, name: "Unknown to Gaia", c: "#ff5d6c" }, { bit: 8, name: "Cold and red", c: "#e58cff" },
+const LENS = [{ bit: 2, name: "Methane dip", c: "#c792ff" }, { bit: 4, name: "Not in Gaia", c: "#ff5d6c" }, { bit: 8, name: "Cold and red", c: "#e58cff" },
   { bit: 1, name: "Confirmed mover", c: "#ff9d4d" }, { bit: 32, name: "Named", c: "#ffffff" }];
 /** the verified catalogue's columns used here (web/public/data/verified/objects.json) */
-type Ver = { id: string[]; ra: number[]; dec: number[]; pm: number[]; pmra: number[]; pmdec: number[]; epm: number[]; conf: number[]; known: number[]; gaia: string[]; kind: string[];
+type Ver = { glat: number[]; id: string[]; ra: number[]; dec: number[]; pm: number[]; pmra: number[]; pmdec: number[]; epm: number[]; conf: number[]; known: number[]; gaia: string[]; kind: string[];
   w12: (number | null)[]; methane: number[]; simbad: string[]; yr: number[]; dp: number[]; ds: number[]; n: number[] };
 const KIND_PLAIN: Record<string, string> = { "M dwarf": "Red dwarf star", "late M or L dwarf": "Very cool dwarf, at the edge between star and brown dwarf", "K dwarf": "Orange dwarf star", "F/G star": "Sun-like star",
   "white dwarf": "White dwarf: the Earth-sized core a dead star leaves", subdwarf: "Old, metal-poor star from the Galaxy's halo", "L dwarf": "Brown dwarf (type L): too small to shine as a star",
@@ -160,18 +160,20 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<Spa
       <h2 class="display">The sky is not still</h2>
       <p class="sp-sub" id="spsub">Loading the 3D catalogue…</p>
     </div>
+    <div class="sp-loading" id="spload">Loading the map of the Sun's neighbourhood…</div>
     <div class="sp-intro" id="spintro" hidden>
       <button class="icon-btn" id="spintrox" aria-label="Hide this introduction">✕</button>
       <b>The sky is not still.</b>
-      <p>Every point is a real star at its real distance. The orange ones were caught moving between pictures taken years apart, and each was confirmed on the images of NASA's newest sky survey, SPHEREx. Some are cold worlds no optical telescope can see.</p>
-      <div><button class="btn sm solid" id="spintro1">Show me one</button><button class="btn sm ghost" id="spintro2">Two-minute tour</button><button class="btn sm ghost" id="spintro3">Help look at one nobody has named</button></div>
+      <p>This is a model of the space around the Sun: every point is a real star, placed at its measured or estimated distance. The orange ones were caught moving between pictures taken years apart, and each was confirmed on the images of NASA's newest sky survey, SPHEREx. A few hundred of them are in no optical star catalogue.</p>
+      <div><button class="btn sm solid" id="spintro1">Show me one</button><button class="btn sm ghost" id="spintro2">Two-minute tour</button><button class="btn sm ghost" id="spintro3">Help look at one that is in no reference database</button></div>
     </div>
     <aside class="sp-ctl" id="spctl">
       <div class="sp-find" id="spfind">
         <div class="eyebrow">Caught moving · confirmed on NASA's SPHEREx images</div>
         <button class="sp-findbtn" data-f="all" title="Show only the objects whose motion was confirmed, coloured by what they are"><b id="spfn1">…</b><span>stars and brown dwarfs on this map</span></button>
-        <button class="sp-findbtn" data-f="nogaia" title="Confirmed movers that the Gaia star catalogue does not list with this motion: mostly too cold or too faint for visible light"><b id="spfn2">…</b><span>of them unknown to the Gaia catalogue</span></button>
-        <button class="sp-findbtn hl" data-f="help" title="Fly to one that nobody has characterised, look at its pictures and say what you see"><b id="spfn3">…</b><span>nobody has named · help look at one</span></button>
+        <button class="sp-findbtn" data-f="nogaia" title="Confirmed movers that Gaia, Europe's optical star catalogue, does not list with this motion. Missing from Gaia can mean very cold, very faint, or simply missed"><b id="spfn2">…</b><span>of them not in Gaia, Europe's optical star catalogue</span></button>
+        <button class="sp-findbtn hl" data-f="help" title="Confirmed movers that are in the WISE catalogues but have no entry in SIMBAD (the database of objects in the astronomical literature) and no Gaia source. Fly to one, compare its pictures and say what you see"><b id="spfn3">…</b><span>not in SIMBAD, astronomy's reference database · help look at one</span></button>
+        <div class="sp-key" aria-label="What the colours mean"><span><i style="background:#ff9d4d"></i>caught moving</span><span><i style="background:#ff5d6c"></i>not in Gaia</span><span><i style="background:#e58cff"></i>cold and red</span><span><i style="background:#6a7080"></i>other stars</span><span class="w">rings: distance from the Sun · drag to turn, scroll to zoom</span></div>
       </div>
       <div class="eyebrow">Zoom out from home</div><div class="sp-dest" id="spdest"></div>
       <div class="sp-row2"><button class="btn sm" id="sptour">▶ Guided tour</button><button class="btn sm ghost" id="spfree" title="Free flight (F)">Free flight</button></div>
@@ -330,21 +332,29 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<Spa
   }
 
   // ---- the verified catalogue, joined by object id: which points are confirmed movers, and what is known of them
-  let ver: Ver | null = null, vi = new Int32Array(0), todo: number[] = []; const verIdx = new Map<string, number>(), tally = { movers: 0, noGaia: 0 };
+  let deepPending = false, wanted: string | null = null;        // the fainter half of the catalogue is still on its way; an object asked for meanwhile
+  let ver: Ver | null = null, vi = new Int32Array(0), todo: number[] = [], todoOff: number[] = []; const verIdx = new Map<string, number>(), tally = { movers: 0, noGaia: 0 };
+  /** survey ids of every object a visitor can help look at: those placed on the map and those that have no distance yet */
+  const poolIds = () => [...todo.map((q) => `${cat!.tile[q]}-${cat!.obj[q]}`), ...(ver ? todoOff.map((k) => ver!.id[k]) : [])];
+  const VOTE_HTML = `<div class="sp-vote" id="spvote"><b>Take part <small>(prototype)</small>.</b> This object is in the WISE catalogues but has no entry in SIMBAD, astronomy's reference database, and no Gaia source. Use the slider above: is there a dot inside the circle in 2010, and again in SPHEREx's picture?
+        <div class="sp-vbtn"><button data-v="moves">Yes, it follows</button><button data-v="unsure">I can't tell</button><button data-v="no">No dot there</button></div><small id="spvmsg"></small></div>`;
   function applyVerified() {
-    const c = cat!; vi = new Int32Array(c.n).fill(-1); todo = []; let nMov = 0, nNoG = 0;
+    const c = cat!; vi = new Int32Array(c.n).fill(-1); todo = []; todoOff = []; let nMov = 0, nNoG = 0; const placed = new Set<number>();
+    const open2 = (k: number) => !!ver && ver.known[k] === 0 && !ver.simbad[k] && Math.abs(ver.glat[k]) >= 10;      // away from the crowded Galactic plane, where the position test loses its meaning
     for (let i = 0; i < c.n; i++) {
       let L = c.lens[i] & 32;                                   // "named" stays; the rest comes from the verified catalogue
       const k = ver && c.tile[i] !== 65535 ? verIdx.get(`${c.tile[i]}-${c.obj[i]}`) : undefined;
       if (ver && k !== undefined) { vi[i] = k; L |= 1; nMov++; if (ver.known[k] !== 1) { L |= 4; nNoG++; } if ((ver.w12[k] ?? -9) > 0.6) L |= 8; if (ver.methane[k]) L |= 2;
-        if (ver.known[k] === 0 && !ver.simbad[k]) todo.push(i); }
+        placed.add(k); if (open2(k)) todo.push(i); }
       c.lens[i] = L;
     }
+    if (ver) for (let k = 0; k < ver.id.length; k++) if (open2(k) && !placed.has(k)) todoOff.push(k);
     tally.movers = nMov; tally.noGaia = nNoG;
     const set = (id: string, v: string) => { const e = host.querySelector(id); if (e) e.textContent = v; };
-    set("#spfn1", ver ? nMov.toLocaleString() : "…"); set("#spfn2", ver ? nNoG.toLocaleString() : "…"); set("#spfn3", ver ? todo.length.toLocaleString() : "…");
+    set("#spfn1", ver ? nMov.toLocaleString() : "…"); set("#spfn2", ver ? nNoG.toLocaleString() : "…"); set("#spfn3", ver ? (todo.length + todoOff.length).toLocaleString() : "…");
   }
   function build() {
+    host.querySelector("#spload")?.remove();
     applyVerified();
     const c = cat!;
     geom?.dispose(); if (points) scene.remove(points);
@@ -358,7 +368,7 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<Spa
     points = new THREE.Points(geom, mat); points.frustumCulled = false; scene.add(points);
     recolor(); remag(); refilter(); buildUnc();
     $("#spsub").innerHTML = meta
-      ? `Every point is a real star or brown dwarf at its distance, moving as measured. <b>${(c.n - 1).toLocaleString()}</b> are placed here; the orange ones were caught moving and confirmed on NASA's SPHEREx images. Click one to see it move.`
+      ? `A model of the space around the Sun: <b>${(c.n - 1).toLocaleString()}</b> real stars and brown dwarfs at their measured or estimated distances. The orange ones were caught moving and confirmed on NASA's SPHEREx images. Click one.`
       : `${(c.n - 1).toLocaleString()} Gaia stars within 65 light-years (the census 3D catalogue is still being computed).`;
   }
   const tmp = new THREE.Color();
@@ -449,7 +459,9 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<Spa
   liveL.initCMEs().then(() => livePanel());
   exo.load(`${BASE}space/exoplanets.json`).then((n) => { if (n) { exo.attach(cat!.n, epochPos, () => null); if (S.sel >= 0) info(S.sel); } });
   if (meta && !opts.lowPower && meta.deep.n) {
-    fetch(`${BASE}data/space/${meta.deep.file}`).then((r) => r.arrayBuffer()).then((b) => { cat = concat(cat!, parse(b)); build(); if (exo.hosts.length) exo.attach(cat!.n, epochPos, () => null); });
+    deepPending = true;
+    fetch(`${BASE}data/space/${meta.deep.file}`).then((r) => r.arrayBuffer()).then((b) => { cat = concat(cat!, parse(b)); build(); if (exo.hosts.length) exo.attach(cat!.n, epochPos, () => null); })
+      .catch(() => {}).then(() => { deepPending = false; const f = wanted; wanted = null; if (f && S.sel < 0 && !handle.focus(f)) $("#sphint").textContent = `"${f}" is not on the map: its distance is not known yet`; });
   }
 
   fetch(`${BASE}data/verified/objects.json`).then((r) => (r.ok ? r.json() : null)).then((j) => { if (!j?.cols) return; ver = j.cols as Ver; ver.id.forEach((id, k) => verIdx.set(id, k)); build(); if (S.sel >= 0) info(S.sel); }).catch(() => {});      // a card opened before the catalogue arrived is completed
@@ -465,11 +477,15 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<Spa
   $("#spintro3").onclick = () => { hideIntro(); (host.querySelector('#spfind [data-f="help"]') as HTMLElement).click(); };
   host.querySelectorAll<HTMLButtonElement>("#spfind .sp-findbtn").forEach((b) => (b.onclick = () => {
     const f = b.dataset.f;
-    if (f === "help") { const v = votes(), left = todo.filter((i) => !v[`${cat!.tile[i]}-${cat!.obj[i]}`]), from = left.length ? left : todo; if (from.length) flyToStar(from[Math.floor(Math.random() * from.length)]); return; }
+    if (f === "help") { const v = votes(), all: [boolean, number][] = [...todo.map((i) => [true, i] as [boolean, number]), ...todoOff.map((k) => [false, k] as [boolean, number])];
+      const idOf = ([on, q]: [boolean, number]) => (on ? `${cat!.tile[q]}-${cat!.obj[q]}` : ver!.id[q]), left = all.filter((q) => !v[idOf(q)]), from = left.length ? left : all; if (!from.length) return;
+      // one in three is taken from those placed on the map (a flight is part of the pleasure), while there are any left
+      const onMap = from.filter((q) => q[0]), pick = onMap.length && Math.random() < 0.34 ? onMap[Math.floor(Math.random() * onMap.length)] : from[Math.floor(Math.random() * from.length)];
+      if (pick[0]) flyToStar(pick[1]); else infoOff(pick[1]); return; }
     showOnly(f === "nogaia" ? [4] : [1, 2, 4, 8]); setSeg("#spcol", "lens"); S.sel = -1; info(-1); flyTo(new THREE.Vector3(0, 0, 0), 60, -1, 3000);
   }));
   // ---------------------------------------------------------------- UI wiring
-  const showChips: [number, string, string][] = [[1, "Confirmed movers", "#ff9d4d"], [4, "Unknown to Gaia", "#ff5d6c"], [8, "Cold and red", "#e58cff"], [2, "Methane dip", "#c792ff"],
+  const showChips: [number, string, string][] = [[1, "Confirmed movers", "#ff9d4d"], [4, "Not in Gaia", "#ff5d6c"], [8, "Cold and red", "#e58cff"], [2, "Methane dip", "#c792ff"],
     [32, "Named stars", "#ffffff"], [0, "Field stars", "#8a93a8"], [100, "Dwarfs", CLS_COL[0]], [101, "Giants", CLS_COL[1]], [102, "Brown dwarfs", CLS_COL[2]], [200, "Planet systems (NASA)", "#5be3a6"], [300, "Live: spacecraft, asteroids, solar storms", "#7cc4ff"]];
   $("#spshow").innerHTML = showChips.map(([b, n, c]) => `<button class="chip on" data-b="${b}" style="--c:${c}"><i></i>${n}</button>`).join("");
   host.querySelectorAll<HTMLButtonElement>("#spshow .chip").forEach((el) => el.onclick = () => {
@@ -601,7 +617,69 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<Spa
   /** A confirmed mover's distance on the map is not believable when it would make the object cross the sky faster
    *  than a star can travel in our Galaxy (550 km/s): the distance, estimated or from a weak parallax, is then too large. */
   const farFetched = (i: number) => { const k = vi.length > i ? vi[i] : -1; if (k < 0 || !ver) return false; const c = cat!; return 4.74 * ver.pm[k] * Math.hypot(c.pos[i * 3], c.pos[i * 3 + 1], c.pos[i * 3 + 2]) > 550; };
+  /** the "send" link is offered only where the public place for such notes can actually be reached */
+  /** Is this site collecting answers (the optional server process is running)? Then an answer is sent there, with no
+   *  account and nothing about the visitor, and the tally of everyone's answers is shown. Otherwise it stays on the device. */
+  let answersApi: Promise<boolean> | null = null;
+  const answersOn = () => (answersApi ??= fetch("/api/answers").then((r) => (r.ok ? r.json() : null)).then((j) => !!j?.ok, () => false));
+  const tallyText = (t: { moves: number; unsure: number; no: number } | null | undefined) => { const n = t ? t.moves + t.unsure + t.no : 0;
+    return n ? `All visitors so far (${n}): ${t!.moves} saw it follow · ${t!.unsure} could not tell · ${t!.no} saw no dot.` : "No answer yet for this object."; };
+  let reportOpenP: Promise<boolean> | null = null;
+  const reportOpen = () => (reportOpenP ??= (() => { const m = REPO.match(/^https:\/\/github\.com\/([^/]+\/[^/]+)\/issues\/new/); if (!m) return Promise.resolve(true);
+    return fetch(`https://api.github.com/repos/${m[1]}`).then((r) => r.ok, () => false); })());
+  /** the take-part buttons of a card: the answer is kept on the device, sent to the site's endpoint when one is
+   *  running (no account), and everyone's tally is shown */
+  function wireVote(el: HTMLElement, vid: string, label: string) {
+    const vb = el.querySelector("#spvote") as HTMLElement | null; if (!vb) return;
+    const msg = el.querySelector("#spvmsg") as HTMLElement;
+    const show = (sentTally?: { moves: number; unsure: number; no: number }) => {
+      const v = votes(), mine = v[vid], ids = poolIds(), seen = ids.filter((q) => v[q]).length;
+      vb.querySelectorAll<HTMLButtonElement>(".sp-vbtn button").forEach((b) => b.classList.toggle("on", mine?.v === b.dataset.v));
+      const next = `You have looked at <b>${seen} of ${ids.length.toLocaleString()}</b>. <button class="link" id="spvnext">Next one</button>`;
+      // first as if nothing is collected here; completed below if this site runs the answers endpoint
+      msg.innerHTML = mine ? `<span id="spvwhere">Saved on this device.</span> ${next}<span id="spvlocal"> · <button class="link" id="spvcopy">Copy my answers</button><a class="link" id="spvsend" target="_blank" rel="noopener" hidden> · Send them as a public note</a></span><br><span id="spvtally"></span><span id="spvhow">Prototype: nothing is collected here automatically.</span>`
+        : `<span id="spvtally"></span>No account is needed and nothing about you is kept.`;
+      const q = <T extends HTMLElement>(sel: string) => msg.querySelector(sel) as T | null;
+      const nx = q("#spvnext"); if (nx) nx.onclick = () => (host.querySelector('#spfind [data-f="help"]') as HTMLElement).click();
+      const lines = Object.entries(v).slice(-40).map(([id, a]) => `${id} | ${a.v} | ${a.name}`), cp = q("#spvcopy"), sd = q<HTMLAnchorElement>("#spvsend");
+      if (cp) cp.onclick = () => { const t = `MIRA map: is there a dot in the circle in the 2010 and SPHEREx pictures?\nid | answer | label\n${lines.join("\n")}`; (navigator.clipboard?.writeText(t) ?? Promise.reject()).then(() => (cp.textContent = "Copied"), () => (cp.textContent = "Copying is not allowed here")); };
+      answersOn().then((on) => {
+        if (!msg.isConnected) return;
+        if (!on) { if (sd) { sd.href = `${REPO}?title=${encodeURIComponent(`Visitor answers on ${lines.length} objects`)}&body=${encodeURIComponent(`Sent from the MIRA map. For each object: is there a dot in the circle in the 2010 and SPHEREx pictures?\n\nid | answer | label\n${lines.join("\n")}`)}`; reportOpen().then((ok) => { sd.hidden = !ok; }); } return; }
+        const tl = q("#spvtally"), where = q("#spvwhere"), how = q("#spvhow"), loc = q("#spvlocal");
+        if (where) where.textContent = "Sent: no account, nothing about you kept."; if (loc) loc.hidden = true;
+        if (how) how.textContent = "A person on the team reads the answers; objects on which several visitors agree go first for a deep analysis.";
+        if (tl && sentTally) tl.textContent = tallyText(sentTally) + " ";
+        else if (tl) fetch(`/api/answers?ids=${vid}`).then((r) => r.json()).then((j) => { if (msg.contains(tl)) tl.textContent = tallyText(j?.tallies?.[vid]) + " "; }).catch(() => {});
+      });
+    };
+    vb.querySelectorAll<HTMLButtonElement>(".sp-vbtn button").forEach((b) => (b.onclick = () => {
+      const v = votes(), prev = v[vid]?.v, ans = b.dataset.v!; if (prev === ans) return;
+      v[vid] = { v: ans, t: Date.now(), name: label }; try { localStorage.setItem(VOTES, JSON.stringify(v)); } catch { /* private mode: the answer lasts for this page only */ }
+      show();
+      answersOn().then((on) => { if (on) fetch("/api/answers", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ id: vid, v: ans, prev }) }).then((r) => r.json()).then((j) => { if (j?.tally) show(j.tally); }).catch(() => {}); });
+    }));
+    show();
+  }
   let pastView: { destroy: () => void } | null = null;
+  /** A confirmed mover with no distance cannot be placed in space, but it can be looked at: its card, without a flight */
+  function infoOff(k: number) {
+    const V = ver!, el = $("#spinfo"), vid = V.id[k]; S.sel = -1; S.body = null; pastView?.destroy(); pastView = null; intro.hidden = true;
+    el.classList.add("ver");
+    el.innerHTML = `<button class="icon-btn" id="spiclose">✕</button>
+      <div class="eyebrow">${KIND_PLAIN[V.kind[k]] ?? V.kind[k]}</div>
+      <h3 class="display">Unnamed mover ${vid}</h3>
+      <p class="sp-lead">Its distance is not known yet, so it has no place on this map; here is where it is in the sky. It crosses the width of the full Moon every <b>${Math.round(1800 / Math.max(V.pm[k], 1e-3)).toLocaleString()} years</b>, and it is not in Gaia, Europe's optical star catalogue.</p>
+      <div class="sp-ver"><b>Caught moving: ${V.pm[k].toFixed(2)}″ per year.</b> Checked on ${V.n[k]} raw SPHEREx exposures: it sits ${V.dp[k].toFixed(1)}″ from where this motion predicts and ${V.ds[k].toFixed(1)}″ from where it would be had it stood still. Gaia, Europe's optical star-mapping satellite, lists nothing at this place.</div>
+      <div class="sp-pics"><div class="eyebrow">Three real NASA pictures: about 1999, 2010, and SPHEREx today</div><div id="sppv"></div></div>
+      ${VOTE_HTML}
+      <div class="actions"><button class="btn sm solid" id="spobs" title="Read the SPHEREx exposures of this object and run the instruments on it">Deep analysis in the Lab</button></div>`;
+    el.classList.add("open");
+    $("#spiclose").onclick = () => info(-1);
+    wireVote(el, vid, `Unnamed mover ${vid}`);
+    pastView = mountPastView(el.querySelector("#sppv") as HTMLElement, { ra: V.ra[k], dec: V.dec[k], pmra: V.pmra[k], pmdec: V.pmdec[k], epoch: V.yr[k] });
+    const ob = el.querySelector("#spobs") as HTMLElement; ob.onclick = () => opts.onObserve?.({ ra: V.ra[k], dec: V.dec[k], pmra: V.pmra[k], pmdec: V.pmdec[k], epoch: V.yr[k], name: `Unnamed mover ${vid}` });
+  }
   function info(i: number) {
     const c = cat!, el = $("#spinfo");
     pastView?.destroy(); pastView = null; el.classList.remove("ver");
@@ -610,14 +688,14 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<Spa
     const v = new THREE.Vector3(c.vel[i * 3], c.vel[i * 3 + 1], c.vel[i * 3 + 2]).divideScalar(PCYR), sp = v.length(), vr = d0 > 0 ? v.dot(p0) / d0 : 0;
     const lens = LENS.filter((l) => c.lens[i] & l.bit && l.bit !== 32).map((l) => `<span style="--c:${l.c}">${l.name}</span>`).join("");
     const isSun = c.obj[i] === 999999 && c.tile[i] === 65535, vk = vi.length > i ? vi[i] : -1, V = vk >= 0 ? ver : null;
-    const T = c.teff[i], vid = `${c.tile[i]}-${c.obj[i]}`, badDist = farFetched(i), isTodo = !!V && V.known[vk] === 0 && !V.simbad[vk];
+    const T = c.teff[i], vid = `${c.tile[i]}-${c.obj[i]}`, badDist = farFetched(i), isTodo = !!V && V.known[vk] === 0 && !V.simbad[vk] && Math.abs(V.glat[vk]) >= 10;
     if (V) el.classList.add("ver");
     intro.hidden = true;
     const lightLeft = EPOCH - d0 * LY;
     el.innerHTML = `<button class="icon-btn" id="spiclose">✕</button>
       <div class="eyebrow">${V ? KIND_PLAIN[V.kind[vk]] ?? V.kind[vk] : isSun ? "Our star" : whiteDwarf.has(i) ? "White dwarf" : noPhot.has(i) ? "Nearby star" : CLASSES[c.cls[i]]}${c.src[i] === 3 && !V ? " · AI classification" : ""}</div>
       <h3 class="display">${labelText(i)}</h3>
-      ${V ? `<p class="sp-lead">${badDist ? "Its distance is not known yet: the value it is placed at on this map would make it faster than any star in our Galaxy, so it is surely closer" : `${c.src[i] === 3 ? "About " : ""}<b>${fmtDist(d)}</b> from the Sun${c.src[i] === 3 ? " (estimated from its colours, not yet measured)" : ""}`}. It crosses the width of the full Moon in our sky every <b>${Math.round(1800 / Math.max(V.pm[vk], 1e-3)).toLocaleString()} years</b>${V.known[vk] === 0 ? ", and no optical catalogue lists it" : ""}.</p>` : ""}
+      ${V ? `<p class="sp-lead">${badDist ? "Its distance is not known yet: the value it is placed at on this map would make it faster than any star in our Galaxy, so it is surely closer" : `${c.src[i] === 3 ? "About " : ""}<b>${fmtDist(d)}</b> from the Sun${c.src[i] === 3 ? " (estimated from its colours, not yet measured)" : ""}`}. It crosses the width of the full Moon in our sky every <b>${Math.round(1800 / Math.max(V.pm[vk], 1e-3)).toLocaleString()} years</b>${V.known[vk] === 0 ? ", and it is not in Gaia, Europe's optical star catalogue" : ""}.</p>` : ""}
       <div class="facts">
         <div class="fact"><b>${isSun ? "0" : badDist ? "?" : fmtDist(d)}</b><span>${badDist ? "provisional place on the map · " : ""}${Math.abs(S.time) > 1 ? `distance in ${fmtYear(NOW_Y + S.time)}` : "distance now"}${c.sig[i] > 0.005 ? ` · ±${Math.round(c.sig[i] * 100)}%` : ""}</span></div>
         <div class="fact"><b>${badDist ? "–" : noPhot.has(i) || !T ? "–" : whiteDwarf.has(i) && T >= 12000 ? "> 12,000 K" : T.toLocaleString() + " K"}</b><span>${badDist ? "temperature and size need a reliable distance" : noPhot.has(i) ? "no colour measured by Gaia" : whiteDwarf.has(i) ? "temperature from its colour · about the size of Earth" : `temperature${c.src[i] === 3 ? " (AI)" : ""} · ≈${(() => { const R = isSun ? 1 : radiusRsun(T, c.M[i], c.cls[i]); return R < 0.2 ? (R * 9.73).toFixed(1) + " Jupiters" : R.toFixed(R < 3 ? 2 : 0) + " Suns"; })()} wide`}</span></div>
@@ -628,10 +706,9 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<Spa
       ${exo.byStar.has(i) ? planetsHTML(exo.byStar.get(i)!) : ""}
       <p class="why">${isSun ? "Everything here moves relative to the Sun, which sits at the centre of the rings." :
         `${c.src[i] ? `Distance from ${SOURCES[c.src[i]]}.` : ""} ${d0 * LY < 3000 ? `The light reaching SPHEREx in 2025 left it around <b>${fmtYear(lightLeft)}</b>.` : ""}`}</p>
-      ${V ? `<div class="sp-ver"><b>Caught moving: ${V.pm[vk].toFixed(2)}″ per year.</b> Checked on ${V.n[vk]} raw SPHEREx exposures: it sits ${V.dp[vk].toFixed(1)}″ from where this motion predicts and ${V.ds[vk].toFixed(1)}″ from where it would be had it stood still. ${V.known[vk] === 1 ? "The Gaia catalogue lists the same motion." : V.known[vk] === 0 ? "The Gaia catalogue has no source here: too cold or too faint for visible light." : "The Gaia catalogue does not list this motion."}</div>
-      <div class="sp-pics"><div class="eyebrow">See it move · two real pictures, eleven years apart</div><div id="sppv"></div></div>
-      ${isTodo ? `<div class="sp-vote" id="spvote"><b>Take part.</b> Nobody has named or classified this object. Drag the slider above: is there a dot inside the circle in 2010, and does it follow the path?
-        <div class="sp-vbtn"><button data-v="moves">Yes, it follows</button><button data-v="unsure">I can't tell</button><button data-v="no">No dot there</button></div><small id="spvmsg"></small></div>` : ""}` : ""}
+      ${V ? `<div class="sp-ver"><b>Caught moving: ${V.pm[vk].toFixed(2)}″ per year.</b> Checked on ${V.n[vk]} raw SPHEREx exposures: it sits ${V.dp[vk].toFixed(1)}″ from where this motion predicts and ${V.ds[vk].toFixed(1)}″ from where it would be had it stood still. ${V.known[vk] === 1 ? "Gaia, Europe's star-mapping satellite, lists the same motion." : V.known[vk] === 0 ? "Gaia, Europe's optical star-mapping satellite, lists nothing at this place." : "Gaia lists a source here, but not this motion."}</div>
+      <div class="sp-pics"><div class="eyebrow">Three real NASA pictures: about 1999, 2010, and SPHEREx today</div><div id="sppv"></div></div>
+      ${isTodo ? VOTE_HTML : ""}` : ""}
       <div class="actions">
         ${!isSun && opts.onObserve ? `<button class="btn sm solid" id="spobs" title="Read the SPHEREx exposures of this object and run the instruments on it">Deep analysis in the Lab</button>` : ""}
         <button class="btn sm${!isSun && opts.onObserve ? " ghost" : ""}" id="spfly">Fly here</button>
@@ -640,19 +717,7 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<Spa
         ${c.tile[i] !== 65535 && opts.onDossier ? `<button class="btn sm ghost" id="spdos">Evidence</button>` : ""}
       </div>`;
     el.classList.add("open");
-    const vb = el.querySelector("#spvote") as HTMLElement | null;
-    if (vb) {
-      const msg = el.querySelector("#spvmsg") as HTMLElement;
-      const show = () => { const v = votes(), mine = v[vid], seen = todo.filter((q) => v[`${c.tile[q]}-${c.obj[q]}`]).length;
-        vb.querySelectorAll<HTMLButtonElement>(".sp-vbtn button").forEach((b) => b.classList.toggle("on", mine?.v === b.dataset.v));
-        msg.innerHTML = mine ? `Saved on this device. You have looked at <b>${seen} of ${todo.length}</b>. <button class="link" id="spvnext">Next one</button> · <a class="link" id="spvsend" target="_blank" rel="noopener">Send my answers to the team</a>` : "Your answer stays on this device until you choose to send it.";
-        const nx = msg.querySelector("#spvnext") as HTMLElement | null; if (nx) nx.onclick = () => (host.querySelector('#spfind [data-f="help"]') as HTMLElement).click();
-        const sd = msg.querySelector("#spvsend") as HTMLAnchorElement | null;
-        if (sd) { const L = Object.entries(v).slice(-40).map(([id, q]) => `${id} | ${q.v} | ${q.name}`);
-          sd.href = `${REPO}?title=${encodeURIComponent(`Visitor answers on ${L.length} unnamed objects`)}&body=${encodeURIComponent(`Sent from the MIRA map. For each object: does a dot follow the measured path between the 1999 and 2010 pictures?\n\nid | answer | label\n${L.join("\n")}`)}`; } };
-      vb.querySelectorAll<HTMLButtonElement>(".sp-vbtn button").forEach((b) => (b.onclick = () => { const v = votes(); v[vid] = { v: b.dataset.v!, t: Date.now(), name: labelText(i) }; try { localStorage.setItem(VOTES, JSON.stringify(v)); } catch { /* private mode: the answer lasts for this page only */ } show(); }));
-      show();
-    }
+    wireVote(el, vid, labelText(i));
     const pvh = el.querySelector("#sppv") as HTMLElement | null;
     if (pvh && V) pastView = mountPastView(pvh, { ra: V.ra[vk], dec: V.dec[vk], pmra: V.pmra[vk], pmdec: V.pmdec[vk], epoch: V.yr[vk] });
     if (exo.sysHost !== (exo.byStar.get(i) ?? -1)) exo.show(exo.byStar.get(i) ?? -1);
@@ -739,11 +804,6 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<Spa
     ["Saturn and its rings", () => flyToBody({ kind: "planet", k: 5 })],
     ["Jupiter", () => flyToBody({ kind: "planet", k: 4 })],
     ["Voyager 1, edge of the Solar System", () => flyToBody({ kind: "probe", k: 0 })],
-    ["The Sun's neighbourhood", () => { S.sel = -1; S.body = null; info(-1); flyTo(new THREE.Vector3(0, 0, 0), 30); }],
-    ["Jupiter", () => flyToBody({ kind: "planet", k: 4 })],
-    ["Voyager 1, edge of the Solar System", () => flyToBody({ kind: "probe", k: 0 })],
-    ["The Sun's neighbourhood", () => { S.sel = -1; S.body = null; info(-1); flyTo(new THREE.Vector3(0, 0, 0), 30); }],
-    ["Voyager 1", () => flyToBody({ kind: "probe", k: 0 })],
     ["The Sun's neighbourhood", () => { S.sel = -1; S.body = null; info(-1); flyTo(new THREE.Vector3(0, 0, 0), 30); }],
     ["Barnard's Star", () => { const i = named("Barnard's Star"); if (i >= 0) flyToStar(i, 0.02); }],
     ["Epsilon Indi B", () => { const i = named("Epsilon Indi B"); if (i >= 0) flyToStar(i, 0.02); }],
@@ -850,7 +910,7 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<Spa
     const tip = $("#sptip");
     if (!b && S.hover < 0) { tip.classList.remove("on"); return; }
     let html = "";
-    if (b) html = `<b>${b.kind === "planet" ? PLANETS[b.k].name : PROBES[b.k].name}</b><span>${(bodyPos(b).length() / AU).toFixed(1)} au from the Sun</span>`;
+    if (b) html = `<b>${bodyName(b)}</b><span>${(bodyPos(b).length() / AU).toFixed(1)} au from the Sun</span>`;
     else {
       const i = S.hover, c = cat!, d = cur(i).length();
       html = `<b>${labelText(i)}</b><span>${i === 0 ? "our star" : CLASSES[c.cls[i]].toLowerCase()} · ${c.teff[i] ? c.teff[i].toLocaleString() + " K · " : ""}${fmtDist(d)} from the Sun</span>`;
@@ -1084,19 +1144,21 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<Spa
     if (i < 0 && q.length > 2) { const hit = allNames.find(([n]) => n.toLowerCase() === q) ?? allNames.find(([n]) => n.toLowerCase().includes(q)); if (hit) { hit[1](); return true; }
       const k = ver ? ver.simbad.findIndex((n) => n.toLowerCase().includes(q)) : -1; if (k >= 0) i = byId(ver!.id[k]); }
     if (i >= 0) { flyToStar(i, i > 0 && vi[i] >= 0 ? undefined : 0.03); return true; }
-    const pk = PLANETS.findIndex((p2) => p2.name === f); if (pk >= 0) { flyToBody({ kind: "planet", k: pk }); return true; } if (f === "Sun") { flyToStar(0); return true; } return false; };
+    const pk = PLANETS.findIndex((p2) => p2.name === f); if (pk >= 0) { flyToBody({ kind: "planet", k: pk }); return true; } if (f === "Sun") { flyToStar(0); return true; }
+    if (deepPending) { wanted = f; return true; }       // not found yet: looked for again when the rest of the catalogue is in
+    return false; };
   handle.context = () => { const i = S.sel, c = cat!, k = i >= 0 && vi.length > i ? vi[i] : -1, V = k >= 0 ? ver : null;
-    return { confirmed_movers_on_map: tally.movers, of_them_unknown_to_gaia: tally.noGaia, unnamed_ones_visitors_can_help_look_at: todo.length,
+    return { confirmed_movers_on_map: tally.movers, of_them_not_in_gaia: tally.noGaia, not_in_simbad_nor_gaia_that_visitors_can_help_look_at: todo.length + todoOff.length, of_those_placed_on_the_map: todo.length,
       selected: i >= 0 ? { name: labelText(i), kind: V ? KIND_PLAIN[V.kind[k]] ?? V.kind[k] : CLASSES[c.cls[i]], distance_light_years: farFetched(i) ? null : +(cur(i).length() * LY).toFixed(1), distance_note: farFetched(i) ? "not known yet: its place on the map is provisional" : c.src[i] === 3 ? "an estimate from its colours, not measured" : "measured",
         ...(V ? { confirmed_mover: true, motion_arcsec_per_year: V.pm[k], years_to_cross_a_full_moon_width: Math.round(1800 / Math.max(V.pm[k], 1e-3)), spherex_exposures_checked: V.n[k], arcsec_from_where_the_motion_predicts: V.dp[k],
-          arcsec_from_where_it_would_be_if_still: V.ds[k], gaia: V.known[k] === 1 ? "Gaia lists the same motion" : V.known[k] === 0 ? "no Gaia source: too cold or faint for visible light" : "Gaia does not list this motion", has_a_name: !!V.simbad[k],
-          pictures: "two real pictures on a slider: 2MASS about 1999 and WISE 2010, with its measured path" } : { confirmed_mover: false }) } : null };
+          arcsec_from_where_it_would_be_if_still: V.ds[k], gaia: V.known[k] === 1 ? "Gaia lists the same motion" : V.known[k] === 0 ? "not listed in Gaia (the optical star catalogue); that alone does not say why" : "Gaia lists a source here but not this motion", has_a_database_entry: !!V.simbad[k],
+          pictures: "three real pictures on a slider: 2MASS about 1999, WISE 2010, and SPHEREx's own (read when the visitor goes past 2010), with its measured path" } : { confirmed_mover: false }) } : null };
   };
   handle.act = (a) => {
     const click = (f: string) => (host.querySelector(`#spfind [data-f="${f}"]`) as HTMLElement | null)?.click();
     if (a.show === "confirmed") click("all"); else if (a.show === "unknown_to_gaia") click("nogaia"); else if (a.show === "everything") showOnly(null);
     if (a.take_part || a.pick === "unnamed") { click("help"); return "flying to a confirmed mover nobody has named"; }
-    if (a.pick === "cold_world") { ($("#spintro1") as HTMLElement).click(); return "flying to a cold brown dwarf that the Gaia optical catalogue does not list"; }
+    if (a.pick === "cold_world") { ($("#spintro1") as HTMLElement).click(); return "flying to a known brown dwarf that is not listed in the Gaia optical catalogue"; }
     if (a.fly_to) return handle.focus(a.fly_to) ? `flying to ${a.fly_to}` : `"${a.fly_to}" is not on the map (no measured distance); it can still be opened in the Lab`;
     return "done";
   };

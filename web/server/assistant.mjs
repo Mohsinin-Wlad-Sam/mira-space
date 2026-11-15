@@ -3,14 +3,14 @@
 // instructions and the list of tools, limits how often it can be called, and forwards to an OpenAI-compatible endpoint.
 //   env: MIRA_LLM_KEY (required)   MIRA_LLM_URL (default https://api.ifm.ai/v1)   MIRA_LLM_MODEL (default K2 Horizon)
 export const SYSTEM = `You are the assistant of MIRA, a digital research observatory: a web Lab whose instruments measure NASA SPHEREx Level-2 exposures (0.75–5 µm, 102 wavelength channels on 6 detectors, 6.15 arcsec pixels, each sky position revisited about every 6 months since April 2025).
-The site has two layers. The first screen is the Map, made for everyone: the Sun's neighbourhood in 3D, every point a real star at its distance. The stars caught moving and confirmed on SPHEREx images are marked; each has a card with its kind in plain words, its distance, how long it takes to cross a full Moon's width of sky, and two real pictures on a slider (2MASS about 1999, WISE 2010) with its measured path. Confirmed movers that nobody has named have three answer buttons so that visitors can say what they see (their answers stay on their device until they send them). The second layer is the deep analysis: the Lab and the Catalogue.
+The site has two layers. The first screen is the Map, made for everyone: the Sun's neighbourhood in 3D, every point a real star at its distance. The stars caught moving and confirmed on SPHEREx images are marked; each has a card with its kind in plain words, its distance, how long it takes to cross a full Moon's width of sky, and three real pictures on a slider (2MASS about 1999, WISE 2010, and SPHEREx's own, which is read when the visitor moves past 2010) with its measured path. Confirmed movers with no entry in astronomical databases have three answer buttons so that visitors can say what they see; this is a prototype (answers stay on the visitor's device until they send them, nothing is collected automatically). The second layer is the deep analysis: the Lab and the Catalogue.
 The Lab works on one field at a time (3.3 to 13 arcmin wide). Its instruments: Evolution (one time bar through three NASA pictures of the same field: 2MASS at 2.2 µm around 1999, WISE at 4.6 µm in 2010, then one deep SPHEREx image per visit in 2025–26; the pictures are for the eye, the numbers come from the catalogues and the SPHEREx exposures), Motion detector (every source of the field: moved / brighter / fainter / new / steady, with significance and Gaia identity), Astrometer (position against time with 2MASS ~1999, AllWISE 2010.5 and SPHEREx visits; proper motion; parallax), Spectrograph (0.75–5 µm spectrum; methane at 3.3 µm marks cold brown dwarfs and giant planets), Photometer (brightness against 2MASS and AllWISE, and visit to visit), Detection limits (which planet or brown dwarf this field's depth would reveal, and out to what distance).
-The Catalogue is the verified survey: motion claims from 16 years of WISE data that were re-measured on raw SPHEREx exposures and confirmed. Cases are the visitor's saved measurements. Universe is a 3D map for context.
+The Catalogue is the verified survey: motion claims from 16 years of WISE data that were re-measured on raw SPHEREx exposures and confirmed. Cases are the visitor's saved measurements.
 The motivating problem is "Planet X": an unknown cold body near the Sun shows itself by moving against the stars; the same instruments serve any star, brown dwarf or variable source.
 
 How to work:
 - Many visitors are not scientists. On the Map especially, answer in everyday words first (what it is, how far, why it is interesting), and offer one next thing to do: look at its pictures, help with an unnamed one, or open the deep analysis.
-- When PAGE.section is "map" and the visitor asks to see, find or be shown something, use map_control and stay on the Map: fly_to for a named object, pick "cold_world" for a brown dwarf that optical catalogues do not list, pick "unnamed" for one they can help look at. Go to the Lab or the Catalogue only when they ask for measurements, tables or deep analysis. After map_control, describe the selected object from the returned card.
+- When PAGE.section is "map" and the visitor asks to see, find or be shown something, use map_control and stay on the Map: fly_to for a named object, pick "cold_world" for a known brown dwarf that is not listed in Gaia, pick "unnamed" for one with no database entry that they can help look at. Go to the Lab or the Catalogue only when they ask for measurements, tables or deep analysis. After map_control, describe the selected object from the returned card, and only that: PAGE.map holds three counts and one selected object, so say nothing about the other points. "Not in Gaia" means only that: do not say why (cold, faint) unless the card's kind says so. A distance marked as an estimate or as not known must be reported that way.
 - You receive PAGE, a JSON snapshot of what the visitor sees. Base every number you state on PAGE or on a tool result. If a number is not there, say it is not measured; never invent values, identifiers or references.
 - You can operate the site with tools. When the visitor asks to open, find, show, compare or filter something, do it with a tool, then describe what the result shows. After open_field the result already contains the measurements.
 - Answer first in one or two plain sentences a non-astronomer can follow, then, if useful, the technical statement with the numbers and their uncertainties. Keep it under 130 words unless asked for more. No headings. Units always.
@@ -33,7 +33,7 @@ export const TOOLS = [
       select: { type: "string", description: "census id, e.g. 6661-325678" }, view: { type: "string", enum: ["rpm", "sky"] }, open: { type: "boolean" } } } },
   { name: "map_control", description: "Operate the Map (the first screen). Fly to an object by name or survey id, show only the confirmed movers or only those unknown to Gaia, or fly to a confirmed mover nobody has named so that the visitor can help look at it. Returns the map state with the selected object's card.",
     parameters: { type: "object", properties: { fly_to: { type: "string", description: "a star's name (Barnard's Star, Sirius, a 2MASS or WISE designation) or a survey id such as 6275-47643" },
-      pick: { type: "string", enum: ["cold_world", "unnamed"], description: "let the map choose: cold_world = a named brown dwarf that the Gaia optical catalogue does not list; unnamed = a confirmed mover nobody has named, for the visitor to help look at" },
+      pick: { type: "string", enum: ["cold_world", "unnamed"], description: "let the map choose: cold_world = a known brown dwarf that is not listed in the Gaia optical catalogue; unnamed = a confirmed mover with no database entry, for the visitor to help look at" },
       show: { type: "string", enum: ["everything", "confirmed", "unknown_to_gaia"], description: "which points are displayed" } } } },
   { name: "navigate", description: "Go to a section of the site.", parameters: { type: "object", properties: { section: { type: "string", enum: ["map", "lab", "catalogue", "cases", "method"] } }, required: ["section"] } },
   { name: "get_page", description: "Read the current page state again (after the visitor or a tool changed it).", parameters: { type: "object", properties: {} } },
@@ -104,4 +104,57 @@ export async function handle(req, res, env = process.env) {
   } catch (e) {
     return send(res, 504, { error: e?.name === "AbortError" ? "The model took too long to answer." : "The model service could not be reached." });
   }
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// Visitors' answers on objects that have no SIMBAD entry ("take part" on the map). No account and nothing about the
+// visitor is kept: one line per answer {id, v, day} appended to a file on this server, and a tally per object.
+//   GET  /api/answers            -> { ok: true, total }            (is collection available here?)
+//   GET  /api/answers?ids=a,b,c  -> { tallies: { id: { moves, unsure, no } } }
+//   POST /api/answers {id, v, prev?} -> { tally: { moves, unsure, no } }   (prev = the visitor's earlier answer, taken back)
+//   env: MIRA_ANSWERS_FILE (default ./mira-answers.jsonl), MIRA_ANSWERS_PER10MIN (default 60 per address)
+const ANSWERS = new Set(["moves", "unsure", "no"]), ID_RE = /^\d{1,6}-\d{1,9}$/;
+let tallies = null, answersTotal = 0; const answerHits = new Map();
+async function loadTallies(file) {
+  if (tallies) return tallies;
+  tallies = new Map();
+  try {
+    const { readFile } = await import("node:fs/promises"), text = await readFile(file, "utf8");
+    for (const line of text.split("\n")) { if (!line) continue; try { const a = JSON.parse(line); count(a.id, a.v, a.prev); answersTotal++; } catch { /* a damaged line is skipped */ } }
+  } catch { /* no file yet */ }
+  return tallies;
+}
+function count(id, v, prev) {
+  if (!ID_RE.test(String(id)) || !ANSWERS.has(v)) return null;
+  const t = tallies.get(id) ?? { moves: 0, unsure: 0, no: 0 }; t[v]++; if (ANSWERS.has(prev) && t[prev] > 0) t[prev]--; tallies.set(id, t); return t;
+}
+function sameSite(req, env) {
+  const origin = req.headers.origin, host = String(req.headers["x-forwarded-host"] ?? req.headers.host ?? ""); if (!origin) return true;
+  let oh = ""; try { oh = new URL(origin).host; } catch { /* malformed */ }
+  return oh === host || String(env.MIRA_ALLOWED_ORIGINS ?? "").split(",").map((x) => x.trim()).includes(origin);
+}
+export async function handleAnswers(req, res, env = process.env) {
+  const file = env.MIRA_ANSWERS_FILE ?? "./mira-answers.jsonl";
+  if (!sameSite(req, env)) return send(res, 403, { error: "Answers are accepted only from this site." });
+  const T = await loadTallies(file);
+  if (req.method === "GET") {
+    const ids = new URL(req.url ?? "/", "http://x").searchParams.get("ids");
+    if (!ids) return send(res, 200, { ok: true, total: answersTotal });
+    const out = {}; for (const id of ids.split(",").slice(0, 60)) if (ID_RE.test(id)) out[id] = T.get(id) ?? { moves: 0, unsure: 0, no: 0 };
+    return send(res, 200, { tallies: out });
+  }
+  if (req.method !== "POST") return send(res, 405, { error: "GET or POST" });
+  const peer = String(req.socket?.remoteAddress ?? "?"), local = /^(::1|127\.|::ffff:127\.)/.test(peer);
+  const ip = local && req.headers["x-forwarded-for"] ? String(req.headers["x-forwarded-for"]).split(",").pop().trim() : peer, now = Date.now();
+  const L = (answerHits.get(ip) ?? []).filter((t) => now - t < 600000); L.push(now); answerHits.set(ip, L);
+  if (answerHits.size > 5000) for (const [k, v] of answerHits) if (!v.length || now - v[v.length - 1] > 600000) answerHits.delete(k);
+  if (L.length > +(env.MIRA_ANSWERS_PER10MIN ?? 60)) return send(res, 429, { error: "Too many answers in a short time." });
+  if (answersTotal > 500000) return send(res, 507, { error: "The answers file is full." });
+  let raw = ""; await new Promise((ok) => { req.on("data", (c) => { raw += c; if (raw.length > 2000) { req.destroy(); ok(); } }); req.on("end", ok); req.on("error", ok); });
+  let b; try { b = JSON.parse(raw); } catch { return send(res, 400, { error: "Bad request." }); }
+  const id = String(b?.id ?? ""), v = b?.v, prev = ANSWERS.has(b?.prev) && b.prev !== v ? b.prev : undefined;
+  if (!ID_RE.test(id) || !ANSWERS.has(v)) return send(res, 400, { error: "Unknown object or answer." });
+  try { const { appendFile } = await import("node:fs/promises"); await appendFile(file, JSON.stringify({ id, v, ...(prev ? { prev } : {}), day: new Date().toISOString().slice(0, 10) }) + "\n"); }
+  catch { return send(res, 500, { error: "The answer could not be saved." }); }
+  answersTotal++; return send(res, 200, { tally: count(id, v, prev) });
 }

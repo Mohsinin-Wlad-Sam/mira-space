@@ -11,12 +11,15 @@ refreshed. Outside figures are sourced in section "Why it matters" below.
 
 **High-level summary (≈150 words)**
 NASA's SPHEREx is photographing the whole sky in 102 infrared colours, and every image is public. But one image is
-a 65-megabyte scientific file in which each pixel has a different colour: today only specialists can look at what
-the public paid for. MIRA opens it to everyone. Its front door is a map of the Sun's neighbourhood where every
-point is a real star at its real distance; the 12,329 orange ones were caught moving and confirmed, one by one, on
-SPHEREx images. Click one and two NASA pictures taken eleven years apart show it move. Some are cold worlds that no
-optical catalogue lists and nobody has named: anyone can look at them and report what they see, the way 150,000
-volunteers found about 3,000 brown dwarfs with NASA's Backyard Worlds. One click deeper is the Lab the challenge
+a 65-megabyte scientific file in which each pixel has a different colour, made for specialists' software. MIRA
+makes them something anyone can look at. Its front door is a model of the space around the Sun where every point is
+a real star at its measured or estimated distance; the 12,329 orange ones (those of the 17,604 confirmed movers that
+have a distance) were caught moving and confirmed, one by
+one, on SPHEREx images. Click one: three real NASA pictures (2MASS about 1999, WISE 2010, SPHEREx today) show it at three places along
+its measured path. For 635 of the confirmed movers there is no Gaia source and no entry in SIMBAD, astronomy's
+reference database; a prototype lets visitors record what they see in their pictures, with no account, following
+NASA's Backyard Worlds, where 150,000 volunteers helped find about 3,000 brown dwarfs.
+One click deeper is the Lab the challenge
 asks for: type any position, watch that field through time, and measure what moved, how fast and what it is.
 No install, no account, no server.
 
@@ -26,22 +29,24 @@ No install, no account, no server.
 
 0. *Why it matters, and to whom.* SPHEREx cost about US$488 million (NASA/JPL press kit) and its data are public,
    but unusable without a research pipeline. MIRA makes them usable by four groups, in this order of size:
-   - **Anyone curious** (about 6 billion people are online, ITU 2025): a map that runs in a phone browser, where
-     each star has a card in plain words and real pictures that show it moving.
+   - **Anyone curious**: a map that runs in a phone browser with no install or account, where each star caught
+     moving has a card in plain words and three real pictures to compare.
    - **Students and teachers**: a real-data lab for a classroom without a telescope. Students measure a star's
      motion on NASA's own images and check it against ESA's Gaia (ε Indi B: 4.70 against 4.68″ per year).
    - **Citizen scientists**: NASA's Backyard Worlds: Planet 9 showed what the public can do, with 150,000
      volunteers helping to find about 3,000 brown dwarfs by spotting moving dots in WISE images (NASA, 13 Jan
-     2021). MIRA brings that task to SPHEREx: confirmed movers that nobody has named are one click away, with their
-     pictures and three answer buttons (prototype: answers stay on the device until the visitor sends them).
+     2021). MIRA tries the same idea on its own catalogue: 635 confirmed movers with no Gaia source and no SIMBAD
+     entry are one click away, with their pictures and three answer buttons. This is a prototype: an answer is recorded by the site's own small endpoint when it runs (no account, nothing about the visitor kept) and the card shows all visitors' tally; without that endpoint it stays on the device.
    - **Researchers**: instruments on raw exposures for any field, a verified catalogue, exports.
    The cost of reaching all of them is that of a static website: the browser reads NASA's archive directly.
+   What we will measure in a first pilot (one month, three classrooms and an open call): how many visitors open a
+   card, how many answers are sent on the 635 objects, and on how many of them five or more visitors agree.
 1. *The problem.* SPHEREx re-images the sky every six months in 102 infrared bands; nobody can look at it all.
    Existing blink tools stop at WISE. And SPHEREx is hard to blink: its pixels are 6″, it rolls between visits, and
    every exposure sees a different colour, so a constant star flickers and the eye cannot tell a mover from noise.
 2. *What we built.* **The map** (first screen): the Sun's neighbourhood in 3D, out to the oldest light, with the
    confirmed movers marked. A click flies to a star and opens its card: what it is in plain words, its distance,
-   how long it takes to cross a full Moon's width of sky, and two real pictures (2MASS about 1999, WISE 2010) on a
+   how long it takes to cross a full Moon's width of sky, and three real pictures (2MASS about 1999, WISE 2010, and SPHEREx's own, read from NASA's archive on demand) on a
    slider with its measured path to today. **The Lab** (deep analysis, one click from every card): RA/Dec or a
    name in; out comes (a) **Evolution**, a time bar the user steers through three NASA pictures of the field
    (2MASS, WISE, then one deep SPHEREx image per visit); (b) the **Motion detector**, every source of the field
@@ -97,12 +102,14 @@ data and checked against independent references; the assistant is told to use on
 
 1. **The sky is not still.** The map with its introduction card. One line: "NASA photographed the whole sky.
    MIRA lets anyone see what moves in it."
-2. **The problem, for everyone.** A US$488 million mission whose public images only specialists can read: 65 MB
-   files, 102 colours, never the same wavelength twice. Six billion people online, a few thousand who can use it.
-3. **Click a star, watch it move.** The card of a brown dwarf no optical catalogue lists: two real NASA pictures,
-   eleven years apart, its path to today, "18 light-years from the Sun".
-4. **Take part.** NASA's own precedent: 150,000 volunteers, about 3,000 brown dwarfs. In MIRA: 36 confirmed movers
-   on the map that nobody has named, with pictures and three answer buttons. A classroom can do it.
+2. **The problem, for everyone.** A US$488 million mission whose public images are made for specialists' software:
+   65 MB files, 102 colours, never the same wavelength twice.
+3. **Click a star, compare three pictures.** The card of a brown dwarf that is not in the Gaia optical catalogue:
+   2MASS 1999, WISE 2010 and SPHEREx 2025 on one slider, the object in the circle each time, "18 light-years from
+   the Sun".
+4. **Take part (prototype).** NASA's own precedent: 150,000 volunteers, about 3,000 brown dwarfs. In MIRA: 635
+   confirmed movers with no Gaia source and no SIMBAD entry, with pictures and three answer buttons, no account. A
+   classroom can do it; the pilot will tell us whether they do.
 5. **One click deeper: the Lab.** ε Indi B: press play, three NASA pictures of the field follow one another and the
    brown dwarf walks along its dated track; "12 sources measured, 1 moved"; Astrometer (+3.99, −2.49″/yr against
    Gaia's +3.98, −2.47), Spectrograph with the methane band. "Read live from NASA's archives. No server."
@@ -116,9 +123,9 @@ data and checked against independent references; the assistant is told to use on
 
 | t | Picture | Caption / voice |
 |---|---|---|
-| 0–5 s | The map: stars drifting as the time slider runs; the introduction card | "The sky is not still. NASA has photographed all of it. Almost nobody can look." |
-| 5–12 s | Click "Show me one": fly to a brown dwarf; its card; the slider dragged from 1999 to 2010, the dot following the circle | "MIRA shows anyone a real star moving, in real NASA pictures." |
-| 12–17 s | "Help look at one": an unnamed object, the three answer buttons | "Some of them nobody has named. You can help look, as 150,000 volunteers did for NASA." |
+| 0–5 s | The map: stars drifting as the time slider runs; the introduction card | "The sky is not still. NASA has photographed all of it, in files made for specialists." |
+| 5–12 s | Click "Show me one": fly to a brown dwarf; its card; the slider dragged from 1999 to 2010, the dot following the circle | "MIRA lets anyone compare real NASA pictures and see a star change place." |
+| 12–17 s | "Help look at one": an object with no SIMBAD entry, the three answer buttons and the tally | "Some are in no reference database. Anyone can take a first look, as 150,000 volunteers did for NASA." |
 | 17–23 s | "Deep analysis": ε Indi B in the Lab, play pressed, the track growing; the Motion detector's table; the Astrometer plot | "One click deeper, instruments measure any place in the sky: what moved, how fast, what it is." |
 | 23–26 s | Catalogue funnel and the blind-test line | "Every claim checked on NASA's raw images." |
 | 26–30 s | Logo + URL | "MIRA. Find what moves." |

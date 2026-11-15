@@ -56,12 +56,14 @@ async function jpegTile(blob: Blob): Promise<Float32Array | null> {
   return out;
 }
 const tiles = new Map<string, Promise<Float32Array | null>>();
-function tile(s: Survey, order: number, npix: number, signal?: AbortSignal): Promise<Float32Array | null> {
+function tile(s: Survey, order: number, npix: number): Promise<Float32Array | null> {
   const url = `${s.url}/Norder${order}/Dir${Math.floor(npix / 10000) * 10000}/Npix${npix}.${s.fmt}`;
   let p = tiles.get(url);
   if (!p) {
-    p = (async () => { const ac = new AbortController(), h = setTimeout(() => ac.abort(), 30000); signal?.addEventListener("abort", () => ac.abort());
-      try { const r = await fetch(url, { signal: ac.signal }); if (!r.ok) return null;
+    // a tile is shared by every picture that needs it: it is not cancelled when one of them goes away, and only a tile
+    // the archive says does not exist (404) is remembered as missing
+    p = (async () => { const ac = new AbortController(), h = setTimeout(() => ac.abort(), 30000);
+      try { const r = await fetch(url, { signal: ac.signal }); if (!r.ok) { if (r.status !== 404) tiles.delete(url); return null; }
         if (s.fmt === "jpg") return await jpegTile(await r.blob());
         const f = parseFitsImage(await r.arrayBuffer()); return f && f.w === TILE && f.h === TILE ? f.data : null; }
       catch { tiles.delete(url); return null; } finally { clearTimeout(h); } })();
@@ -84,7 +86,7 @@ async function sample(s: Survey, order: number, N: number, toSky: (i: number, j:
     tn[q] = face * 4 ** order + interleave(ix >> TB, iy >> TB, order); tp[q] = cell(ix & (TILE - 1), iy & (TILE - 1), orient); want.add(tn[q]); q++;
   }
   if (want.size > 9) return null;
-  const got = new Map<number, Float32Array | null>(); await Promise.all([...want].map(async (t) => got.set(t, await tile(s, order, t, signal))));
+  const got = new Map<number, Float32Array | null>(); await Promise.all([...want].map(async (t) => got.set(t, await tile(s, order, t)))); if (signal?.aborted) return null;
   if (![...got.values()].some(Boolean)) return null;
   const out = new Float32Array(N * N); let ok = 0;
   for (let k = 0; k < N * N; k++) { let sum = 0, m = 0; for (let u = 0; u < 4; u++) { const d = got.get(tn[k * 4 + u]), v = d ? d[tp[k * 4 + u]] : NaN; if (Number.isFinite(v)) { sum += v; m++; } } out[k] = m ? sum / m : NaN; if (m) ok++; }

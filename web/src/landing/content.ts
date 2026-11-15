@@ -204,14 +204,13 @@ export const navLinks: NavLink[] = [
 //   150,000 volunteers, about 3,000 brown dwarfs: NASA, "Citizen Scientists Help Create 3D Map of Cosmic
 //     Neighborhood", 13 Jan 2021 (Backyard Worlds: Planet 9)
 //   US$488 million: SPHEREx lifecycle cost, NASA/JPL press kit
-//   6 billion people online: ITU Facts and Figures 2025
 //   12,329 / 92% / 5,757 / 17,600: our own results (see the Method page of the app)
 // ---------------------------------------------------------------------------
 export const hero = {
   /** Shown in the eyebrow until the live census numbers arrive. */
   eyebrow: 'NASA SPHEREx · open to everyone, in your browser',
   title: 'The sky is not still',
-  sub: 'Watch real stars move in NASA pictures · help find the Sun’s unknown neighbours',
+  sub: 'See real stars change place between NASA pictures · help look at the ones in no reference database',
   cta: { label: 'Open the map', href: viewer.home } satisfies Cta,
   tour: { label: 'See a cold world move', href: viewer.coldWorld } satisfies Cta,
   image: images.hero as SiteImage,
@@ -225,10 +224,10 @@ export const features: Feature[] = [
     title: 'Click a star. Watch it move.',
     body:
       'NASA’s newest sky survey, SPHEREx, is photographing the whole sky in 102 infrared colours, and every image ' +
-      'is public. But one image is a 65-megabyte scientific file only specialists can read. Mira turns them into ' +
-      'a map of the Sun’s neighbourhood where every point is a real star at its real distance. Click one, and two ' +
-      'NASA pictures taken eleven years apart show it moving, with the path it has followed to today. No install, ' +
-      'no account, and it works on a phone.',
+      'is public. But one image is a 65-megabyte scientific file made for specialists’ software. Mira turns them ' +
+      'into a model of the space around the Sun where every point is a real star at its measured or estimated ' +
+      'distance. Click one that was caught moving: three real NASA pictures, from 1999, 2010 and SPHEREx today, ' +
+      'show it at three places along its measured path. No install, no account, and it works on a phone.',
     cta: { label: 'Open the map', href: viewer.home },
     image: images.motion,
   },
@@ -236,12 +235,13 @@ export const features: Feature[] = [
     id: 'take-part',
     align: 'right',
     eyebrow: 'Take part',
-    title: 'Help find our unknown neighbours',
+    title: 'Help look at the ones in no reference database',
     body:
-      'The coldest worlds near the Sun give off no visible light. They are found because they move. In NASA’s ' +
-      'Backyard Worlds project, 150,000 volunteers looking for moving dots in older images have helped find about ' +
-      '3,000 of them. Mira brings that search to SPHEREx: the map holds confirmed movers that no optical ' +
-      'catalogue lists and nobody has named. Open one, look at its pictures, and say what you see.',
+      'The coldest objects near the Sun give off almost no visible light. They are found because they move. In ' +
+      'NASA’s Backyard Worlds project, 150,000 volunteers looking for moving dots in older images have helped find ' +
+      'about 3,000 brown dwarfs. Mira tries the same idea on its own catalogue, as a prototype: 635 confirmed ' +
+      'movers have no Gaia source and no entry in SIMBAD, astronomy’s reference database. Open one, compare its ' +
+      'three pictures, and say what you see. No account, and nothing about you is kept.',
     cta: { label: 'Look at one', href: viewer.takePart },
     image: images.galaxy,
   },
@@ -290,8 +290,8 @@ export const features: Feature[] = [
     eyebrow: 'Sustainability',
     title: 'Free for everyone, built to last',
     body:
-      'The public paid US$488 million for SPHEREx; with Mira it can look at what it bought. The browser reads ' +
-      'NASA’s archive directly, so serving the world costs a few dollars a month. Free and open for everyone; ' +
+      'SPHEREx cost about US$488 million of public money; Mira makes its images something the public can look ' +
+      'at. The browser reads NASA’s archive directly, so serving it costs a few dollars a month. Free and open; ' +
       'sustained by research and education grants and by work for archives and universities that want the same ' +
       'instruments on their own data.',
     cta: { label: 'Read the plan', href: links.plan },
@@ -304,8 +304,8 @@ export const stats: { image: SiteImage; items: Stat[] } = {
   image: images.stats,
   items: [
     { value: 12329, suffix: '', label: 'Moving stars on the map, each confirmed on SPHEREx images' },
-    { value: 150000, suffix: '', label: 'Volunteers who searched older NASA images this way' },
-    { value: 6, suffix: ' billion', label: 'People online who can open it: no install, no account' },
+    { value: 150000, suffix: '', label: 'Volunteers in NASA’s Backyard Worlds: the precedent we follow' },
+    { value: 635, suffix: '', label: 'Confirmed movers with no Gaia source and no SIMBAD entry, waiting for a first look' },
   ],
 }
 

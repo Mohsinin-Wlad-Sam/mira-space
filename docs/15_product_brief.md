@@ -5,14 +5,14 @@
 ## 0. Who it is for, and why it matters
 
 NASA's SPHEREx cost about US$488 million (NASA/JPL press kit) and its images are public, but one image is a 65 MB
-scientific file that only specialists can read. MIRA's first job is to open it to everyone; its second, to give
+scientific file made for specialists' software. MIRA's first job is to make them something anyone can look at; its second, to give
 those who want to go deeper real instruments. In order of audience size:
 
 | Who | What they get | Evidence that it matters |
 |---|---|---|
-| Anyone curious, on a phone | A map of the Sun's neighbourhood; each star a card in plain words with two real NASA pictures that show it moving | About 6 billion people are online (ITU, Facts and Figures 2025); the site needs no install, account or server |
+| Anyone curious, on a phone | A model of the space around the Sun; each star caught moving has a card in plain words with three real NASA pictures to compare (2MASS about 1999, WISE 2010, SPHEREx today) | The site needs no install, account or server. Not yet measured: the first pilot will count card openings |
 | Students and teachers | A real-data lab without a telescope: measure a star's motion and check it against Gaia | ε Indi B: 4.70 against Gaia's 4.68″ per year, on NASA's own images |
-| Citizen scientists | Confirmed movers nobody has named, with pictures and answer buttons (prototype) | NASA's Backyard Worlds: Planet 9: 150,000 volunteers helped find about 3,000 brown dwarfs by spotting moving dots in WISE images (NASA/JPL, 13 Jan 2021) |
+| Citizen scientists | 635 confirmed movers with no Gaia source and no SIMBAD entry (36 of them placed on the map, the rest shown without a distance), with pictures and answer buttons (prototype: an answer is recorded by the site's own small endpoint when it runs (no account, nothing about the visitor kept) and the card shows all visitors' tally; without that endpoint it stays on the device) | A precedent, not a result of ours: NASA's Backyard Worlds: Planet 9, where 150,000 volunteers helped find about 3,000 brown dwarfs by spotting moving dots in WISE images (NASA/JPL, 13 Jan 2021) |
 | Researchers | The Lab's instruments on raw exposures for any field; a verified catalogue; exports | Blind control run: 92% of known movers found, no false alarm among 5,757 still stars |
 
 The interface follows that order: the **map** is the first screen and shows results as pictures and cards; the
@@ -41,7 +41,7 @@ on an HPC cluster. Every instrument serves the chain *find → measure → ident
 
 | Instrument | Question it answers | Output |
 |---|---|---|
-| Map (first screen) | What is out there, and what moved? | 3D neighbourhood of the Sun with the confirmed movers marked; a card per object with two real pictures (1999, 2010) and its path; answer buttons for the unnamed ones |
+| Map (first screen) | What is out there, and what moved? | 3D neighbourhood of the Sun with the confirmed movers marked; a card per object with three real pictures (2MASS ~1999, WISE 2010, SPHEREx read on demand) and its measured path; answer buttons for the unnamed ones |
 | Finder (sky chart + verified catalogue) | Where should I point? | target or field |
 | Epoch imager | What does this field look like through time? | three NASA pictures of the same field on one time bar: 2MASS (~1999), WISE (2010), one deep SPHEREx image per visit (2025–26); playback control |
 | Motion detector | Which sources in this field moved? | table: motion, significance, known/unknown; vectors on the image |

@@ -8,12 +8,15 @@ run, on their own data.
 
 **Impact, before money.** The return on a public mission of about US$488 million [12] is measured in how many
 people can use its data. Today that is a few thousand specialists. MIRA widens it in three steps, each with an
-existing proof that the audience is there: the curious public (about 6 billion people are online [13], and the map
-runs on a phone); classrooms without a telescope (online-observatory memberships are already sold to schools,
+existing sign that the audience is there: the curious public (the map runs in a phone browser; the 6 billion
+people online [13] bound the reach, they are not our audience); classrooms without a telescope (online-observatory memberships are already sold to schools,
 section 1); and citizen scientists (150,000 volunteers helped NASA find about 3,000 brown dwarfs by spotting
 moving dots in older images [1]). What we will count after launch: visitors who open an object's card, answers
-sent on unnamed objects and how many of those objects several visitors agree on, classrooms that complete the
-"measure a star" exercise, and fields measured in the Lab.
+sent on the 635 objects with no Gaia source and no SIMBAD entry and how many of those several visitors agree on, classrooms
+that complete the "measure a star" exercise, and fields measured in the Lab. First pilot: one month, three
+classrooms and an open call; target: 200 of the 635 objects looked at by at least five visitors. The take-part
+flow is a prototype today: answers are recorded, with no account, by the same small optional process that serves
+the assistant, and the card shows the tally; at scale it would move to a Zooniverse project.
 
 **Positioning.** *MIRA turns public SPHEREx exposures into measured, shareable evidence about any source: an
 instrument bench in the browser and a survey verified on raw NASA data.* Planet X — an unknown cold body near the

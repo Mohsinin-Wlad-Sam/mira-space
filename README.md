@@ -5,16 +5,20 @@
 **NASA Space Apps Challenge 2026 · "Planet X and SPHEREx"** · team *assrar-dawla*
 
 NASA's SPHEREx is photographing the whole sky in 102 infrared colours and every image is public, but one image is a
-65 MB scientific file that only specialists can read. **MIRA opens it to everyone.**
+65 MB scientific file made for specialists' software. **MIRA makes them something anyone can look at.**
 
-- **For anyone curious:** a map of the Sun's neighbourhood where every point is a real star at its real distance.
-  The 12,329 orange ones were caught moving and confirmed on SPHEREx images. Click one: two NASA pictures taken
-  eleven years apart show it move, with its path to today. Works in a phone browser; no install, no account.
+- **For anyone curious:** a model of the space around the Sun where every point is a real star at its measured or
+  estimated distance. The 12,329 orange ones were caught moving and confirmed on SPHEREx images (they are the ones,
+  among the catalogue's 17,604 confirmed movers, that have a distance and so a place on the map). Click one: compare
+  three real NASA pictures (2MASS about 1999, WISE 2010, SPHEREx today) and follow its measured path. Works in a phone browser; no
+  install, no account.
 - **For students and teachers:** measure a star's motion on NASA's own images and check it against ESA's Gaia
   (ε Indi B: 4.70 against 4.68″ per year). A classroom needs no telescope.
-- **For citizen scientists:** some confirmed movers are cold worlds that no optical catalogue lists and nobody has
-  named. Look at their pictures and say what you see, as 150,000 volunteers did for NASA's Backyard Worlds project,
-  helping to find about 3,000 brown dwarfs ([NASA, 2021](https://www.jpl.nasa.gov/news/citizen-scientists-help-create-3d-map-of-cosmic-neighborhood/)).
+- **For citizen scientists (prototype):** 635 confirmed movers away from the Galactic plane have no Gaia source
+  and no entry in SIMBAD, astronomy's reference database (they are listed in the WISE catalogues; SIMBAD, which indexes
+  objects from the astronomical literature, has nothing at their position). A visitor compares the three pictures and answers one question; an answer is recorded by the site's own small endpoint when it runs (no account, nothing about the visitor kept) and the card shows all visitors' tally; without that endpoint it stays on the device.
+  The precedent is NASA's Backyard Worlds, where 150,000 volunteers helped find about 3,000 brown dwarfs
+  ([NASA/JPL, 2021](https://www.jpl.nasa.gov/news/citizen-scientists-help-create-3d-map-of-cosmic-neighborhood/)).
 - **For researchers:** one click deeper, the Lab: give a position, and instruments read every SPHEREx exposure of
   that field straight from the public archive and measure it: **which sources moved** since 1999 and 2010 and how
   fast; for the nearest, a parallax; a 0.75–5 µm spectrum with its molecular bands; whether they brightened or
@@ -30,7 +34,7 @@ moving against the stars. The same tools serve any star, brown dwarf or variable
 
 | Section | What you do there | Built from |
 |---|---|---|
-| **Map** (`/explore/`, first screen) | The Sun's neighbourhood in 3D, out to the oldest light. Confirmed movers are marked; a click flies to one and opens its card: plain-language kind, distance, two real pictures (2MASS ~1999, WISE 2010) on a slider with its measured path, what was checked on SPHEREx, and, for the unnamed ones, three answer buttons to take part. | 3D catalogue from the survey (`census/export_space.py`), joined to the verified catalogue; pictures from IRSA's HiPS tiles of 2MASS and WISE |
+| **Map** (`/explore/`, first screen) | The Sun's neighbourhood in 3D, out to the oldest light. Confirmed movers are marked; a click flies to one and opens its card: plain-language kind, distance, three real pictures (2MASS ~1999, WISE 2010, and SPHEREx's own, read from NASA's archive on demand) on a slider with its measured path, what was checked on SPHEREx, and, for the unnamed ones, three answer buttons to take part. | 3D catalogue from the survey (`census/export_space.py`), joined to the verified catalogue; pictures from IRSA's HiPS tiles of 2MASS and WISE |
 | **Lab** (`/explore/#lab`) | Deep analysis. One field, six instruments: **Evolution** (one time bar you steer through three NASA pictures of the same field: 2MASS ~1999, WISE 2010, then one deep SPHEREx image per visit, so a mover walks across the frame), **Motion detector** (every source: moved / brighter / fainter / new / steady, with significance and its Gaia identity), **Astrometer** (position against time, proper motion, parallax), **Spectrograph** (0.75–5 µm spectrum, molecular bands, methane), **Photometer** (brightness against 1999 and 2010, and visit to visit), **Detection limits** (which planet or brown dwarf the field's depth would reveal). Plus every exposure with NASA's flags, and exports (CSV, FITS cube, Python, link, embed). | SPHEREx Level-2 exposures read by HTTP Range from `s3://nasa-irsa-spherex`; Gaia DR3, AllWISE, 2MASS from CDS mirrors |
 | **Catalogue** (`#catalogue`) | The survey, verified: filter and sort the confirmed movers, see them on a reduced proper-motion diagram and an all-sky chart, read the evidence for each, open it in the Lab | 39.9 billion WISE detections linked on a cluster, each claim re-measured on raw SPHEREx exposures |
 | **Cases** (`#cases`) | Your saved measurements, notes, target lists, exports; the survey's candidates with their verification | browser storage only |

@@ -64,9 +64,9 @@ async function nasaJson(key: string, url: string): Promise<any | null> {
 /** DONKI CME analyses of the last `days` days: the hourly static copy when fresh, else browser-direct (CORS-enabled) */
 export async function loadCMEs(days = 10): Promise<CME[]> {
   const end = new Date(), start = new Date(end.getTime() - days * 864e5), f = (d: Date) => d.toISOString().slice(0, 10);
-  const L = (await loadLive()) as any; let j: any = liveIsFresh(L) && L.cmes?.length ? L.cmes : null;
+  const L = (await loadLive()) as any; let j: any = liveIsFresh(L) && Array.isArray(L.cmes) ? L.cmes : null;      // an empty list is an answer too: a quiet Sun
   if (!j) j = await nasaJson("mira.donki", `https://api.nasa.gov/DONKI/CMEAnalysis?startDate=${f(start)}&endDate=${f(end)}&mostAccurateOnly=true&api_key=${NASA_KEY}`);
-  if (!Array.isArray(j) || !j.length) j = L?.cmes ?? [];
+  if (!Array.isArray(j)) j = L?.cmes ?? [];
   try {
     return (j as any[]).filter((c) => c.speed && c.time21_5 && c.latitude !== null && c.longitude !== null).map((c) => ({
       id: c.associatedCMEID, t21: Date.parse(c.time21_5), speed: c.speed, lat: c.latitude, lon: c.longitude, half: c.halfAngle ?? 30, type: c.type, link: c.associatedCMELink, note: c.note ?? "" }));

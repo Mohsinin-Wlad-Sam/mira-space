@@ -16,6 +16,7 @@ assistant's proxy, which holds the model key; without it everything else works a
 | `/data/space`, `/data/universe`, `/space`, `/live`, `/data/candidates.json`, `/data/neighbors.json` | 3D catalogues, textures, hourly NASA feeds | ~35 MB |
 | `/validation.json` | result of the last engine validation run (shown on the Method page) | 4 kB |
 | `/api/assistant` | optional proxy to the language model (see below) | — |
+| `/api/answers` | optional, same process: visitors' answers on the map's unstudied objects, one line each in a file (`MIRA_ANSWERS_FILE`); no account, nothing about the visitor stored | grows by ~60 bytes per answer |
 
 The older survey feeds (`/data/obj`, `/data/sky`, `/data/twins`, `movers.json` …, ~290 MB) are no longer used by the
 app and need not be deployed.

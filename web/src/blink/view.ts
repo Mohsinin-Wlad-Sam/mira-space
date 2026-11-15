@@ -584,7 +584,7 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
   /** one word and one phrase on what happened to a source */
   function verdict(r: ChangeRow): { chip: string; cls: string; text: string } {
     const m = r.pm, d = [r.dW2, r.dW1].find((x) => x && Math.abs(x.z) >= 5 && Math.abs(Math.log(x.ratio)) > 0.26) ?? null;
-    if (r.tags.includes("MOVED") && m) return { chip: "moved", cls: "pos", text: `${m.tot.toFixed(m.tot < 1 ? 2 : 1)}″ per year toward ${dirOf(m.ra, m.dec)}${r.tags.includes("SATURATED") ? " · saturated: measured on the wings of its image, agrees with Gaia" : r.tracked ? ` · ${r.why}` : ""}` };
+    if (r.tags.includes("MOVED") && m) return { chip: "moved", cls: "pos", text: `${m.tot.toFixed(m.tot < 1 ? 2 : 1)}″ per year toward ${dirOf(m.ra, m.dec)}${r.tags.includes("SATURATED") ? " · saturated: measured on the wings of its image, agrees with Gaia" : r.tracked && r.why ? ` · ${r.why}` : ""}` };
     if (r.tags.includes("BRIGHTER") && d) return { chip: "brighter", cls: "warn", text: `${d.ratio.toFixed(1)}× its ${d.year.toFixed(0)} brightness` };
     if (r.tags.includes("FAINTER") && d) return { chip: "fainter", cls: "warn", text: `${Math.round((1 - d.ratio) * 100)}% fainter than in ${d.year.toFixed(0)}` };
     if (r.tags.includes("NEW")) return { chip: "new", cls: "pos", text: "nothing here in the 2010 and 1999 surveys" };
@@ -694,7 +694,8 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
     const refPm = probe.follow && hasPm() ? { ra: target.pmra!, dec: target.pmdec!, name: `${target.source ?? "catalogue"} motion` } : r?.gaia && gpm !== null ? { ra: r.gaia.pmra, dec: r.gaia.pmdec, name: "Gaia DR3 motion" } : null, ep = m ? plxError(m) : 0;
     const e = L ? Math.hypot(L.etot, report?.cal.pmRms ?? 0.03) : 0;
     const txt = L ? `Over ${L.base.toFixed(0)} years the source ${L.sig >= 5 && L.tot >= 0.08 ? `moved <b>${(L.tot * L.base).toFixed(1)}″</b>: <b>${L.tot.toFixed(L.tot < 1 ? 3 : 2)} ± ${e.toFixed(3)}″ per year</b> toward ${dirOf(L.ra, L.dec)} (${L.sig.toFixed(0)}σ)` : `did not move measurably: ${L.tot.toFixed(3)} ± ${e.toFixed(3)}″ per year`}.${
-        refPm ? ` ${refPm.name.replace(" motion", "")} gives ${Math.hypot(refPm.ra, refPm.dec).toFixed(3)}″ per year${Math.hypot(L.ra - refPm.ra, L.dec - refPm.dec) < Math.max(4 * e, 0.04) ? ": the two agree" : ": they disagree, so this image is probably contaminated"}.` : r && !r.gaia ? " Gaia has no motion for this source." : ""}`
+        refPm ? ` ${refPm.name.replace(" motion", "")} gives ${Math.hypot(refPm.ra, refPm.dec).toFixed(3)}″ per year${(() => { const gaiaRef = refPm.name.includes("Gaia"), diff = Math.hypot(L.ra - refPm.ra, L.dec - refPm.dec);       // a non-Gaia reference has an error of its own: a few per cent
+            return diff < Math.max(4 * e, 0.04, gaiaRef ? 0 : 0.04 * L.tot) ? ": the two agree" : gaiaRef ? ": they disagree, so this image is probably contaminated" : `: ${diff.toFixed(2)}″ per year apart, more than the errors of the two allow`; })()}.` : r && !r.gaia ? " Gaia has no motion for this source." : ""}`
       : say(answers?.move);
     const catPlx = probe.follow && target.plx ? target.plx / 1000 : r?.gaia?.plx ? r.gaia.plx / 1000 : null, catD = catPlx && catPlx > 0.001 ? ` The catalogue parallax, ${catPlx.toFixed(3)}″, puts it at ${(3.2616 / catPlx).toFixed(catPlx > 0.1 ? 1 : 0)} light-years.` : "";
     const dist = !m || m.plx === null ? catD : m.plx > 5 * ep ? ` Parallax from the SPHEREx exposures alone: ${m.plx.toFixed(2)} ± ${ep.toFixed(2)}″, a distance of <b>${(3.2616 / m.plx).toFixed(1)} light-years</b> (${(3.2616 / (m.plx + ep)).toFixed(1)}–${(3.2616 / Math.max(m.plx - ep, 1e-3)).toFixed(1)}).${catD}`
