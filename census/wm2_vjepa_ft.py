@@ -24,7 +24,7 @@ def video(tm, w2, sx, K, reps, flip, dev):
     return (v - mean) / std
 
 def main():
-    ap = argparse.ArgumentParser(); ap.add_argument("--data", required=True); ap.add_argument("--gpu", type=int, default=0); ap.add_argument("--lr", type=float, default=2e-5); ap.add_argument("--epochs", type=int, default=6); ap.add_argument("--reps", type=int, default=2); ap.add_argument("--batch", type=int, default=16); ap.add_argument("--tag", default="a"); ap.add_argument("--marks", default="")
+    ap = argparse.ArgumentParser(); ap.add_argument("--data", required=True); ap.add_argument("--gpu", type=int, default=0); ap.add_argument("--lr", type=float, default=2e-5); ap.add_argument("--epochs", type=int, default=6); ap.add_argument("--reps", type=int, default=2); ap.add_argument("--batch", type=int, default=16); ap.add_argument("--atlas", default=""); ap.add_argument("--tag", default="a"); ap.add_argument("--marks", default="")
     a = ap.parse_args(); root = os.path.expanduser(a.data); dev = torch.device(f"cuda:{a.gpu}"); torch.manual_seed(0)
     from transformers import AutoModel
     K = clips_zoom(root); sp = np.array([split(int(t)) for t in K[:, 0]]); tr_all = np.nonzero(sp == 0)[0]; te = np.nonzero(sp == 2)[0]; rng = np.random.default_rng(0)
@@ -68,6 +68,38 @@ def main():
             K_all = K; K = KM; sm = score(np.arange(len(KM))); K = K_all
             json.dump({"scores": [round(float(1 / (1 + np.exp(-v))), 3) for v in sm], "auc_test": res["auc_test"]}, open(f"{root}/vjft_{a.tag}_marks.json", "w")); print("marks scored", len(M), flush=True)
     np.savez(f"{root}/vjft_{a.tag}_test.npz", idx=te, y=y, score=sc); json.dump(res, open(f"{root}/vjft_{a.tag}.json", "w"), indent=1); print("RESULT", json.dumps(res), flush=True)
+    # --- research preview: where the fine-tuned model puts every test star and every mark in its own space of 1,024 numbers,
+    # flattened to a map. Nothing here is a measurement: it shows how the model groups what it was shown.
+    if a.atlas:
+        from census.wm2_run import tile_sky
+        def embed(KK):
+            m.eval(); o = []
+            with torch.no_grad():
+                for i in range(0, len(KK), 48):
+                    with torch.autocast("cuda", dtype=torch.bfloat16): h = m(pixel_values_videos=video(tm, w2, sx, KK[i:i + 48], a.reps, 0, dev), skip_predictor=True).last_hidden_state
+                    f = h.float().mean(1); o.append(torch.cat([f, head(f)], 1).cpu())
+            return torch.cat(o).numpy()
+        Kt = K[te]; E = embed(Kt); n_t = len(Kt); ra, dec = tile_sky(Kt[:, 0], Kt[:, 1] + Z / 2, Kt[:, 2] + Z / 2); kind = Kt[:, 3].astype(int); pmv = Kt[:, 6]
+        if mk and os.path.exists(mk):
+            Mk = json.load(open(mk))["marks"]; Em = embed(KM); E = np.concatenate([E, Em]); ra = np.concatenate([ra, [q["ra"] for q in Mk]]); dec = np.concatenate([dec, [q["dec"] for q in Mk]])
+            kind = np.concatenate([kind, np.full(len(Mk), 2)]); pmv = np.concatenate([pmv, [q["pm"] for q in Mk]])
+        F_ = E[:, :1024]; prob = 1 / (1 + np.exp(-E[:, 1024])); F0 = F_ - F_.mean(0); _, sv, Vt = np.linalg.svd(F0, full_matrices=False); P50 = F0 @ Vt[:50].T
+        try:
+            from sklearn.manifold import TSNE
+            xy = TSNE(2, perplexity=40, init="pca", random_state=0).fit_transform(P50); how = "t-SNE of the first 50 principal components of the 1,024 numbers"
+        except Exception as e:
+            print("no t-SNE:", e, flush=True); xy = P50[:, :2]; how = "the first two principal components of the 1,024 numbers"
+        xy = (xy - xy.min(0)) / np.maximum(1e-9, xy.max(0) - xy.min(0))
+        # for each mark: of its ten nearest test stars in the model's space, how many are real movers
+        Fn = F_ / np.linalg.norm(F_, axis=1, keepdims=True); knn = np.full(len(E), -1.0)
+        if len(E) > n_t:
+            sim = Fn[n_t:] @ Fn[:n_t].T; nb = np.argsort(-sim, 1)[:, :10]; knn[n_t:] = (Kt[:, 3][nb] == 1).mean(1)
+        json.dump({"model": "V-JEPA 2 ViT-L, fine-tuned on MIRA's movers", "how": how, "auc_test": log[-1]["auc_test"], "variance_in_first_two_components": float((sv[:2] ** 2).sum() / (sv ** 2).sum()),
+                   "n": {"still": int((kind == 0).sum()), "mover": int((kind == 1).sum()), "mark": int((kind == 2).sum())},
+                   "marks_among_movers": int((knn[n_t:] >= 0.5).sum()) if len(E) > n_t else None,
+                   "x": [round(float(v), 4) for v in xy[:, 0]], "y": [round(float(v), 4) for v in xy[:, 1]], "kind": kind.tolist(), "pm": [round(float(v), 2) for v in pmv], "score": [round(float(v), 3) for v in prob],
+                   "ra": [round(float(v), 4) for v in ra], "dec": [round(float(v), 4) for v in dec], "knn": [round(float(v), 1) for v in knn]}, open(os.path.expanduser(a.atlas), "w"))
+        print("atlas written", len(E), how, flush=True)
 
 if __name__ == "__main__":
     main()

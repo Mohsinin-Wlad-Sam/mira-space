@@ -23,9 +23,9 @@ exposures, and a small sky world model, trained on our university's GPUs, that r
 account, no server.
 
 **Link to project demo (choose one; both exist):**
-- 30-second film: `media/mira_film_30s.mp4` in the repository (1080p, 60 frames a second, 29.9 s, English captions on
-  screen). Upload it to YouTube or Drive with public access and paste that link. It can be rendered again with
-  `web/scripts/render_film.mjs`.
+- 30-second film: `media/mira_film_30s.mp4` in the repository (1080p, 24 pictures a second, 30.0 s; a 720p copy
+  beside it). Upload it to YouTube or Drive with public access and paste that link. In the YouTube description put:
+  'Time and Space' by Scott Buckley - released under CC-BY 4.0. www.scottbuckley.com.au
 - Seven slides: the deck at `⟨hosted URL⟩/deck/` (the product runs inside the slides), or its PDF `media/MIRA_deck.pdf`.
 
 **Link to final project:** ⟨hosted URL⟩ · documentation ⟨hosted URL⟩/docs/ · repository github.com/Mohsinin-Wlad-Sam/assrar-dawla (must be public)
@@ -131,39 +131,40 @@ text and layout under the team's direction; every use is logged in `docs/07_si_u
 afterwards. A language model (K2 Horizon) runs the in-product assistant: it explains and operates the page and is
 restricted to numbers the instruments computed. A small neural network trained by the team (the "sky world model")
 draws forecast pictures of a field: these are AI-generated and carry a visible "AI-generated · prediction" label in
-the Lab, in the deck and in the film. No other picture, video or audio is AI-generated: the sky pictures are NASA
-data, the film's music is "Impact Prelude" by Kevin MacLeod (CC BY 4.0) and its opening shot is NASA/JPL-Caltech's
-own animation. The idea, the scientific choices and the validation are the team's.
+the Lab. The film and the deck show no AI-generated picture: every shot is recorded from the running site on NASA
+data; the film's music is "Time and Space" by Scott Buckley (CC BY 4.0). Two more networks only point at places
+(a whole-sky "scout" trained by the team, and Meta's published V-JEPA 2, fine-tuned): their marks are checked against
+ESA's Gaia catalogue and shown as what they are. The idea, the scientific choices and the validation are the team's.
 
 ## 7 slides (built: `web/deck/index.html`, served at `/deck/`)
 
 Arrow keys or a clicker turn the slides; F goes full screen. Slides 1, 3 and 4 run the live product inside the slide.
+Each slide is one statement and one picture; the detail is in the documentation.
 
-1. **Title.** MIRA · See the sky change. Team Mohsinin Wlad Dario, the five names, Ben Guerir, the challenge. Behind
-   it the Sky map plays its 27 years.
-2. **The challenge.** "The sky moves. Almost nobody can watch it." 102 colours; 1,628,230 exposures indexed; 27
-   years on one time bar; the composition picture only SPHEREx allows.
-3. **What we built.** The Sky map, live in the slide: search, time bar, planets, what the sky is made of, click any
-   place.
-4. **The Lab.** Live on Epsilon Indi B: point, play, four answers; the challenge's tips ticked one by one.
-5. **Validity.** The funnel 39.9 billion → 1.56 million → 202,528 → 17,604; blind test 92% / 0 false alarms;
-   0.011″/yr; 0.25″; 8′ against JPL Horizons; the world model's training curve and its real-star test.
-6. **Impact and plan.** Explorer (free), Researcher, Mission; US$150 a year to keep the site alive; honest status.
-7. **Next, and who we are.** Each data release re-runs the search; the model that flags what it did not expect;
-   exercises in three languages; the team with affiliations (photos go in `web/public/deck/team/<first name>.jpg`).
+1. **Title.** MIRA · The sky is not still. Team Mohsinin Wlad Dario, the five names, Ben Guerir, the challenge.
+   Behind it the Sky map plays its 27 years.
+2. **The challenge.** "The sky moves. Almost nobody can watch it." One sentence of what NASA asked; a real picture
+   of a star that moved; 102 colours, 6 months, 27 years.
+3. **The product: Sky.** Live in the slide. Three phrases.
+4. **The product: Lab.** Live on Epsilon Indi B. Four questions; six of the challenge's tips ticked.
+5. **Validity.** 17,604 confirmed · 92% found blind with no false alarm · 0.011″ a year · 276 of the AI scout's 400
+   new finds confirmed by Gaia; the funnel; the scout's marks on the Sky map.
+6. **Impact and plan.** Explorer (free), Researcher, Mission; US$150 a year; no customer yet.
+7. **Next, and who we are.** Each data release re-runs the search; the team with affiliations (photos go in
+   `web/public/deck/team/<first name>.jpg`); data and AI credits.
 
 ## 30-second film (built: `web/film/index.html`, rendered to `media/mira_film_30s.mp4`)
 
-| t | Picture | Caption on screen |
-|---|---|---|
-| 0–2.6 s | NASA/JPL-Caltech's animation of the SPHEREx spacecraft | Team Mohsinin Wlad Dario · NASA Space Apps Challenge 2026 — NASA's SPHEREx maps the whole sky in 102 colours |
-| 2.6–5.6 s | The Sky map: SPHEREx's survey filling the sky on its real dates | The challenge · Planet X and SPHEREx — Every place, every six months. Spot what moves. |
-| 5.6–8.5 s | 3D: Jupiter | MIRA · See the sky change. |
-| 8.5–14.2 s | 3D: the flight out to Epsilon Indi B, its card with three real pictures | From the planets to the stars — 17,604 stars caught moving |
-| 14.2–19.2 s | The Lab on Epsilon Indi B, 1999 to 2026 playing | Point at any place. Play 27 years. — 4.70″ a year. Measured. |
-| 19.2–23.2 s | The Sky map's composition picture, the spectrum following the pointer | Only SPHEREx sees this — What the sky is made of: carbon dust · starlight · hydrogen |
-| 23.2–27 s | The Lab's sky world model | A model that forecasts the sky, and flags what it did not expect: the search a ninth planet needs |
-| 27–30 s | End card | MIRA · See the sky change. · team · credits |
+Five shots, each one the running site. No 3D scene, no AI-generated picture, fifteen words on screen before the name.
 
-Music: "Impact Prelude", Kevin MacLeod (incompetech.com), CC BY 4.0. Opening shot: NASA/JPL-Caltech. Everything
-else is recorded from the running site. Full credits: `docs/17_credits.md`.
+| t | Picture | Words on screen |
+|---|---|---|
+| 0–6 s | The Sky map alone: SPHEREx's survey filling the sky on its real dates, the camera moving in | none |
+| 6–12.5 s | The Lab's picture of one place: Epsilon Indi B crossing its field, 1999 to 2026, in 2MASS, WISE and SPHEREx | the year · Epsilon Indi B · It moved. |
+| 12.5–18.6 s | The Lab's Spectrograph drawing the object's SPHEREx spectrum | Methane · A brown dwarf. 12 light-years away. |
+| 18.6–26 s | The Sky map with every confirmed mover, the camera moving back (the orchestra enters on the cut) | 17,604 · Stars caught moving |
+| 26–30 s | The name | MIRA · The sky is not still · one credit line |
+
+Photographed at 144 frames a second from the site, finished on our university's GPUs (`web/scripts/film_finish.py`):
+24 pictures a second with a half-open shutter, lens glow, grain, black bars. Music: "Time and Space" by Scott Buckley,
+CC BY 4.0, with sound design made for the film (`web/scripts/film_score.py`). Full credits: `docs/17_credits.md`.

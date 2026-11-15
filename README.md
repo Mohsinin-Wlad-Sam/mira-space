@@ -5,7 +5,7 @@
 **NASA Space Apps Challenge 2026 · "Planet X and SPHEREx"** · team *Mohsinin Wlad Dario* (Ben Guerir) ·
 Mohammed Ouabdrrahmane, Hamza Ba-mohammed, Hiba Nemry, Aya Driouche, Abdelmonaim Bounite
 
-**Documentation** `/docs/` · **Seven-slide deck** `/deck/` · **30-second film** `/film/` (rendered by `web/scripts/render_film.mjs`) · credits in `docs/17_credits.md`
+**Documentation** `/docs/` · **Seven-slide deck** `/deck/` (PDF: `media/MIRA_deck.pdf`) · **30-second film** `media/mira_film_30s.mp4` (director page `/film/`) · credits in `docs/17_credits.md`
 
 NASA's SPHEREx is photographing the whole sky in 102 infrared colours and every image is public, but one image is a
 65 MB scientific file made for specialists' software. **MIRA makes them something anyone can look at.**

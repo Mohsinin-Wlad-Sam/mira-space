@@ -42,10 +42,14 @@ p { margin: 0; font-size: calc(1.5 * var(--u)); line-height: 1.45; color: var(--
 @keyframes pulse { 50% { opacity: .3; } }
 ul.pts { list-style: none; margin: 0; padding: 0; display: grid; gap: calc(1 * var(--u)); } ul.pts li { display: grid; grid-template-columns: calc(2.2 * var(--u)) 1fr; font-size: calc(1.38 * var(--u)); line-height: 1.4; color: var(--dim); } ul.pts li::before { content: counter(n, decimal-leading-zero); counter-increment: n; font-family: var(--mono); font-size: calc(.8 * var(--u)); color: var(--faint); padding-top: .35em; } ul.pts { counter-reset: n; }
 .nums { display: grid; grid-template-columns: repeat(3, 1fr); gap: calc(2 * var(--u)); } .num b { display: block; font-family: var(--display); font-weight: 700; font-size: calc(4.6 * var(--u)); line-height: 1; font-variant-numeric: tabular-nums; } .num span { display: block; margin-top: 6px; font-size: calc(1.08 * var(--u)); line-height: 1.35; color: var(--dim); } .num small { display: block; margin-top: 4px; font-family: var(--mono); font-size: calc(.7 * var(--u)); letter-spacing: .08em; color: var(--faint); }
+.lead { font-size: calc(2 * var(--u)); line-height: 1.35; color: var(--white); max-width: 26ch; }
+.words { display: grid; gap: calc(.9 * var(--u)); } .words span { font-family: var(--display); font-weight: 600; font-size: calc(2.5 * var(--u)); line-height: 1.05; text-transform: uppercase; letter-spacing: .02em; padding-left: calc(1.1 * var(--u)); border-left: 2px solid var(--accent); }
+.big4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: calc(2.6 * var(--u)); } .big4.two4 { grid-template-columns: repeat(2, minmax(0, 28ch)); } .big4 b { display: block; font-family: var(--display); font-weight: 700; font-size: calc(4.8 * var(--u)); line-height: 1; font-variant-numeric: tabular-nums; white-space: nowrap; } .big4 span { display: block; margin-top: calc(.6 * var(--u)); font-size: calc(1.25 * var(--u)); line-height: 1.3; color: var(--dim); max-width: 22ch; }
+.row5 { display: grid; grid-template-columns: minmax(0, 40fr) minmax(0, 60fr); gap: calc(3.4 * var(--u)); align-items: center; min-height: 0; } .row5 .live { aspect-ratio: 16 / 7; } .row5 .live img { object-position: center 42%; }
 /* tips */
 .tips { display: grid; grid-template-columns: 1fr 1fr; gap: calc(.5 * var(--u)) calc(1.6 * var(--u)); font-size: calc(1.12 * var(--u)); color: var(--dim); } .tips span::before { content: "✓"; margin-right: .6em; color: #7df0a6; }
 /* validity */
-.s5 { grid-template-rows: auto 1fr; gap: calc(2.4 * var(--u)); } .grid3 { display: grid; grid-template-columns: 1.05fr 1fr 1.1fr; gap: calc(3 * var(--u)); align-items: start; } .card h3 { margin: 0 0 calc(1 * var(--u)); padding-bottom: calc(.8 * var(--u)); border-bottom: .8px solid var(--hair); font-size: calc(.95 * var(--u)); letter-spacing: .16em; text-transform: uppercase; font-weight: 700; }
+.s5 { grid-template-rows: auto auto 1fr; gap: calc(2.2 * var(--u)); align-content: center; } .grid3 { display: grid; grid-template-columns: 1.05fr 1fr 1.1fr; gap: calc(3 * var(--u)); align-items: start; } .card h3 { margin: 0 0 calc(1 * var(--u)); padding-bottom: calc(.8 * var(--u)); border-bottom: .8px solid var(--hair); font-size: calc(.95 * var(--u)); letter-spacing: .16em; text-transform: uppercase; font-weight: 700; }
 .fun { display: grid; gap: calc(.7 * var(--u)); } .fun div { position: relative; height: calc(3.3 * var(--u)); } .fun i { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: rgb(240 240 250 / .14); border-left: 2px solid var(--white); transition: width 1.3s cubic-bezier(.2, .7, .2, 1); } .slide.on .fun i { width: var(--w); transition-delay: calc(.5s + var(--k) * .22s); }
 .fun div:last-child i { background: rgb(255 157 77 / .3); border-color: var(--accent); } .fun b { position: relative; display: block; padding: calc(.35 * var(--u)) 0 0 calc(.9 * var(--u)); font-family: var(--display); font-size: calc(1.75 * var(--u)); line-height: 1; } .fun span { position: relative; display: block; padding-left: calc(.9 * var(--u)); font-size: calc(.86 * var(--u)); color: var(--dim); }
 .kv { display: grid; gap: calc(.9 * var(--u)); } .kv div { display: grid; grid-template-columns: auto 1fr; gap: calc(1 * var(--u)); align-items: baseline; } .kv b { font-family: var(--display); font-size: calc(2.5 * var(--u)); min-width: 5.2ch; } .kv span { font-size: calc(1.02 * var(--u)); line-height: 1.35; color: var(--dim); } .kv span b { font: inherit; font-weight: 600; color: #fff; min-width: 0; }
@@ -55,11 +59,11 @@ svg.curve { width: 100%; height: auto; display: block; } svg.curve path { fill: 
 /* business */
 .plans { display: grid; grid-template-columns: repeat(3, 1fr); gap: calc(1.2 * var(--u)); } .plan { padding: calc(1.5 * var(--u)); border: .8px solid var(--hair); border-radius: calc(.8 * var(--u)); display: grid; gap: calc(.6 * var(--u)); align-content: start; } .plan.hi { border-color: var(--accent); }
 .plan .k { font-family: var(--mono); font-size: calc(.7 * var(--u)); letter-spacing: .16em; text-transform: uppercase; color: var(--faint); } .plan h4 { margin: 0; font-family: var(--display); font-size: calc(2.3 * var(--u)); text-transform: uppercase; line-height: 1; } .plan .p { font-size: calc(1 * var(--u)); color: var(--accent); } .plan li { font-size: calc(.98 * var(--u)); line-height: 1.4; color: var(--dim); margin: 3px 0; } .plan ul { margin: 0; padding-left: 1.1em; }
-.s6 { grid-template-rows: auto auto 1fr; gap: calc(2 * var(--u)); align-content: center; } .row2 { display: grid; grid-template-columns: 1.25fr 1fr; gap: calc(3 * var(--u)); align-items: start; }
+.s6 { grid-template-rows: auto auto auto; gap: calc(3 * var(--u)); align-content: center; } .live.wide { aspect-ratio: 1920 / 804; } .live.wide img { object-position: center; } .row2 { display: grid; grid-template-columns: 1.25fr 1fr; gap: calc(3 * var(--u)); align-items: start; }
 /* team */
 .team { display: grid; grid-template-columns: repeat(5, 1fr); gap: calc(1.4 * var(--u)); } .who { display: grid; gap: calc(.7 * var(--u)); } .ph { position: relative; height: calc(15.5 * var(--u)); border-radius: calc(.7 * var(--u)); overflow: hidden; background: linear-gradient(160deg, rgb(240 240 250 / .1), rgb(240 240 250 / .03)); box-shadow: 0 0 0 .8px var(--hair); display: grid; place-items: center; font-family: var(--display); font-size: calc(3.4 * var(--u)); color: var(--faint); }
 .ph img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; filter: grayscale(1) contrast(1.05); } .who b { font-size: calc(1.12 * var(--u)); font-weight: 600; line-height: 1.2; } .who span { font-size: calc(.86 * var(--u)); color: var(--dim); line-height: 1.3; }
-.s7 { grid-template-rows: auto 1fr auto; gap: calc(2 * var(--u)); } .next { display: grid; grid-template-columns: repeat(3, 1fr); gap: calc(2 * var(--u)); } .next div { padding-top: calc(.9 * var(--u)); border-top: .8px solid var(--hair); } .next b { display: block; font-size: calc(.86 * var(--u)); letter-spacing: .14em; text-transform: uppercase; margin-bottom: 5px; } .next span { font-size: calc(1.02 * var(--u)); line-height: 1.4; color: var(--dim); }
+.s7 { grid-template-rows: auto auto auto; gap: calc(2.6 * var(--u)); align-content: center; } .next { display: grid; grid-template-columns: repeat(3, 1fr); gap: calc(2 * var(--u)); } .next div { padding-top: calc(.9 * var(--u)); border-top: .8px solid var(--hair); } .next b { display: block; font-size: calc(.86 * var(--u)); letter-spacing: .14em; text-transform: uppercase; margin-bottom: 5px; } .next span { font-size: calc(1.02 * var(--u)); line-height: 1.4; color: var(--dim); }
 .hint { position: fixed; right: calc(6 * var(--u)); top: calc(2.4 * var(--u)); z-index: 6; font-family: var(--mono); font-size: calc(.72 * var(--u)); letter-spacing: .14em; text-transform: uppercase; color: var(--faint); }
 @media (max-width: 820px) and (orientation: portrait) { :root { --u: 2.1vw; } .two, .grid3, .row2 { grid-template-columns: 1fr; } .slide { overflow: auto; align-content: start; } .team { grid-template-columns: repeat(3, 1fr); } .plans, .next, .nums { grid-template-columns: 1fr; } h1 { font-size: calc(8 * var(--u)); } }
 @media print { @page { size: 1600px 900px; margin: 0; } html, body { overflow: visible; height: auto; } .deck { position: static; } .slide { position: relative; width: 1600px; height: 900px; opacity: 1 !important; visibility: visible !important; transform: none !important; page-break-after: always; break-after: page; --u: 16px; } .a { opacity: 1 !important; transform: none !important; } .fun i { width: var(--w) !important; } svg.curve path { stroke-dashoffset: 0 !important; } iframe { display: none !important; } .foot, .hint { display: none; } :root { --u: 16px; } }
@@ -70,95 +74,85 @@ svg.curve { width: 100%; height: auto; display: block; } svg.curve path { fill: 
 <div class="deck" id="deck">
 
 <section class="slide s1 on" data-live="bg1">
-  <div class="bg"><img src="/deck/shot_sky.jpg" alt=""><iframe data-src="/explore/?embed=1&deck=bg#sky" id="bg1" title="MIRA Sky map, live" tabindex="-1" style="pointer-events:none"></iframe></div>
+  <div class="bg"><img src="/deck/shot_title.jpg" alt=""><iframe data-src="/explore/?embed=1&deck=bg#sky" id="bg1" title="MIRA Sky map, live" tabindex="-1" style="pointer-events:none"></iframe></div>
   <div class="eyebrow a">NASA Space Apps Challenge 2026 · Planet X and SPHEREx</div>
   <h1 class="a" style="--d:1">MIRA</h1>
-  <div class="tag a" style="--d:2">See the sky change.</div>
-  <p class="a" style="--d:3">A public observatory in the browser. Tonight's planets, 27 years of NASA's sky on one time bar, and stars caught changing place, each one measurable on SPHEREx exposures.</p>
-  <div class="meta a" style="--d:4"><div><b>Team</b>Mohsinin Wlad Dario</div><div><b>Members</b>Mohammed Ouabdrrahmane · Hamza Ba-mohammed · Hiba Nemry · Aya Driouche · Abdelmonaim Bounite</div><div><b>Local event</b>Ben Guerir, Morocco</div></div>
+  <div class="tag a" style="--d:2">The sky is not still.</div>
+  <div class="meta a" style="--d:3"><div><b>Team</b>Mohsinin Wlad Dario</div><div><b>Members</b>Mohammed Ouabdrrahmane · Hamza Ba-mohammed · Hiba Nemry · Aya Driouche · Abdelmonaim Bounite</div><div><b>Local event</b>Ben Guerir, Morocco</div></div>
 </section>
 
 <section class="slide two">
   <div class="col">
-    <div class="eyebrow a">01 · The challenge</div>
+    <div class="eyebrow a">The challenge</div>
     <h2 class="a" style="--d:1">The sky moves. Almost nobody can watch it.</h2>
-    <p class="a" style="--d:2">NASA's SPHEREx photographs every place in the sky every six months, in 102 colours of infrared light. Anything close to us that moves is in those pictures: cold brown dwarfs, and a ninth planet if there is one.</p>
-    <p class="a" style="--d:3">NASA asked for <b>a public tool that plays a place through time like a little video</b>, so that what moves is easy to spot. Today that takes a specialist, an archive query and a pipeline.</p>
+    <p class="lead a" style="--d:2">NASA asked: play any place in the sky through time, so anyone can spot what moves.</p>
   </div>
   <div class="col">
+    <div class="live wide a" style="--d:2"><img src="/deck/shot_moved.jpg" alt="Epsilon Indi B in 2026, with the path it has followed since 1999, on real NASA pictures"><span class="lbl">Real NASA pictures · 1999 to 2026</span></div>
     <div class="nums a" style="--d:3">
-      <div class="num"><b data-count="102">0</b><span>colours of infrared light, the whole sky</span><small>SPHEREx · NASA</small></div>
-      <div class="num"><b data-count="1628230">0</b><span>SPHEREx exposures indexed by MIRA</span><small>to the release of 5 Oct 2026</small></div>
-      <div class="num"><b data-count="27">0</b><span>years of NASA all-sky pictures on one time bar</span><small>2MASS 1999 · WISE 2010 · SPHEREx</small></div>
+      <div class="num"><b data-count="102">0</b><span>colours of infrared light</span></div>
+      <div class="num"><b data-count="6">0</b><span>months between two looks at a place</span></div>
+      <div class="num"><b data-count="27">0</b><span>years of NASA pictures, one time bar</span></div>
     </div>
-    <div class="live a" style="--d:4"><img src="/deck/shot_made.jpg" alt="The sky in carbon dust, starlight and hydrogen, computed from SPHEREx's 102 colours"><span class="lbl">Only SPHEREx: carbon dust · starlight · hydrogen</span></div>
   </div>
 </section>
 
 <section class="slide two" data-live="f3">
   <div class="col">
-    <div class="eyebrow a">02 · What we built</div>
-    <h2 class="a" style="--d:1">One time bar for the whole sky.</h2>
-    <ul class="pts a" style="--d:2">
-      <li><span><b>Search anything</b>, even misspelled: a planet, a star, a kind of object.</span></li>
-      <li><span><b>Drag the time bar</b> from 1999 to today: three NASA surveys, then SPHEREx filling the sky on its real dates.</span></li>
-      <li><span><b>Planets live</b>, and your own horizon: what is up tonight.</span></li>
-      <li><span><b>What the sky is made of</b>: point anywhere and read its spectrum.</span></li>
-      <li><span><b>Click any place</b> to watch it through time, or to measure it.</span></li>
-    </ul>
-    <p class="cap a" style="--d:3">The frame on the right is the product itself, running. Use it.</p>
+    <div class="eyebrow a">The product · Sky</div>
+    <h2 class="a" style="--d:1">One time bar. 1999 to tonight.</h2>
+    <div class="words a" style="--d:2"><span>Search anything</span><span>Planets, live</span><span>Click a place. Watch it move.</span></div>
   </div>
-  <div class="live a" style="--d:2"><img src="/deck/shot_sky.jpg" alt="MIRA's Sky map"><iframe data-src="/explore/?embed=1&deck=1#sky" id="f3" title="MIRA Sky map, live" allow="geolocation"></iframe><span class="lbl"><i></i>Live · MIRA Sky map</span></div>
+  <div class="live a" style="--d:2"><img src="/deck/shot_sky.jpg" alt="MIRA's Sky map"><iframe data-src="/explore/?embed=1&deck=1#sky" id="f3" title="MIRA Sky map, live" allow="geolocation"></iframe><span class="lbl"><i></i>Live · use it</span></div>
 </section>
 
 <section class="slide two rev" data-live="f4">
-  <div class="live a" style="--d:1"><img src="/deck/shot_lab.jpg" alt="MIRA's Lab on Epsilon Indi B"><iframe data-src="/explore/?embed=1&deck=1&target=eps-indi-b" id="f4" title="MIRA Lab, live"></iframe><span class="lbl"><i></i>Live · the Lab on Epsilon Indi B</span></div>
+  <div class="live a" style="--d:1"><img src="/deck/shot_lab.jpg" alt="MIRA's Lab on Epsilon Indi B"><iframe data-src="/explore/?embed=1&deck=1&target=eps-indi-b" id="f4" title="MIRA Lab, live"></iframe><span class="lbl"><i></i>Live · Epsilon Indi B</span></div>
   <div class="col">
-    <div class="eyebrow a">03 · The Lab</div>
-    <h2 class="a" style="--d:1">Point. Play. Four answers.</h2>
-    <p class="a" style="--d:2">Every SPHEREx exposure of the place is read live from NASA's archive. What moved, how fast, what its light says, did it change. Tools open only when asked for.</p>
-    <div class="tips a" style="--d:3"><span>A little video of any place</span><span>NASA's five test targets</span><span>102 bands, six detector co-adds</span><span>Spectra on the fly</span><span>Add and subtract dates</span><span>Selectable field of view</span><span>Gaia and WISE overlays</span><span>Coordinates in the URL, embeddable</span><span>NASA's contamination flags</span><span>Astropy and Aladin (CDS)</span><span>One script per data release</span><span>Static site, no server needed</span></div>
+    <div class="eyebrow a">The product · Lab</div>
+    <h2 class="a" style="--d:1">Point. Play. Measure.</h2>
+    <div class="words a" style="--d:2"><span>What moved</span><span>How fast</span><span>What it is</span><span>Did it change</span></div>
+    <div class="tips a" style="--d:3"><span>NASA's five test targets</span><span>102 bands</span><span>Spectra on the fly</span><span>Add, subtract dates</span><span>Gaia and WISE overlays</span><span>Link and embed</span></div>
   </div>
 </section>
 
 <section class="slide s5">
-  <div><div class="eyebrow a">04 · Validity</div><h2 class="a" style="--d:1;max-width:none">Measured, not claimed.</h2></div>
-  <div class="grid3">
-    <div class="card a" style="--d:2"><h3>Re-measured on raw exposures · university GPU cluster</h3>
-      <div class="fun"><div><i style="--w:100%;--k:0"></i><b>39.9 billion</b><span>WISE detections searched</span></div><div><i style="--w:62%;--k:1"></i><b>1.56 million</b><span>candidate claims</span></div><div><i style="--w:38%;--k:2"></i><b>202,528</b><span>re-measured on raw SPHEREx exposures</span></div><div><i style="--w:22%;--k:3"></i><b>17,604</b><span>motions confirmed · 1,348 with no Gaia source</span></div></div></div>
-    <div class="card a" style="--d:3"><h3>Checked against references</h3>
-      <div class="kv"><div><b>92%</b><span>of known movers found in a blind test, with <b>0</b> false alarms among 5,951 still stars</span></div><div><b>0.011″</b><span>per year: median error of a measured motion (a SPHEREx pixel is 6.15″)</span></div><div><b>0.25″</b><span>median distance between where a star is seen and where its motion predicts</span></div><div><b>8′</b><span>worst planet position against NASA JPL Horizons, 1999–2027</span></div></div></div>
-    <div class="card a" style="--d:4"><h3>World models · tested on real stars</h3>
-      <svg class="curve" viewBox="0 0 300 70" preserveAspectRatio="none" id="curve"><path pathLength="1" d="M0 6 L300 60"/></svg>
-      <p class="cap" id="wmcap">Networks shown real pictures of the sky taken years apart learn to say what moved and to draw what comes next.</p>
-      <div class="wm"><figure><img src="/deck/wm_heat.jpg" alt=""><figcaption>What it says moved · model output</figcaption></figure><figure><img src="/deck/wm_pred.jpg" alt=""><figcaption>Its 2026 forecast · AI-generated</figcaption></figure></div></div>
+  <div><div class="eyebrow a">Validity</div><h2 class="a" style="--d:1;max-width:none">Measured, not claimed.</h2></div>
+  <div class="big4 a" style="--d:2">
+    <div><b data-count="17604">0</b><span>motions confirmed on raw SPHEREx exposures</span></div>
+    <div><b>92%</b><span>of known movers found blind, zero false alarms</span></div>
+    <div><b>0.011″</b><span>a year: median error of a motion</span></div>
+    <div><b id="gk">276 / 400</b><span>new finds of our AI scout, confirmed by ESA's Gaia</span></div>
+  </div>
+  <div class="row5">
+    <div class="fun a" style="--d:3"><div><i style="--w:100%;--k:0"></i><b>39.9 billion</b><span>detections searched</span></div><div><i style="--w:62%;--k:1"></i><b>1.56 million</b><span>claims</span></div><div><i style="--w:38%;--k:2"></i><b>202,528</b><span>re-measured</span></div><div><i style="--w:22%;--k:3"></i><b>17,604</b><span>confirmed</span></div></div>
+    <div class="live a" style="--d:4"><img src="/deck/shot_scout.jpg" alt="The places the sky model marked, on MIRA's Sky map"><span class="lbl" id="wmcap">Whole-sky AI scout · filled marks are in Gaia</span></div>
   </div>
 </section>
 
 <section class="slide s6">
-  <div><div class="eyebrow a">05 · Impact and plan</div><h2 class="a" style="--d:1;max-width:none">Free for everyone. Paid where it saves work.</h2></div>
+  <div><div class="eyebrow a">Impact and plan</div><h2 class="a" style="--d:1;max-width:none">Free for everyone. Paid where it saves work.</h2></div>
   <div class="plans a" style="--d:2">
-    <div class="plan"><div class="k">The public · classrooms</div><h4>Explorer</h4><div class="p">Free · no account · no tracking</div><ul><li>Both maps, live planets, your own sky</li><li>The Lab and the catalogue</li><li>Embeds for schools and planetariums</li></ul></div>
-    <div class="plan hi"><div class="k">Research groups · universities</div><h4>Researcher</h4><div class="p">Seat or site licence · free for students</div><ul><li>Watchlists: a target list in one run</li><li>The sky world model</li><li>Bulk exports, shared workspaces</li></ul></div>
-    <div class="plan"><div class="k">Agencies · missions · science centres</div><h4>Mission</h4><div class="p">Per project</div><ul><li>Verification runs at each data release</li><li>The engine on your archive</li><li>A world model trained on your survey</li></ul></div>
+    <div class="plan"><div class="k">The public · classrooms</div><h4>Explorer</h4><div class="p">Free</div><ul><li>Everything on this site</li></ul></div>
+    <div class="plan hi"><div class="k">Research groups</div><h4>Researcher</h4><div class="p">Per seat</div><ul><li>Target lists in one run, the AI scout</li></ul></div>
+    <div class="plan"><div class="k">Agencies · missions</div><h4>Mission</h4><div class="p">Per project</div><ul><li>A verification run at each data release</li></ul></div>
   </div>
-  <div class="row2 a" style="--d:3">
-    <div class="kv"><div><b>US$150</b><span>a year keeps the public site alive: it is a static site that reads NASA's archive from the visitor's browser</span></div><div><b>US$57k</b><span>a year funds a maintainer, student stipends and outreach in Arabic, French and English (our estimate)</span></div></div>
-    <p class="cap">Honest status: no customer interviewed yet, no contract. First step after the hackathon: offer the verification run, free, to two research groups and one citizen-science project, and measure hours saved. Full plan: docs/13_business_plan.md.</p>
+  <div class="big4 two4 a" style="--d:3">
+    <div><b>US$150</b><span>a year runs the public site</span></div>
+    <div><b>0</b><span>customers yet. First: a free pilot with two research groups</span></div>
   </div>
 </section>
 
 <section class="slide s7">
-  <div><div class="eyebrow a">06 · Next, and who we are</div><h2 class="a" style="--d:1;max-width:none">Every new SPHEREx release, the search runs again.</h2></div>
-  <div class="next a" style="--d:2"><div><b>With each data release</b><span>One script rebuilds the index and the pictures. The verified catalogue is re-measured on the new exposures.</span></div><div><b>The search a ninth planet needs</b><span>A model that predicts each new visit from the earlier ones, and flags only what it did not expect.</span></div><div><b>For people</b><span>Exercises on real NASA data in Arabic, French and English. Volunteers look at the 635 movers no database names.</span></div></div>
-  <div class="team a" style="--d:3">
+  <div><div class="eyebrow a">Next · who we are</div><h2 class="a" style="--d:1;max-width:none">Every new SPHEREx release, the search runs again.</h2></div>
+  <div class="team a" style="--d:2">
     <div class="who"><div class="ph">MO<img src="/deck/team/mohammed.jpg" alt="" onerror="this.remove()"></div><b>Mohammed Ouabdrrahmane</b><span>Ibn Zohr University</span></div>
     <div class="who"><div class="ph">HB<img src="/deck/team/hamza.jpg" alt="" onerror="this.remove()"></div><b>Hamza Ba-mohammed</b><span>College of Computing, UM6P Rabat</span></div>
     <div class="who"><div class="ph">HN<img src="/deck/team/hiba.jpg" alt="" onerror="this.remove()"></div><b>Hiba Nemry</b><span>SHBM, UM6P Benguerir</span></div>
     <div class="who"><div class="ph">AD<img src="/deck/team/aya.jpg" alt="" onerror="this.remove()"></div><b>Aya Driouche</b><span>UEMF</span></div>
     <div class="who"><div class="ph">AB<img src="/deck/team/abdelmonaim.jpg" alt="" onerror="this.remove()"></div><b>Abdelmonaim Bounite</b><span>MBZUAI</span></div>
   </div>
-  <p class="cap a" style="--d:4">Data: NASA SPHEREx, 2MASS and WISE (NASA/IPAC IRSA) · ESA Gaia DR3 · SIMBAD, VizieR, Aladin (CDS) · NASA JPL Horizons. Built with AI assistance, logged in docs/07_si_usage_log.md; the only AI-generated pictures are the world model's forecasts, which are labelled. Not affiliated with or endorsed by NASA.</p>
+  <p class="cap a" style="--d:3">Data: NASA SPHEREx, 2MASS, WISE (IRSA) · ESA Gaia · CDS · JPL Horizons. Built with AI assistance, logged in the repository. Not affiliated with or endorsed by NASA.</p>
 </section>
 </div>
 <div class="foot"><span class="logo">MIRA</span><span id="pos">01 / 07</span><span class="bar"><i id="prog"></i></span><span>Mohsinin Wlad Dario</span><span class="nav"><button id="prev" aria-label="Previous slide">‹</button><button id="next" aria-label="Next slide">›</button></span></div>
@@ -179,18 +173,8 @@ document.querySelectorAll('iframe').forEach((f) => { f.addEventListener('mousele
 addEventListener('message', (e) => { if (e.data && e.data.mira === 'key') go(k + (e.data.key === 'PageDown' ? 1 : -1)); });
 const fit = () => document.querySelectorAll('.live').forEach((b) => b.style.setProperty('--s', String(b.clientWidth / 1360))); addEventListener('resize', fit); fit();
 go(Math.max(0, (parseInt(location.hash.slice(1)) || 1) - 1));
-// the training curve and test figures of the world model, from the file the cluster run wrote
-const J = (u) => fetch(u).then((r) => (r.ok ? r.json() : null)).catch(() => null);
-Promise.all([J('/data/wm/train_log.json'), J('/data/wm/model.json'), J('/data/wm/scout.json')]).then(([log, m, sc]) => {
-  if (log && log.hist && log.hist.length > 3) { const h = log.hist, lo = Math.min(...h.map((q) => q.loss)), hi = h[2].loss, X = (i) => (i / (h.length - 1)) * 300, Y = (v) => 64 - ((Math.min(hi, v) - lo) / (hi - lo)) * 58;
-    document.querySelector('#curve path').setAttribute('d', h.map((q, i) => `${i ? 'L' : 'M'}${X(i).toFixed(1)} ${Y(q.loss).toFixed(1)}`).join(' ')); }
-  const W = (t) => `<b style="color:#fff">${t}</b>`, parts = [];
-  if (sc) { const t = sc.test, fast = (t.by_pm || []).find((b) => b.lo === 1), w = sc.copies.reduce((q, c) => q + c.weights_millions, 0), ft = sc.vjepa_finetuned, cmp = sc.comparison && ((ft && sc.comparison.vjz) || sc.comparison.vjepa || sc.comparison.vjz);
-    parts.push(`Our scout (${sc.copies.length} networks, ${w.toFixed(0)} M weights, trained on the whole sky at three dates on 6 GPUs): on a fifth of the sky kept aside it finds ${W(Math.round(100 * t.recall) + '%')} of ${t.n.toLocaleString('en-US')} real movers${fast ? `, ${W(Math.round(100 * fast.recall) + '%')} of those above 1″ a year` : ''}.`);
-    if (cmp) parts.push(`Meta's V-JEPA 2 on the same ${cmp.patches.toLocaleString('en-US')} test stars (0.5 = chance): as published ${W(cmp.vjepa2_probe_auc.toFixed(2))}, our scout ${W(cmp.mira_auc.toFixed(2))}${ft ? `, V-JEPA 2 fine-tuned on our movers ${W(ft.auc_test.toFixed(2))}` : ''}.${ft && ft.marks_scored ? ` It now checks every mark the scout makes: both agree on ${W(ft.marks_agree + ' of ' + ft.marks_scored)}.` : ''}`); }
-  if (m && m.test) parts.push(`A 0.7 M-weight model runs in the browser and forecasts any field (curve: its training error).`);
-  if (parts.length) document.getElementById('wmcap').innerHTML = parts.join(' ');
-});
+// the scout's figure against Gaia, from the file the cluster run wrote
+fetch('/data/wm/scout.json').then((r) => (r.ok ? r.json() : null)).then((sc) => { if (sc && sc.gaia_check) document.getElementById('gk').textContent = `${sc.gaia_check.with_a_gaia_fast_mover} / ${sc.gaia_check.asked}`; }).catch(() => {});
 </script>
 </body>
 </html>

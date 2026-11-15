@@ -32,6 +32,8 @@ export const toEq = (l: number, b: number): [number, number] => { const g = [Mat
   const e = [0, 1, 2].map((i) => AG[0][i] * g[0] + AG[1][i] * g[1] + AG[2][i] * g[2]); return [((Math.atan2(e[1], e[0]) / D) + 360) % 360, Math.asin(Math.max(-1, Math.min(1, e[2]))) / D]; };
 /** the closest zoom, in screen pixels per degree: 2.6″ per pixel. Beyond it no all-sky survey used here has more to show */
 const ZMAX = 1400;
+/** the film shows every confirmed mover at once, whatever the zoom (the map itself thins them out until it is zoomed in) */
+const FILM = typeof location !== "undefined" && new URLSearchParams(location.search).get("deck") === "film";
 const wrap = (d: number) => ((((d + 180) % 360) + 360) % 360) - 180;
 const hms = (ra: number, dec: number) => { const h = ra / 15, hh = Math.floor(h), mm = Math.floor((h - hh) * 60), a = Math.abs(dec), dd = Math.floor(a), dm = Math.floor((a - dd) * 60);
   return `${String(hh).padStart(2, "0")}h${String(mm).padStart(2, "0")}m ${dec < 0 ? "−" : "+"}${String(dd).padStart(2, "0")}°${String(dm).padStart(2, "0")}′`; };
@@ -353,8 +355,8 @@ export async function openSky(host: HTMLElement, o: SkyOpts): Promise<SkyHandle>
     const mv = u < 1 ? 0 : u < 2 ? ease(u - 1) : 1;
     // with the whole sky in view only the fastest movers are drawn; the others appear as the map is zoomed in.
     // A picture of what the sky is made of is shown without them.
-    const scoutOn = st.chip === "scout", made = st.layer !== "" || st.wave >= 0 || scoutOn, pmMin = st.chip !== "all" ? 0 : s < 6 ? 1 : s < 10 ? 0.7 : s < 18 ? 0.5 : s < 30 ? 0.4 : s < 48 ? 0.3 : 0;
-    if (V && st.show.movers && mv > 0) { const r = Math.max(pmMin >= 0.5 ? 1.5 : 1, Math.min(4, 0.2 + 0.11 * s)), dense = false, sel = st.sel, wait = u < 3 && cov && CELL.length === GL.length; shown = [];
+    const scoutOn = st.chip === "scout", made = st.layer !== "" || st.wave >= 0 || scoutOn, pmMin = st.chip !== "all" || FILM ? 0 : s < 6 ? 1 : s < 10 ? 0.7 : s < 18 ? 0.5 : s < 30 ? 0.4 : s < 48 ? 0.3 : 0;
+    if (V && st.show.movers && mv > 0) { const r = Math.max(pmMin >= 0.5 || FILM ? 1.5 : 1, Math.min(4, 0.2 + 0.11 * s)), dense = false, sel = st.sel, wait = u < 3 && cov && CELL.length === GL.length; shown = [];
       for (let k = 0; k < GL.length; k++) { if (k !== sel && (made || V.pm[k] < pmMin || Math.abs(V.glat[k]) < 10)) continue;                       // the crowded plane is left out, as in the Catalogue
         const nog = V.known[k] !== 1, open = isOpenCase(V, k); if ((st.chip === "nogaia" && !nog) || (st.chip === "open" && !open)) continue;
         const [gl, gb] = posAt(k, yr), x = cw / 2 - wrap(gl - view.l) * s, y = ch / 2 - (gb - view.b) * s; PX[k] = x; PY[k] = y; if (x < -4 || y < -4 || x > cw + 4 || y > ch + 4) continue;
@@ -363,11 +365,13 @@ export async function openSky(host: HTMLElement, o: SkyOpts): Promise<SkyHandle>
       g.globalAlpha = 1; } else shown = [];
     // the places the sky model marks where the catalogue has nothing: unverified, each one a click away from its pictures and from the Lab
     if (scoutOn && scout && st.wave < 0 && !st.layer) { g.strokeStyle = "#b48cff"; g.lineWidth = 1.3;
-      // a filled mark is one that the second model (V-JEPA 2, fine-tuned) also calls a mover; a hollow one it does not
-      scoutGal.forEach(([gl, gb], i) => { const x = cw / 2 - wrap(gl - view.l) * s, y = ch / 2 - (gb - view.b) * s; if (x < -6 || y < -6 || x > cw + 6 || y > ch + 6) return; const m = scout!.marks[i], both = (m.vj ?? 0) >= 0.5, r = (s < 8 ? 3 : 5) + (both ? 1 : 0);
-        g.fillStyle = both ? "rgba(180,140,255,.9)" : "rgba(180,140,255,.12)"; g.globalAlpha = both || m.vj === undefined ? 1 : 0.6;
-        g.beginPath(); g.moveTo(x, y - r); g.lineTo(x + r, y); g.lineTo(x, y + r); g.lineTo(x - r, y); g.closePath(); g.fill(); g.stroke(); g.globalAlpha = 1;
-        marks.push({ x, y, r: 9, go: () => openPlace(m.ra, m.dec, both ? "Marked by both sky models" : "Marked by the sky model", `MIRA's scout reads about ${m.pm.toFixed(1)}″ per year here (confidence ${Math.round(m.conf * 100)}%).${m.vj === undefined ? "" : ` Meta's V-JEPA 2, fine-tuned on MIRA's movers, gives it ${Math.round(m.vj * 100)}%.`} MIRA's catalogue has nothing at this place. Unverified: watch the pictures, then measure it in the Lab.`) }); }); }
+      // a filled mark is a fast-moving star ESA's Gaia lists at that place (the model was right); a hollow one has no Gaia match
+      scoutGal.forEach(([gl, gb], i) => { const x = cw / 2 - wrap(gl - view.l) * s, y = ch / 2 - (gb - view.b) * s; if (x < -6 || y < -6 || x > cw + 6 || y > ch + 6) return; const m = scout!.marks[i], known = !!m.gaia, r = s < 8 ? 3 : 5;
+        g.fillStyle = known ? "rgba(180,140,255,.85)" : "rgba(0,0,0,.55)";
+        g.beginPath(); g.moveTo(x, y - r); g.lineTo(x + r, y); g.lineTo(x, y + r); g.lineTo(x - r, y); g.closePath(); g.fill(); g.stroke();
+        marks.push({ x, y, r: 9, go: () => openPlace(m.ra, m.dec, known ? "The sky model found a star Gaia knows" : "Marked by the sky model, not in Gaia",
+          known ? `The model reads ${m.pm.toFixed(1)}″ a year here from three pictures; ESA's Gaia lists a star moving ${m.gaia!.pm.toFixed(2)}″ a year. MIRA's catalogue did not have it.`
+            : `The model reads ${m.pm.toFixed(1)}″ a year here. No fast-moving Gaia star within 30″, and nothing in MIRA's catalogue. Open: watch the pictures, then measure it in the Lab.`) }); }); }
     if (tileNote !== tileShown) { tileShown = tileNote; const e3 = host.querySelector<HTMLElement>("#sktile"); if (e3) e3.textContent = tileNote; }
     const lod = scoutOn ? "" : made || !st.show.movers ? "" : pmMin ? `Showing the ${shown.length.toLocaleString("en-US")} fastest in view. Zoom in for the rest.` : ""; if (lod !== lodText) { lodText = lod; const e2 = host.querySelector<HTMLElement>("#sklod"); if (e2) { e2.textContent = lod; e2.hidden = !lod; } }
     // the wanderers, with their names
@@ -425,11 +429,12 @@ export async function openSky(host: HTMLElement, o: SkyOpts): Promise<SkyHandle>
       const dp = host.querySelector("#skdepth") as HTMLElement | null; if (dp) dp.onclick = () => { st.depth = !st.depth; if (st.depth && st.u < 2) st.u = 3; sync(); }; }
     else if (st.panel === "scout") { const key = `w${!!scout}`; if (key === subKey) return; subKey = key;
       if (!scout) { el.innerHTML = `<p class="mx-note">Reading what the model marked…</p>`; return; }
-      const t = scout.test, fast = t.by_pm.find((b) => b.lo === 1), w = scout.copies.reduce((q, c2) => q + c2.weights_millions, 0), ft = scout.vjepa_finetuned ?? null, cmp = (ft ? scout.comparison?.vjz : null) ?? scout.comparison?.vjepa ?? scout.comparison?.vjz ?? null, ftOn = !!ft && cmp === scout.comparison?.vjz;
-      el.innerHTML = `<div class="mx-stat"><b>${Math.round(100 * t.recall)}%</b><span>of ${t.n.toLocaleString("en-US")} real movers faster than 0.4″ a year found on the fifth of the sky kept for testing${fast ? ` · ${Math.round(100 * fast.recall)}% of those above 1″` : ""}</span></div>
-        <p class="mx-note">${scout.copies.length} networks (${w.toFixed(0)} million weights together), trained on our university's GPUs, were shown the whole sky three times: 2MASS 1999, WISE 2010, SPHEREx 2025. Their average marks ${scout.sky.marks.toLocaleString("en-US")} places; ${scout.sky.marks_on_catalogue_stars.toLocaleString("en-US")} are stars MIRA's catalogue holds. The purple marks are the ${scout.marks.length} strongest of the others.</p>
-        <p class="mx-note"><b>Unverified.</b> On the test sky ${t.false_per_sqdeg.toFixed(2)} marks per square degree fell on nothing the catalogue knows: some are stars Gaia lists and MIRA's catalogue does not hold, some are artefacts. Click a mark to watch the place through time, then measure it in the Lab. The model points; the Lab measures.</p>
-        ${cmp ? `<p class="mx-note"><b>Two models, two jobs.</b> On the same ${cmp.patches.toLocaleString("en-US")} test patches, one star each (0.5 is chance, 1 is perfect): Meta's V-JEPA 2 as published <b>${cmp.vjepa2_probe_auc.toFixed(2)}</b>, MIRA's scout <b>${cmp.mira_auc.toFixed(2)}</b>${ftOn ? `, V-JEPA 2 after fine-tuning on MIRA's movers <b>${ft!.auc_test.toFixed(2)}</b>` : ""}.${ftOn && ft!.marks_scored ? ` So the scout searches the whole sky and V-JEPA 2 gives each mark a second opinion: <b>${ft!.marks_agree} of ${ft!.marks_scored}</b> marks are movers for both (filled); the hollow ones only for the scout.` : ""}</p>` : ""}`; }
+      const t = scout.test, ft = scout.vjepa_finetuned ?? null, cmp = scout.comparison?.vjz ?? null, gc = scout.gaia_check ?? null, n = (v: number) => v.toLocaleString("en-US"), kv = (b: string, t2: string) => `<div class="sk-kv"><b>${b}</b><span>${t2}</span></div>`;
+      el.innerHTML = kv(n(scout.sky.marks), "places marked on the whole sky, from three pictures of each") + kv(n(scout.sky.marks_on_catalogue_stars), "are movers MIRA's catalogue already holds")
+        + (gc ? kv(`${gc.with_a_gaia_fast_mover}<small> / ${gc.asked}</small>`, "of the strongest others are fast movers in ESA's Gaia <i class=\"sk-d on\"></i>") + kv(String(gc.without), "have no Gaia match: open <i class=\"sk-d\"></i>") : "")
+        + kv(`${Math.round(100 * t.recall)}%`, `of ${n(t.n)} known fast movers found on sky kept for testing`)
+        + (cmp && ft ? kv(ft.auc_test.toFixed(2), `Meta's V-JEPA 2, fine-tuned, telling movers from still stars (our scout ${cmp.mira_auc.toFixed(2)}, chance 0.5)`) : "")
+        + `<p class="mx-note">The model points; the Lab measures. <a href="/docs/#worldmodel" target="_blank" rel="noopener">How it was tested</a></p>`; }
     else if (st.panel === "colours") { const key = `c${st.wave}|${LAM.length}|${st.layer}|${!!spec}`; if (key === subKey) return; subKey = key; const lam = LAM[st.wave]; loadSpec();
       el.innerHTML = `<div class="mx-h">Only SPHEREx sees the whole sky in 102 colours</div>
         <div class="mx-chips sk-layers"><button data-ly="" class="${!st.layer && st.wave < 0 ? "on" : ""}">Picture</button>${Object.entries(LAYERS).map(([k, L2]) => `<button data-ly="${k}" class="${st.layer === k ? "on" : ""}">${L2.t}</button>`).join("")}</div>

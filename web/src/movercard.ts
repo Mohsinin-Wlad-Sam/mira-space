@@ -32,7 +32,9 @@ export const gaiaLine = (V: Ver, k: number) => (V.known[k] === 1 ? "Gaia, Europe
 /** the sky model's own look at the whole sky (census/wm2_run.py): its test figures, what it marks, and for every catalogue star whether it marks it too */
 export type Scout = { threshold: number; copies: { weights_millions: number }[]; test: { n: number; recall: number; false_per_sqdeg: number; pm_err_median: number | null; by_pm: { lo: number; hi: number; n: number; recall: number }[] };
   test_forecast?: { recall: number; by_pm: { lo: number; hi: number; n: number; recall: number }[] }; comparison?: Record<string, { patches: number; with_a_real_mover: number; vjepa2_probe_auc: number; vjepa2_surprise_auc: number; mira_auc: number }> | null;
-  sky: { tiles: number; marks: number; marks_on_catalogue_stars: number; marks_in_the_galactic_plane: number; marks_elsewhere: number }; objects: { id: string[]; conf: number[]; pm: number[] }; marks: { ra: number; dec: number; conf: number; pm: number; pa: number; glat: number; vj?: number }[];
+  sky: { tiles: number; marks: number; marks_on_catalogue_stars: number; marks_in_the_galactic_plane: number; marks_elsewhere: number }; objects: { id: string[]; conf: number[]; pm: number[] }; marks: { ra: number; dec: number; conf: number; pm: number; pa: number; glat: number; vj?: number; gaia?: { pm: number; g: number | null; id: string } | null }[];
+  /** the marks checked against ESA's Gaia DR3: how many have a fast-moving star at their place */
+  gaia_check?: { asked: number; with_a_gaia_fast_mover: number; without: number; radius_arcsec: number; min_pm_arcsec_yr: number; model_motion_error_median: number | null } | null;
   /** Meta's V-JEPA 2 after fine-tuning on MIRA's examples: its score on the test sky, and how many of the marks it also calls movers */
   vjepa_finetuned?: { auc_test: number; patches?: number; marks_scored?: number; marks_agree?: number; scorer_auc_test?: number } | null };
 let scoutP: Promise<Scout | null> | null = null, scout: Scout | null = null, scoutIdx: Map<string, number> | null = null;

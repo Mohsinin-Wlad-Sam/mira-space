@@ -2,18 +2,19 @@
 
 Everything MIRA shows or plays that the team did not make itself, with its source and the terms under which it is used.
 
-## The 30-second film (`web/film/`, rendered by `web/scripts/render_film.mjs`)
+## The 30-second film (`web/film/`, photographed by `web/scripts/render_film.mjs`, finished by `web/scripts/film_finish.py`, sound by `web/scripts/film_score.py`)
 
 | What | Source | Credit and terms |
 |---|---|---|
-| Music | "Impact Prelude", Kevin MacLeod, incompetech.com. The stretch from 1:09 to 1:39, faded in and out and loudness-normalised | "Impact Prelude" Kevin MacLeod (incompetech.com). Licensed under Creative Commons: By Attribution 4.0 License. http://creativecommons.org/licenses/by/4.0/ |
-| Opening shot: the SPHEREx spacecraft in orbit (3.6 s) | "NASA's SPHEREx Prelaunch Media Reel", NASA ID `JPL-20250130-SPHERX-0001-SPHEREx_Media_Reel`, 0:29 to 0:33. https://images.nasa.gov/details/JPL-20250130-SPHERX-0001-SPHEREx_Media_Reel | Credit: NASA/JPL-Caltech. NASA describes the reel as "animations and b-roll for media and public use". No NASA logo or mission identifier appears in the excerpt; its use does not imply endorsement |
-| Every other shot | Recorded from the running site | Real data (see below). The pictures drawn by the sky world model are AI-generated and carry a visible label |
+| Music | "Time and Space" by Scott Buckley, www.scottbuckley.com.au. The stretch from 1:49 to 2:15: the quiet piano part, then the orchestra's entry, which the film puts on its fourth shot. The last second rings out in a reverberation added here | 'Time and Space' by Scott Buckley - released under CC-BY 4.0. www.scottbuckley.com.au. On YouTube the composer asks for this line in the video description |
+| Sound design | Made for the film from sines and noise (`film_score.py`): a low drop at the start, a rise into the orchestra's entry, soft ticks while the years run, a low note under the name | The team's own |
+| Every shot | Recorded from the running site: the Sky map and the Lab | Real data (see below). No picture in the film is AI-generated |
+| The look | A half-open shutter (each of the 24 pictures a second is the average of three of six photographed sub-frames), lens glow and streak, grain, darker corners, black bars | Computed on our university's GPUs from the photographed frames. Nothing is added that was not in them |
 
 **Why no commercial music or film footage.** The Space Apps submission guide says: "If you are using any copyrighted
 materials, make sure you have permission to use them." A credit line is not permission, and platforms mute or
 block videos that carry commercial tracks. The film therefore uses only material whose licence already grants the
-use: a Creative Commons track and NASA's own media.
+use: a Creative Commons track and the site's own pictures of NASA data.
 
 ## Data
 
