@@ -22,8 +22,8 @@ of any patch under the pointer. **Space** is a 3D model of the Sun's neighbourho
 The **Lab** is the tool the challenge asks for: point at any place, play it through time like a little video, and
 get four answers: what moved, how fast, what its light says, did it change. Tools open only when asked for; NASA's
 five test targets open at once. Behind it is a catalogue of 17,604 moving stars, each re-measured on raw SPHEREx
-exposures; world models (one runs in the browser, a scout searched the whole sky: 276 of its 400 strongest new finds
-are confirmed by ESA's Gaia); a data API and full documentation. No install, no account.
+exposures; world models (one runs in the browser, a scout searched the whole sky: 362 of its 400 strongest new finds
+are fast-moving stars that Gaia or SIMBAD already list); a data API and full documentation. No install, no account.
 
 **Link to project demo (choose one; both exist):**
 - 30-second film: `media/mira_film_30s.mp4` in the repository (1080p, 24 pictures a second, 30.0 s; a 720p copy
@@ -150,8 +150,8 @@ Each slide is one statement and one picture; the detail is in the documentation.
    of a star that moved; 102 colours, 6 months, 27 years.
 3. **The product: Sky.** Live in the slide. Three phrases.
 4. **The product: Lab.** Live on Epsilon Indi B. Four questions; six of the challenge's tips ticked.
-5. **Validity.** 17,604 confirmed · 92% found blind with no false alarm · 0.011″ a year · 276 of the AI scout's 400
-   new finds confirmed by Gaia; the funnel; the scout's marks on the Sky map.
+5. **Validity.** 17,604 confirmed · 92% found blind with no false alarm · 0.011″ a year · 362 of the AI scout's 400
+   new finds already listed by Gaia or SIMBAD; the funnel; the scout's marks on the Sky map.
 6. **Impact and plan.** Explorer (free), Researcher, Mission; US$150 a year; no customer yet.
 7. **Next, and who we are.** Each data release re-runs the search; the team with affiliations (photos go in
    `web/public/deck/team/<first name>.jpg`); data and AI credits.

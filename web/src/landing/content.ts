@@ -214,8 +214,8 @@ export const features: Feature[] = [
     eyebrow: 'Research preview',
     title: 'An AI scout for the whole sky.',
     body:
-      'A network looked at every patch of sky three times. Of its 400 strongest new marks, 276 are fast ' +
-      'movers in ESA’s Gaia. Meta’s V-JEPA 2, fine-tuned, gives the second opinion.',
+      'A network looked at every patch of sky three times. Of its 400 strongest new marks, 362 are fast-moving ' +
+      'stars that Gaia or SIMBAD already list; 38 are open. Meta’s V-JEPA 2, fine-tuned, gives a second opinion.',
     cta: { label: 'How it was tested', href: '/docs/#worldmodel' },
     image: images.starfield,
   },
@@ -248,7 +248,7 @@ export const stats: { image: SiteImage; items: Stat[] } = {
   image: images.stats,
   items: [
     { value: 17604, suffix: '', label: 'Stars caught moving' },
-    { value: 276, suffix: '', label: 'Of the AI scout’s 400 new finds, confirmed by Gaia' },
+    { value: 362, suffix: '', label: 'Of the AI scout’s 400 new finds, known to Gaia or SIMBAD' },
     { value: 635, suffix: '', label: 'Movers in no reference database' },
   ],
 }

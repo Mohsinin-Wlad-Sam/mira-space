@@ -41,7 +41,7 @@ in 1999, WISE in 2010, then every SPHEREx visit), so that what moved is easy to 
 fast it moves, what its light says it is, whether its brightness changed, each with its error and checked against
 ESA's Gaia. A Sky map puts the whole survey on one time bar, with tonight's planets. Behind it are a catalogue of
 17,604 moving stars, each re-measured on raw SPHEREx exposures; an AI scout that searched the whole sky, of whose
-400 strongest new finds 276 are confirmed by Gaia; a data API; and full documentation. NASA's five test targets
+400 strongest new finds 362 are fast-moving stars that Gaia or SIMBAD already list; a data API; and full documentation. NASA's five test targets
 open at once. No install, no account.
 
 **Link to project demo**
@@ -78,7 +78,8 @@ needs five sigma against the scatter with which those stars are recovered.
 *Does it work?* Epsilon Indi B: 4.70 ± 0.02 arcseconds a year (Gaia: 4.68). Barnard's Star: 10.46 ± 0.05 (Gaia:
 10.39). WISE 0855: 8.21 ± 0.05 (Kirkpatrick et al. 2021: 8.15). In a blind test on 459 fields the detector found
 92% of known movers and raised no false alarm among 5,757 still stars. Of the 400 strongest places the AI scout
-marked where our catalogue had nothing, 276 are fast-moving stars in Gaia DR3; 124 have no match and stay open.
+marked where our catalogue had nothing, 276 are fast-moving stars in Gaia DR3 and 86 more are in SIMBAD; 38 are in
+neither and stay open.
 
 *Who it is for.* Anyone curious (tonight's planets, any place as a film); classrooms (measure a star on NASA's own
 images and compare with Gaia); volunteers (635 confirmed movers that no reference database names); researchers and

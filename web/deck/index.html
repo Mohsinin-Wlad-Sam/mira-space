@@ -122,11 +122,11 @@ svg.curve { width: 100%; height: auto; display: block; } svg.curve path { fill: 
     <div><b data-count="17604">0</b><span>motions confirmed on raw SPHEREx exposures</span></div>
     <div><b>92%</b><span>of known movers found blind, zero false alarms</span></div>
     <div><b>0.011″</b><span>a year: median error of a motion</span></div>
-    <div><b id="gk">276 / 400</b><span>new finds of our AI scout, confirmed by ESA's Gaia</span></div>
+    <div><b id="gk">362 / 400</b><span>new finds of our AI scout that Gaia or SIMBAD already list</span></div>
   </div>
   <div class="row5">
     <div class="fun a" style="--d:3"><div><i style="--w:100%;--k:0"></i><b>39.9 billion</b><span>detections searched</span></div><div><i style="--w:62%;--k:1"></i><b>1.56 million</b><span>claims</span></div><div><i style="--w:38%;--k:2"></i><b>202,528</b><span>re-measured</span></div><div><i style="--w:22%;--k:3"></i><b>17,604</b><span>confirmed</span></div></div>
-    <div class="live a" style="--d:4"><img src="/deck/shot_scout.jpg" alt="The places the sky model marked, on MIRA's Sky map"><span class="lbl" id="wmcap">Whole-sky AI scout · filled marks are in Gaia</span></div>
+    <div class="live a" style="--d:4"><img src="/deck/shot_scout.jpg" alt="The places the sky model marked, on MIRA's Sky map"><span class="lbl" id="wmcap">Whole-sky AI scout · filled marks are known stars</span></div>
   </div>
 </section>
 
@@ -174,7 +174,7 @@ addEventListener('message', (e) => { if (e.data && e.data.mira === 'key') go(k +
 const fit = () => document.querySelectorAll('.live').forEach((b) => b.style.setProperty('--s', String(b.clientWidth / 1360))); addEventListener('resize', fit); fit();
 go(Math.max(0, (parseInt(location.hash.slice(1)) || 1) - 1));
 // the scout's figure against Gaia, from the file the cluster run wrote
-fetch('/data/wm/scout.json').then((r) => (r.ok ? r.json() : null)).then((sc) => { if (sc && sc.gaia_check) document.getElementById('gk').textContent = `${sc.gaia_check.with_a_gaia_fast_mover} / ${sc.gaia_check.asked}`; }).catch(() => {});
+fetch('/data/wm/scout.json').then((r) => (r.ok ? r.json() : null)).then((sc) => { if (sc && sc.gaia_check) document.getElementById('gk').textContent = `${sc.gaia_check.known_fast_movers ?? sc.gaia_check.with_a_gaia_fast_mover} / ${sc.gaia_check.asked}`; }).catch(() => {});
 </script>
 </body>
 </html>
