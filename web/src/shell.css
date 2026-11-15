@@ -153,3 +153,13 @@ body.about-on #ui .top { background: #000; border-bottom-color: var(--panel-line
 body.embed { --header-h: 0px; }
 .embed-out { position: absolute; z-index: 45; top: 10px; right: 12px; padding: 5px 11px; border-radius: 999px; background: rgb(7 8 12 / .8); border: .8px solid var(--panel-line); color: var(--white); font-family: var(--body); font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; text-decoration: none; pointer-events: auto; }
 body.embed #ui .sp-info, body.embed #ui .sp-info.ver { top: 46px; max-height: calc(100% - 150px); }
+
+/* ------------------------------------------------------------------ with the assistant open, the maps' pieces make room for it */
+@media (min-width: 761px) {
+  body.asst-on #ui .mx-dock { left: calc((100vw - 400px) / 2); width: min(740px, calc(100vw - 400px - 2 * var(--edge))); }
+  body.asst-on #ui .sp-ladder { left: calc((100vw - 400px) / 2); max-width: calc(100vw - 400px - 2 * var(--edge)); }
+  body.asst-on #ui .sp-info, body.asst-on #ui .sp-info.ver { right: calc(400px + var(--edge)); }
+  body.asst-on #ui .sp-scale, body.asst-on #ui .sk-coords { display: none; }
+  body.asst-on #ui .sp-intro, body.asst-on #ui .sp-cap { left: calc((100vw - 400px) / 2); }
+}
+.mx-note .link { color: var(--dim); text-decoration: underline; }

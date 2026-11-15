@@ -88,7 +88,7 @@ export async function openSky(host: HTMLElement, o: SkyOpts): Promise<SkyHandle>
   // ---- the time bar: four equal stretches of very different lengths, so that each has room
   const yearAt = (u: number) => (u <= 1 ? Y0 + (Y1 - Y0) * u : u <= 2 ? Y1 + (YS - Y1) * (u - 1) : u <= 3 ? YS + (nowY - YS) * (u - 2) : nowY + (u - 3));
   const uAt = (yr: number) => (yr <= Y1 ? (yr - Y0) / (Y1 - Y0) : yr <= YS ? 1 + (yr - Y1) / (YS - Y1) : yr <= nowY ? 2 + (yr - YS) / (nowY - YS) : 3 + (yr - nowY));
-  const RATE = [1 / 4, 1 / 3.5, 1 / 14, 1 / 14];             // stretches per second while playing
+  const RATE = [1 / 4, 1 / 3.5, 1 / 17.5, 1 / 14];           // stretches per second while playing: 1999 to today in 25 seconds
   const isLive = () => Math.abs(st.u - 3) < 1e-4;
   const dayOf = (yr: number) => (cov ? (yr - 2000) * 365.25 + 51544.5 - cov.mjd0 : -1);
 
@@ -111,7 +111,7 @@ export async function openSky(host: HTMLElement, o: SkyOpts): Promise<SkyHandle>
   function reveal(day: number) {
     const key = Math.round(day * 2); if (key === revKey || !cov || !cellOf || !pano.spherex) return; revKey = key;
     const n = cov.visits.length, A = new Float32Array(n), S = new Float32Array(n); let seenN = 0, vis = 0; scanOn = false;
-    for (let c = 0; c < n; c++) { const v = cov.visits[c]; if (!v.length || day < v[0]) continue; seenN++; A[c] = Math.min(1, (day - v[0] + 1) / (v[1] - v[0] + 2));
+    for (let c = 0; c < n; c++) { const v = cov.visits[c]; if (!v.length || day < v[0]) continue; seenN++; A[c] = Math.min(1, (day - v[0] + 1) / (Math.min(v[1] - v[0], 12) + 2));      // a place fills in over its first two weeks, as the 102 colours come in
       for (let q = 0; q < v.length; q += 2) { if (day >= v[q]) vis++; if (day >= v[q] - 1 && day <= v[q] + 4) { S[c] = 1; scanOn = true; } } }
     prog = { pct: seenN / n, visits: vis / n }; revFull = seenN === n && A.every((q) => q >= 1); paint(maskCv, A, [255, 255, 255]); paint(scanCv, S, [91, 227, 255]);
     const rg = revCv.getContext("2d")!; rg.globalCompositeOperation = "copy"; rg.drawImage(pano.spherex, 0, 0, RW, RW / 2); rg.globalCompositeOperation = "destination-in"; rg.imageSmoothingEnabled = true; rg.drawImage(maskCv, 0, 0, RW, RW / 2); rg.globalCompositeOperation = "source-over";
@@ -295,7 +295,7 @@ export async function openSky(host: HTMLElement, o: SkyOpts): Promise<SkyHandle>
       const pct = st.u >= 3 ? 1 : st.u <= 2 ? 0 : prog.pct, vis = st.u >= 3 && cov ? cov.visits.reduce((q, v) => q + v.length / 2, 0) / cov.visits.length : st.u <= 2 ? 0 : prog.visits;
       el.innerHTML = cov ? `<div class="mx-stat"><b>${Math.round(pct * 100)}%</b><span>of the sky imaged at least once by ${dayText(Math.min(yr, nowY))} · ${vis.toFixed(1)} visits on average</span></div><div class="mx-bar"><i style="width:${(pct * 100).toFixed(1)}%"></i></div>
         <div class="mx-acts"><button class="btn sm ghost" id="skrun" title="From SPHEREx's first survey exposures to the newest public ones">▶ Play the survey</button></div>
-        <p class="mx-note">${cov.exposures.toLocaleString()} exposures are public, from ${cov.first} to ${cov.last}. The picture appears where SPHEREx had really observed by each date; the blue band is where it had just arrived. It comes back to every place about every six months. A new release needs one script.</p>`
+        <p class="mx-note">${cov.exposures.toLocaleString()} exposures are public, from ${cov.first} to ${cov.last}. The picture appears where SPHEREx had really observed by each date; the blue band is where it had just arrived. It comes back to every place about every six months. A new release needs one script. <a class="link" href="${o.base}data/sphx2/coverage.json" download="spherex_coverage_dates.json">The dates, as a file</a></p>`
         : `<p class="mx-note">The dates of SPHEREx's exposures could not be read just now.</p>`;
       const run = host.querySelector("#skrun") as HTMLElement | null; if (run) run.onclick = () => playTo(2, 3); }
     else if (st.panel === "colours") { const key = `c${st.wave}|${LAM.length}`; if (key === subKey) return; subKey = key; const lam = LAM[st.wave];
@@ -334,7 +334,8 @@ export async function openSky(host: HTMLElement, o: SkyOpts): Promise<SkyHandle>
   const poolIds = () => (V ? V.id.filter((_, k) => isOpenCase(V!, k)) : []);
   function nextCase() { if (!V) return; const v = votes(), pool: number[] = []; for (let k = 0; k < V.id.length; k++) if (isOpenCase(V, k)) pool.push(k); const left = pool.filter((k) => !v[V!.id[k]]), from = left.length ? left : pool; if (from.length) select(from[Math.floor(Math.random() * from.length)], true); }
   function closeCard() { closeMenu(); destroyCard?.(); destroyCard = null; st.sel = -1; st.body = ""; st.place = null; const card = $("#skinfo"); card.classList.remove("open", "ver", "hud"); card.innerHTML = ""; st.dirty = true; o.onLink?.(""); }
-  const flyTo = (l: number, b: number, z: number) => { view.l = l; view.b = b; view.z = Math.max(view.z, z); clampView(); st.dirty = true; };
+  // on a phone the card is a sheet over the lower half, so the thing it is about is put in the upper third
+  const flyTo = (l: number, b: number, z: number) => { view.l = l; view.z = Math.max(view.z, z); view.b = cw < 760 ? b - (ch * 0.27) / scale() : b; clampView(); st.dirty = true; };
   function select(k: number, fly = false) {
     closeCard(); if (k < 0 || !V) return; st.sel = k; const card = $("#skinfo"); o.onLink?.(V.id[k]);
     if (fly) flyTo(GL[k], GB[k], 5);
