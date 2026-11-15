@@ -2,7 +2,7 @@
    A slim header (two maps, the Lab, the Catalogue, one search, the assistant); on the maps, the picture fills the
    window and three pieces float on it, the same on both: the highlights rail (left), the time dock (bottom centre)
    and the card (right). Nothing else is on screen. */
-:root { --header-h: 56px; --edge: 24px; --gutter: 24px; --panel: rgb(7 8 12 / .68); --panel-line: rgb(240 240 250 / .15); --panel-r: 10px; --live: #7df0a6; }
+:root { --header-h: 56px; --edge: 24px; --gutter: 24px; --radius: 8px; --hair: rgb(240 240 250 / .15); --line: rgb(240 240 250 / .3); --panel: rgb(7 8 12 / .68); --panel-line: rgb(240 240 250 / .15); --panel-r: 10px; --live: #7df0a6; }
 
 /* ------------------------------------------------------------------ header */
 #ui .top { height: var(--header-h); padding: 0 var(--edge); gap: 18px; z-index: 40; flex-wrap: nowrap; background: rgb(0 0 0 / .9); border-bottom: .8px solid var(--panel-line); }
