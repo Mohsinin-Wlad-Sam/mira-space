@@ -7,11 +7,19 @@
 NASA's SPHEREx is photographing the whole sky in 102 infrared colours and every image is public, but one image is a
 65 MB scientific file made for specialists' software. **MIRA makes them something anyone can look at.**
 
-- **For anyone curious:** a model of the space around the Sun where every point is a real star at its measured or
-  estimated distance. The 12,329 orange ones were caught moving and confirmed on SPHEREx images (they are the ones,
-  among the catalogue's 17,604 confirmed movers, that have a distance and so a place on the map). Click one: compare
-  three real NASA pictures (2MASS about 1999, WISE 2010, SPHEREx today) and follow its measured path. Works in a phone browser; no
-  install, no account.
+- **For anyone curious:** two maps in one frame (highlights on the left, one time bar at the bottom, a card on the
+  right).
+  - **Sky**, the whole sky as a map. The Sun, the Moon and the planets stand where they are right now; "My sky now"
+    shades what is below your own horizon and says which planets are up and when the others rise (your position
+    stays in the page). The time bar goes back to 1999 through three NASA surveys, and SPHEREx's picture fills in on
+    the dates it was really taken. Click any place to watch it through time as a little film.
+  - **Space**, a model of the space around the Sun. Among the planets, time runs in days and they move on their real
+    orbits; among the stars, every point is a real star at its measured or estimated distance, and the 12,329 orange
+    ones were caught moving and confirmed on SPHEREx images (they are the ones, among the catalogue's 17,604
+    confirmed movers, that have a distance). Click one: compare three real NASA pictures (2MASS about 1999, WISE
+    2010, SPHEREx today) and follow its measured path.
+
+  Works in a phone browser; no install, no account.
 - **For students and teachers:** measure a star's motion on NASA's own images and check it against ESA's Gaia
   (ε Indi B: 4.70 against 4.68″ per year). A classroom needs no telescope.
 - **For citizen scientists (prototype):** 635 confirmed movers away from the Galactic plane have no Gaia source
@@ -19,6 +27,9 @@ NASA's SPHEREx is photographing the whole sky in 102 infrared colours and every 
   objects from the astronomical literature, has nothing at their position). A visitor compares the three pictures and answers one question; an answer is recorded by the site's own small endpoint when it runs (no account, nothing about the visitor kept) and the card shows all visitors' tally; without that endpoint it stays on the device.
   The precedent is NASA's Backyard Worlds, where 150,000 volunteers helped find about 3,000 brown dwarfs
   ([NASA/JPL, 2021](https://www.jpl.nasa.gov/news/citizen-scientists-help-create-3d-map-of-cosmic-neighborhood/)).
+- **For mission teams and science centres:** the Sky map plays SPHEREx's survey as it really advanced, from the
+  dates of its 1.6 million public exposures, and any view (a map or a Lab field) can be put on another page with one
+  line of HTML (More → Copy code to embed it).
 - **For researchers:** one click deeper, the Lab: give a position, and instruments read every SPHEREx exposure of
   that field straight from the public archive and measure it: **which sources moved** since 1999 and 2010 and how
   fast; for the nearest, a parallax; a 0.75–5 µm spectrum with its molecular bands; whether they brightened or
@@ -30,8 +41,9 @@ moving against the stars. The same tools serve any star, brown dwarf or variable
 
 ## Questions we expect
 
-- **Who is it for?** Everyone first. The front door is a map with pictures and plain words, and an assistant that
-  explains any card or panel on request; students measure a star themselves; researchers get instruments and a
+- **Who is it for?** Everyone first. The Sky map answers what people ask of the sky (where are the planets tonight,
+  what is above my horizon); both maps use pictures and plain words, and an assistant explains any card or panel on
+  request; students measure a star themselves; researchers get instruments and a
   verified catalogue. The order of the screens follows that order.
 - **Is it only a visualisation?** No. The pictures are the way in; behind them the Lab produces numbers with errors
   (a motion, a parallax, a spectrum, a detection limit), checked against ESA's Gaia, and the catalogue is the result
@@ -50,13 +62,13 @@ moving against the stars. The same tools serve any star, brown dwarf or variable
 
 | Tip | Where it is done |
 |---|---|
-| Easy to update with new data releases | Pixels are never copied: the browser reads NASA's archive. One script rebuilds the small exposure index after a release (`deploy/update_spherex.sh`); the whole-sky map reads NASA's SPHEREx all-sky cube live; `census/build_sky_backdrop.py` refreshes the 3D map's sky |
-| The 102 bands, creatively; co-add per detector | Lab: six pictures under the image, one per detector array, each the sum of all its exposures; Colour view; whole-sky map: a slider through all 102 wavelengths; 3D map: SPHEREx sky in three colours |
+| Easy to update with new data releases | Pixels are never copied: the browser reads NASA's archive. One script rebuilds the small exposure index after a release, and with it the dates of SPHEREx's visits to each part of the sky that the Sky map plays (`deploy/update_spherex.sh`); the Sky map reads NASA's SPHEREx all-sky cube live; `census/build_sky_backdrop.py` refreshes the 3D map's sky |
+| The 102 bands, creatively; co-add per detector | Lab: six pictures under the image, one per detector array, each the sum of all its exposures; Colour view; Sky map: a slider through all 102 wavelengths; 3D map: SPHEREx sky in three colours |
 | Spectra on the fly | Lab → Spectrograph, for any source of the field, with molecular bands and automatic methane detection |
-| Add or subtract images taken at different times | Lab → Evolution (adds each visit's exposures; one time bar with 2MASS and WISE) and Difference (later visit minus first); any exposure can be left out |
+| Add or subtract images taken at different times | Lab → Evolution (adds each visit's exposures; one time bar with 2MASS and WISE) and Difference (later visit minus first); any exposure can be left out. Sky map: any place opens a card that plays 2MASS, WISE and each SPHEREx visit (its exposures added) |
 | Choose the field of view | Lab: 3.3′, 6.6′, 9.8′, 13.1′, with the download size shown first |
 | Overlay Gaia or WISE | Lab toggles (Gaia at each date, WISE 2010); Astrometer and Photometer plots; Gaia over real tiles in the closer look |
-| Coordinates in the URL; embeddable | `/explore/?ra=…&dec=…&fov=…`, `?target=name`, `&embed=1`; maps: `#universe=<id>`, `#sky=<id>` |
+| Coordinates in the URL; embeddable | `/explore/?ra=…&dec=…&fov=…`, `?target=name`, `&embed=1`; maps: `#universe=<id>`, and `#sky=<planet, name, id or "RA Dec">`, which follows whatever card is open; More → "Copy code to embed it" gives the `<iframe>` for the view on screen |
 | Metadata such as contamination flags | Lab: NASA's per-pixel flags applied to every source, paintable on the image, listed per exposure |
 | Astropy and Aladin | Survey, index and verification built with Astropy and the browser engine checked against it; the closer look uses CDS's Aladin Lite on real HiPS tiles |
 
@@ -66,7 +78,7 @@ moving against the stars. The same tools serve any star, brown dwarf or variable
 
 | Section | What you do there | Built from |
 |---|---|---|
-| **Map** (`/explore/`, first screen) | Two maps of the same findings. **Around the Sun (3D):** the Sun's neighbourhood out to the oldest light; the sky behind it is NASA's own SPHEREx all-sky picture (three of its 102 colours). **The whole sky:** a flat map that pans and zooms like any map; three NASA all-sky pictures fade into one another by year (2MASS ~1999, WISE 2010, SPHEREx 2025–26) and a slider goes through SPHEREx's 102 wavelengths, read live from NASA; any place can be sent to the Lab or looked at closely with Aladin. On both, a confirmed mover opens a film-style card tied to it by a target ring and a line: plain-language kind, distance, three real pictures (2MASS, WISE, SPHEREx) that play once and can be scrubbed, what was checked on SPHEREx, "Explain it to me", and, where the object is in no reference database, three answer buttons. | 3D catalogue from the survey (`census/export_space.py`) joined to the verified catalogue; SPHEREx all-sky cube, 2MASS and WISE HiPS tiles from IRSA (`census/build_sky_backdrop.py`, `web/src/skymap.ts`, `web/src/blink/hips.ts`); Aladin Lite (CDS) |
+| **Sky** (`/explore/#sky`) and **Space** (`/explore/`, first screen) | Two maps in one frame: a highlights rail, one time dock, one card. **Sky:** a flat map of the whole sky that pans and zooms like any map. One time bar: 1999 → 2010 the 2MASS picture fades into WISE's; 2010 → 2025 the movers caught in the WISE years appear; 2025 → today SPHEREx's picture fills in place by place on the dates of its exposures, and each mover lights up when SPHEREx reached it; today → +1 year the planets go on along the ecliptic. The Sun, the Moon and the planets are drawn where they are on the date shown (live at "today"), "My sky now" shades what is below the visitor's horizon, and a slider goes through SPHEREx's 102 wavelengths, read live from NASA. Landmarks and NASA's five test targets are marked; any place opens a card that plays 2MASS, WISE and each SPHEREx visit, and can be sent to the Lab or looked at closely with Aladin. **Space:** the Sun's neighbourhood in 3D out to the oldest light, with NASA's SPHEREx all-sky picture as its sky; among the planets time runs in days ("Planets, live"), among the stars in millennia. On both, a confirmed mover opens a film-style card tied to it by a target ring and a line: plain-language kind, distance, three real pictures (2MASS, WISE, SPHEREx) that play once and can be scrubbed, what was checked on SPHEREx, "Explain it to me", and, where the object is in no reference database, three answer buttons. | 3D catalogue from the survey (`census/export_space.py`) joined to the verified catalogue; SPHEREx all-sky cube, 2MASS and WISE HiPS tiles from IRSA (`census/build_sky_backdrop.py`, `web/src/skymap.ts`, `web/src/blink/hips.ts`); dates of SPHEREx's visits per sky cell from the exposure index (`census/sphx_coverage.py`); planets from JPL's orbital elements and JPL Horizons (`web/src/ephem.ts`, checked by `web/scripts/test_ephem.mts`); Aladin Lite (CDS) |
 | **Lab** (`/explore/#lab`) | Deep analysis. One field, six instruments: **Evolution** (one time bar you steer through three NASA pictures of the same field: 2MASS ~1999, WISE 2010, then one deep SPHEREx image per visit, so a mover walks across the frame), **Motion detector** (every source: moved / brighter / fainter / new / steady, with significance and its Gaia identity), **Astrometer** (position against time, proper motion, parallax), **Spectrograph** (0.75–5 µm spectrum, molecular bands, methane), **Photometer** (brightness against 1999 and 2010, and visit to visit), **Detection limits** (which planet or brown dwarf the field's depth would reveal). Plus every exposure with NASA's flags, and exports (CSV, FITS cube, Python, link, embed). | SPHEREx Level-2 exposures read by HTTP Range from `s3://nasa-irsa-spherex`; Gaia DR3, AllWISE, 2MASS from CDS mirrors |
 | **Catalogue** (`#catalogue`) | The survey, verified: filter and sort the confirmed movers, see them on a reduced proper-motion diagram and an all-sky chart, read the evidence for each, open it in the Lab | 39.9 billion WISE detections linked on a cluster, each claim re-measured on raw SPHEREx exposures |
 | **Cases** (`#cases`) | Your saved measurements, notes, target lists, exports; the survey's candidates with their verification | browser storage only |
@@ -117,6 +129,11 @@ SPHEREx exposures alone, 1.5-year baseline (`web/scripts/validate_blink.mts`, ru
 The two tables differ on purpose: the first uses the 2010 and 1999 catalogue positions (15–27 years), the second
 only SPHEREx's own 1.5 years. Engine checks against Astropy on the same NASA file: pixel positions to 0.004 px,
 resampled values to 0.005%, decoded flag masks bit for bit.
+
+The Sun, Moon and planets on the Sky map (`web/src/ephem.ts`, JPL's orbital elements computed in the browser),
+checked against JPL Horizons on four dates between 1999 and 2027 (`npx tsx scripts/test_ephem.mts`): the planets are
+within 8′ (Saturn the worst; Mercury to Mars, Uranus and Neptune within about 1′), the Moon within 7′, brightness
+within 0.2 magnitude. Enough for a map of the whole sky, and stated as such on every planet's card.
 
 ## The survey and its verification
 
@@ -187,11 +204,12 @@ in [`docs/14_deployment_and_updates.md`](docs/14_deployment_and_updates.md).
 | Path | Contents |
 |---|---|
 | `web/src/blink/` | the engine (`engine.ts`, `rice.ts`), the field detector (`detect.ts`), measurements, catalogues, plots, detection limits and the Lab view (`view.ts`) |
-| `web/src/catalogue.ts`, `logbook.ts`, `assistant.ts`, `space.ts`, `main.ts` | Catalogue, Cases, assistant panel, 3D view, shell |
+| `web/src/skymap.ts`, `space.ts`, `movercard.ts`, `pastview.ts`, `placeview.ts`, `ephem.ts`, `closer.ts` | the two maps (Sky, Space), their cards (a mover; any place through time), planet positions, the Aladin closer look |
+| `web/src/catalogue.ts`, `logbook.ts`, `assistant.ts`, `main.ts`, `shell.css` | Catalogue, Cases, assistant panel, shell (header, routes), the frame the maps share |
 | `web/server/assistant.mjs`, `deploy/assistant-proxy.mjs` | the assistant's server side (dev and production) |
-| `web/scripts/` | `verify_census.mts` (raw-exposure re-measurement), `candidates_report.mts`, `validate_detector.mts`, `test_detect.mts`, `validate_blink.mts` |
+| `web/scripts/` | `verify_census.mts` (raw-exposure re-measurement), `candidates_report.mts`, `validate_detector.mts`, `test_detect.mts`, `validate_blink.mts`, `test_ephem.mts` (planets against JPL Horizons) |
 | `web/src/landing/` | landing page (React); all copy in `content.ts` |
-| `census/` | survey pipeline (linker, SPHEREx photometry, exporters), `verify_select.py`, `verify_lists.py`, `verify_merge.py` |
+| `census/` | survey pipeline (linker, SPHEREx photometry, exporters), `verify_select.py`, `verify_lists.py`, `verify_merge.py`, `sphx_index2.py` (exposure index), `sphx_coverage.py` (when SPHEREx imaged each part of the sky) |
 | `deploy/` | Caddy / nginx / Docker configs, `update_spherex.sh`, the assistant proxy |
 | `docs/15_product_brief.md` | the concept in two pages |
 | `docs/13_business_plan.md` | who pays, for what, and why it stays free |

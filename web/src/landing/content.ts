@@ -211,9 +211,9 @@ export const hero = {
   /** Shown in the eyebrow until the live census numbers arrive. */
   eyebrow: 'NASA SPHEREx · open to everyone, in your browser',
   title: 'The sky is not still',
-  sub: 'See real stars change place between NASA pictures · help look at the ones in no reference database',
-  cta: { label: 'Open the map', href: viewer.home } satisfies Cta,
-  tour: { label: 'See a cold world move', href: viewer.coldWorld } satisfies Cta,
+  sub: 'Tonight’s planets, live · 27 years of NASA’s sky on one slider · real stars caught changing place',
+  cta: { label: 'Open the sky', href: viewer.sky } satisfies Cta,
+  tour: { label: 'Fly around the Sun', href: viewer.home } satisfies Cta,
   image: images.hero as SiteImage,
 }
 
@@ -222,16 +222,17 @@ export const features: Feature[] = [
     id: 'map',
     align: 'left',
     eyebrow: 'For everyone',
-    title: 'Click a star. Watch it move.',
+    title: 'Planets move in days. Stars move in decades. See both.',
     body:
-      'NASA’s newest sky survey, SPHEREx, is photographing the whole sky in 102 infrared colours, and every image ' +
-      'is public. But one image is a 65-megabyte scientific file made for specialists’ software. Mira turns them ' +
-      'into a model of the space around the Sun where every point is a real star at its measured or estimated ' +
-      'distance. Click one that was caught moving: three real NASA pictures, from 1999, 2010 and SPHEREx today, ' +
-      'show it at three places along its measured path. Or open the whole sky as a flat map and watch three ' +
-      'NASA surveys fade into one another by year, then slide through SPHEREx’s 102 colours. No install, no ' +
-      'account, and it works on a phone.',
-    cta: { label: 'Open the map', href: viewer.home },
+      'NASA’s newest sky survey, SPHEREx, is photographing the whole sky in 102 infrared colours. Its images are ' +
+      'public, but each is a 65-megabyte scientific file made for specialists’ software. Mira turns them into two ' +
+      'maps anyone can use. On the Sky, the Sun, the Moon and the planets stand where they are right now; one tap ' +
+      'shades what is below your own horizon and tells you which planets are up tonight. Slide back in time and ' +
+      'three NASA surveys follow one another from 1999, the last of them, SPHEREx, filling in on the very dates ' +
+      'it was taken. In Space, every point is a real star at its distance from the Sun, and the orange ones were ' +
+      'caught changing place: click one and three real NASA pictures show it move. No install, no account, and it ' +
+      'works on a phone.',
+    cta: { label: 'Open the sky', href: viewer.sky },
     image: images.motion,
   },
   {
@@ -264,14 +265,15 @@ export const features: Feature[] = [
   {
     id: 'research',
     align: 'right',
-    eyebrow: 'For researchers',
+    eyebrow: 'For researchers and agencies',
     title: 'Instruments, not screenshots',
     body:
-      'Behind the map is a working Lab: a motion detector, an astrometer, a spectrograph, a photometer and ' +
+      'Behind the maps is a working Lab: a motion detector, an astrometer, a spectrograph, a photometer and ' +
       'detection limits, reading SPHEREx exposures straight from NASA’s archive for any field of the sky, on a ' +
       'laptop: no cluster, no install. Tested ' +
       'blind on 459 fields, the detector found 92% of known moving stars and raised no false alarm among 5,757 ' +
-      'still ones.',
+      'still ones. For a mission team or a science centre, the Sky map plays the survey as it really advanced, ' +
+      'from the index of its 1.6 million public exposures, and any view can be put on another page with one line.',
     cta: { label: 'Open the Lab', href: viewer.lab },
     image: images.bands,
   },
@@ -320,15 +322,15 @@ export const team: Feature = {
   title: 'Built for Planet X & SPHEREx',
   body:
     'Mira is our answer to the Planet X and SPHEREx challenge: a public tool that shows SPHEREx images of any ' +
-    'place over time so that moving objects are easy to spot, a map that makes what was found visible to ' +
+    'place over time so that moving objects are easy to spot, two maps that make the sky and what was found in it visible to ' +
     'everyone, and a survey of sixteen years of infrared sky checked, claim by claim, on NASA’s raw exposures.',
   cta: { label: 'View the challenge', href: links.challenge },
   image: images.starfield,
 }
 
 export const footerLinks: NavLink[] = [
-  { label: 'The map', href: viewer.home },
-  { label: 'The whole sky', href: viewer.sky },
+  { label: 'Space (3D)', href: viewer.home },
+  { label: 'Sky', href: viewer.sky },
   { label: 'The Lab', href: viewer.lab },
   { label: 'Catalogue', href: viewer.catalogue },
   { label: 'Challenge', href: links.challenge },

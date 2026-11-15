@@ -19,7 +19,8 @@ import { mountPlaceView } from "./placeview";
 export type SkyOpts = { base: string; lowPower?: boolean; focus?: string;
   onObserve: (t: { ra: number; dec: number; pmra?: number; pmdec?: number; epoch?: number; name?: string; source?: string }) => void;
   /** open one of the Lab's named targets (NASA's five test targets) */ onTarget?: (key: string) => void;
-  onExplain?: (q: string) => void; on3D?: (id: string) => void; onCloser?: (ra: number, dec: number) => void; toast?: (m: string) => void };
+  onExplain?: (q: string) => void; on3D?: (id: string) => void; onCloser?: (ra: number, dec: number) => void; toast?: (m: string) => void;
+  /** what is open, as the words that open it again (an id, a name, coordinates; empty when nothing is): for the address bar */ onLink?: (q: string) => void };
 export type SkyHandle = { pause: (on: boolean) => void; focus: (q: string) => Promise<boolean>; context: () => unknown; /** "planets" | "spherex" | "story" | "colours" | "all" | "nogaia" | "open" */ show: (what: string) => boolean };
 
 const D = Math.PI / 180;
@@ -151,6 +152,40 @@ export async function openSky(host: HTMLElement, o: SkyOpts): Promise<SkyHandle>
   }
   fetch(`${SX}/properties`).then((r) => r.text()).then((t) => { const m = t.match(/data_cube_crval3_arr\s*=\s*([^\n]+)/); if (m) LAM = m[1].trim().split(/\s+/).map(Number); sync(); }).catch(() => {});
 
+  // ---- my sky now: with the visitor's position (asked for, kept in this page, sent nowhere) the part of the sky
+  //      below their horizon is shaded, and each wanderer is said to be up or to rise at about such an hour
+  let me: { lat: number; lon: number } | null = null, horizKey = NaN, horizLine: [number, number][] = [], compass: { n: string; l: number; b: number }[] = [];
+  const horizCv = mk(MW, MH); let maskRA: Float32Array | null = null, maskSD: Float32Array, maskCD: Float32Array;
+  const lstAt = (yr: number) => { const dj = (yr - 2000) * 365.25, T = dj / 36525; return (((280.46061837 + 360.98564736629 * dj + 0.000387933 * T * T + me!.lon) % 360) + 360) % 360; };
+  /** altitude above the visitor's horizon and compass bearing (degrees, from north through east) */
+  const altAz = (ra: number, dec: number, yr: number): [number, number] => { const H = (lstAt(yr) - ra) * D, ph = me!.lat * D, d = dec * D, sa = Math.sin(ph) * Math.sin(d) + Math.cos(ph) * Math.cos(d) * Math.cos(H);
+    return [Math.asin(Math.max(-1, Math.min(1, sa))) / D, ((Math.atan2(-Math.cos(d) * Math.sin(H), Math.sin(d) * Math.cos(ph) - Math.cos(d) * Math.sin(ph) * Math.cos(H)) / D) + 360) % 360]; };
+  const COMPASS = ["north", "north-east", "east", "south-east", "south", "south-west", "west", "north-west"];
+  /** "34° up in the south-east", or "below your horizon · rises about 21:40" (searched in five-minute steps over a day) */
+  function myView(b: { ra: number; dec: number }, yr: number): string {
+    const [alt, az] = altAz(b.ra, b.dec, yr); if (alt > 0) return `${alt < 10 ? "low" : alt > 60 ? "high" : Math.round(alt) + "° up"} in the ${COMPASS[Math.round(az / 45) % 8]}`;
+    for (let m = 5; m <= 1440; m += 5) if (altAz(b.ra, b.dec, yr + m / 525960)[0] > 0) return `below your horizon · rises about ${dateOf(yr + m / 525960).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
+    return "does not rise for you today";
+  }
+  function horizon(yr: number) {
+    const key = Math.round(yr * 365.25 * 720); if (key === horizKey || !me) return; horizKey = key;
+    if (!maskRA) { maskRA = new Float32Array(MW * MH); maskSD = new Float32Array(MW * MH); maskCD = new Float32Array(MW * MH);
+      for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) { const [ra, dec] = toEq(((x + 0.5) / MW) * 360, 90 - ((y + 0.5) / MH) * 180), i = y * MW + x; maskRA[i] = ra; maskSD[i] = Math.sin(dec * D); maskCD[i] = Math.cos(dec * D); } }
+    const lst = lstAt(yr), sp = Math.sin(me.lat * D), cp = Math.cos(me.lat * D), cx = horizCv.getContext("2d")!, id = cx.createImageData(MW, MH), d = id.data;
+    for (let i = 0; i < maskRA.length; i++) { const sa = sp * maskSD[i] + cp * maskCD[i] * Math.cos((lst - maskRA[i]) * D); d[i * 4 + 3] = sa >= 0.03 ? 0 : sa <= -0.03 ? 165 : (165 * (0.03 - sa)) / 0.06; }
+    cx.putImageData(id, 0, 0);
+    const at = (alt: number, az: number): [number, number] => { const a = alt * D, A = az * D, ph = me!.lat * D, dec = Math.asin(Math.sin(a) * Math.sin(ph) + Math.cos(a) * Math.cos(ph) * Math.cos(A)), H = Math.atan2(-Math.sin(A) * Math.cos(a), Math.sin(a) * Math.cos(ph) - Math.cos(a) * Math.sin(ph) * Math.cos(A));
+      return toGal((((lst - H / D) % 360) + 360) % 360, dec / D); };
+    horizLine = []; for (let az = 0; az <= 360; az += 3) horizLine.push(at(0, az));
+    compass = [["N", 0], ["E", 90], ["S", 180], ["W", 270]].map(([n, az]) => { const [l, b] = at(2.5, az as number); return { n: n as string, l, b }; }); const z = at(90, 0); compass.push({ n: "overhead", l: z[0], b: z[1] });
+  }
+  function askWhere() {
+    if (me) { me = null; horizKey = NaN; subKey = ""; sync(); return; }
+    if (!navigator.geolocation) { o.toast?.("This browser cannot tell where you are."); return; }
+    navigator.geolocation.getCurrentPosition((p) => { me = { lat: p.coords.latitude, lon: p.coords.longitude }; horizKey = NaN; subKey = ""; closeCard(); jump(3);
+        horizon(yearAt(3)); const z = compass.find((c) => c.n === "overhead"); if (z) { view.l = z.l; view.b = 0; view.z = 1; clampView(); } st.dirty = true; },       // what is overhead goes to the middle of the map
+      () => o.toast?.("No position was given. Allow it for this page to see your own horizon."), { maximumAge: 3600000, timeout: 12000 });
+  }
   // ---- the wanderers: Sun, Moon and planets on the date shown, with where they came from and where they are going
   const PAST = 60, AHEAD = 30, STEP = 3;                      // days of trail behind and ahead, and the step between its points
   let trails: Record<string, [number, number][]> = {};
@@ -200,6 +235,9 @@ export async function openSky(host: HTMLElement, o: SkyOpts): Promise<SkyHandle>
       if (scanOn) { g.globalCompositeOperation = "screen"; layer(scanCv, 0.34); g.globalCompositeOperation = "source-over"; } }
     else if (u < 3) { layer(pano.wise, 1); layer(pano.spherex, ease(u - 2)); }
     else layer(pano.spherex, 1);
+    // my sky now: what is below the visitor's horizon is shaded
+    const mine = !!me && isLive() && st.wave < 0;
+    if (mine) { horizon(yr); layer(horizCv, 1); g.lineWidth = 1.2; g.strokeStyle = "rgba(125,240,166,.7)"; path(horizLine, 0, horizLine.length - 1); }
     // the ecliptic: the road of the Sun, the Moon and the planets
     const wanderers = st.show.planets && (!st.playing || u >= 2);
     if (wanderers) { g.setLineDash([2, 6]); g.lineWidth = 1; g.strokeStyle = "rgba(255,210,122,.42)"; path(ECL, 0, ECL.length - 1); g.setLineDash([]); }
@@ -221,6 +259,7 @@ export async function openSky(host: HTMLElement, o: SkyOpts): Promise<SkyHandle>
         g.fillStyle = b.col; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill(); g.lineWidth = 1; g.strokeStyle = "rgba(0,0,0,.65)"; g.stroke();
         marks.push({ x, y, r: Math.max(12, r + 5), go: () => openBody(b.key) }); }
       for (const b of bodies) { const [x, y] = toScreen(b.gl, b.gb); if (x < 0 || y < 0 || x > cw || y > ch) continue; label(b.name.toUpperCase(), x, y, b.kind === "planet" ? 7 : 10, "#fff", "700 11px Barlow, system-ui, sans-serif", true); } }
+    if (mine) for (const c of compass) { const [x, y] = toScreen(c.l, c.b); if (x > 0 && y > 0 && x < cw && y < ch) { if (c.n === "overhead") { g.strokeStyle = "#7df0a6"; g.lineWidth = 1.3; g.beginPath(); g.moveTo(x - 6, y); g.lineTo(x + 6, y); g.moveTo(x, y - 6); g.lineTo(x, y + 6); g.stroke(); } label(c.n === "overhead" ? "straight overhead" : c.n, x, y, c.n === "overhead" ? 7 : 0, "#7df0a6", "700 11px Barlow, system-ui, sans-serif", true); } }
     // the famous ones and the landmarks
     if (st.show.marks) {
       PINS.forEach((p, i) => { const [x, y] = toScreen(PINGAL[i][0], PINGAL[i][1]); if (x < 0 || y < 0 || x > cw || y > ch) return;
@@ -245,10 +284,11 @@ export async function openSky(host: HTMLElement, o: SkyOpts): Promise<SkyHandle>
   let subKey = "";
   function renderSub() {
     const el = $("#sksub"), yr = yearAt(st.u); el.hidden = !st.panel; $("#skrail").classList.toggle("sub", !!st.panel); if (!st.panel) { subKey = ""; el.innerHTML = ""; return; }
-    if (st.panel === "planets") { ephem(); const key = `p${bodiesKey}`; if (key === subKey) return; subKey = key;
-      el.innerHTML = `<div class="mx-h">${isLive() ? "Right now" : dayText(yr)}</div><div class="mx-rows">${bodies.map((b) => `<button data-b="${b.key}"><i style="background:${b.col}"></i><b>${b.name}</b><span>${b.kind === "sun" ? "daytime side of the sky" : `${b.kind === "moon" ? whenSeen(b).eye.split(",")[0] : whenSeen(b).when.replace(/^in the /, "").replace(/, (before sunrise|after sunset)$/, "").replace(" to see these weeks", "")}${zodiac(b) ? ` · ${zodiac(b)}` : ""}`}</span></button>`).join("")}</div>
-        <div class="mx-acts"><button class="btn sm ghost" id="skyear" title="Let the date run through the next twelve months">▶ Play the coming year</button></div>
-        <p class="mx-note">Computed for the date on the time bar from JPL's orbital elements (within 10′ of JPL Horizons). The dotted line is the ecliptic, the road the planets keep to; each planet trails its last two months and points to its next one.</p>`;
+    if (st.panel === "planets") { ephem(); const mine = !!me && isLive(), key = `p${bodiesKey}|${mine}|${mine ? Math.round(yr * 365.25 * 288) : 0}`; if (key === subKey) return; subKey = key;
+      el.innerHTML = `<div class="mx-h">${isLive() ? "Right now" : dayText(yr)}</div><div class="mx-rows">${bodies.map((b) => `<button data-b="${b.key}"><i style="background:${b.col}"></i><b>${b.name}</b><span>${mine ? myView(b, yr) : b.kind === "sun" ? "daytime side of the sky" : `${b.kind === "moon" ? whenSeen(b).eye.split(",")[0] : whenSeen(b).when.replace(/^in the /, "").replace(/, (before sunrise|after sunset)$/, "").replace(" to see these weeks", "")}${zodiac(b) ? ` · ${zodiac(b)}` : ""}`}</span></button>`).join("")}</div>
+        <div class="mx-acts"><button class="btn sm ${me ? "solid" : "ghost"}" id="skme" title="Shade what is below your own horizon right now, and say which planets are up. Your position is used in this page only">${me ? "✓ My sky now" : "My sky now"}</button><button class="btn sm ghost" id="skyear" title="Let the date run through the next twelve months">▶ The coming year</button></div>
+        <p class="mx-note">${mine ? "The shaded part of the map is below your horizon at this moment; the green line is the horizon, with its compass points. Your position stays in this page: it is not sent or stored. " : me ? "Press Live to see your own sky again. " : ""}Computed from JPL's orbital elements (within 10′ of JPL Horizons). The dotted line is the ecliptic, the road the planets keep to; each planet trails its last two months and points to its next one.</p>`;
+      $("#skme").onclick = askWhere;
       el.querySelectorAll<HTMLButtonElement>("[data-b]").forEach((b) => (b.onclick = () => openBody(b.dataset.b!, true)));
       $("#skyear").onclick = () => playTo(3, 4); }
     else if (st.panel === "spherex") { const key = `s${Math.round(prog.pct * 1000)}|${Math.round(st.u * 400)}|${!!cov}`; if (key === subKey) return; subKey = key;
@@ -293,10 +333,10 @@ export async function openSky(host: HTMLElement, o: SkyOpts): Promise<SkyHandle>
   // ---- cards: a confirmed mover (the same card as on the 3D map), a wanderer, or any place
   const poolIds = () => (V ? V.id.filter((_, k) => isOpenCase(V!, k)) : []);
   function nextCase() { if (!V) return; const v = votes(), pool: number[] = []; for (let k = 0; k < V.id.length; k++) if (isOpenCase(V, k)) pool.push(k); const left = pool.filter((k) => !v[V!.id[k]]), from = left.length ? left : pool; if (from.length) select(from[Math.floor(Math.random() * from.length)], true); }
-  function closeCard() { closeMenu(); destroyCard?.(); destroyCard = null; st.sel = -1; st.body = ""; st.place = null; const card = $("#skinfo"); card.classList.remove("open", "ver", "hud"); card.innerHTML = ""; st.dirty = true; }
+  function closeCard() { closeMenu(); destroyCard?.(); destroyCard = null; st.sel = -1; st.body = ""; st.place = null; const card = $("#skinfo"); card.classList.remove("open", "ver", "hud"); card.innerHTML = ""; st.dirty = true; o.onLink?.(""); }
   const flyTo = (l: number, b: number, z: number) => { view.l = l; view.b = b; view.z = Math.max(view.z, z); clampView(); st.dirty = true; };
   function select(k: number, fly = false) {
-    closeCard(); if (k < 0 || !V) return; st.sel = k; const card = $("#skinfo");
+    closeCard(); if (k < 0 || !V) return; st.sel = k; const card = $("#skinfo"); o.onLink?.(V.id[k]);
     if (fly) flyTo(GL[k], GB[k], 5);
     destroyCard = mountMoverCard(card, V, k, { lead: `At ${hms(V.ra[k], V.dec[k])} on the sky. It crosses the width of the full Moon every <b>${moonYears(V, k)} years</b>${V.known[k] === 0 ? ", and it is not in Gaia, Europe's optical star catalogue" : ""}.`,
       poolIds, next: nextCase, onClose: closeCard, onObserve: (t2) => o.onObserve({ ...t2, source: "The survey of the WISE years (2010–2020)" }), onExplain: o.onExplain, autoplay: !o.lowPower,
@@ -304,7 +344,7 @@ export async function openSky(host: HTMLElement, o: SkyOpts): Promise<SkyHandle>
         ...(o.onCloser ? [["Look closer", "Real survey tiles of this place, with CDS's Aladin", () => o.onCloser!(V!.ra[k], V!.dec[k])] as [string, string, () => void]] : [])] });
     st.dirty = true;
   }
-  function openBody(key: string, fly = false) { closeCard(); ephem(); const b = bodies.find((q) => q.key === key); if (!b) return; st.body = key; if (fly) flyTo(b.gl, b.gb, 2.5); renderBody(true); st.dirty = true; }
+  function openBody(key: string, fly = false) { closeCard(); ephem(); const b = bodies.find((q) => q.key === key); if (!b) return; st.body = key; o.onLink?.(b.name); if (fly) flyTo(b.gl, b.gb, 2.5); renderBody(true); st.dirty = true; }
   let bodyKey = "";
   function renderBody(force = false) {
     const b = bodies.find((q) => q.key === st.body), card = $("#skinfo"); if (!b) return; const key = `${b.key}|${bodiesKey}`; if (!force && key === bodyKey) return; bodyKey = key;
@@ -320,6 +360,7 @@ export async function openSky(host: HTMLElement, o: SkyOpts): Promise<SkyHandle>
         <div class="fact"><b>${mins < 1 ? (mins * 60).toFixed(1) + " s" : mins < 100 ? mins.toFixed(0) + " min" : (mins / 60).toFixed(1) + " h"}</b><span>ago its light left</span></div>
         ${b.kind === "sun" ? "" : `<div class="fact"><b>${Math.abs(b.elong).toFixed(0)}° ${b.elong > 0 ? "east" : "west"}</b><span>of the Sun in the sky</span></div><div class="fact"><b>${b.mag >= 0 ? "+" : "−"}${Math.abs(b.mag).toFixed(1)}</b><span>${brightWords(b).split(": ")[1] ?? "magnitude"}</span></div>`}
       </div>
+      ${me && live ? `<div class="sp-ver"><b>From where you are, right now:</b> ${myView(b, yearAt(st.u))}.</div>` : ""}
       <p class="why">${b.kind === "planet" ? "Planet means wanderer: it changes place against the stars in days. The stars change place too, in decades: that is what the orange points on this map are." : b.kind === "moon" ? "The Moon goes around the whole sky in a month, about its own width every hour." : "The dotted line is the Sun's yearly path among the stars, the ecliptic. The planets keep close to it."} Position from JPL's orbital elements (within 10′).</p>
       <div class="actions">${o.on3D ? `<button class="btn sm solid" id="skb3d" title="Fly around the Solar System as it is on this date">See it in 3D</button>` : ""}${o.onExplain ? `<button class="btn sm ghost" id="skbex">Explain it to me</button>` : ""}${b.kind === "planet" ? `<button class="btn sm ghost" id="skbyr" title="Let the date run through the next twelve months and watch it go">▶ Its coming year</button>` : ""}</div>`;
     $("#skbx").onclick = closeCard; const b3 = card.querySelector("#skb3d") as HTMLElement | null, bx = card.querySelector("#skbex") as HTMLElement | null, by = card.querySelector("#skbyr") as HTMLElement | null;
@@ -327,7 +368,7 @@ export async function openSky(host: HTMLElement, o: SkyOpts): Promise<SkyHandle>
     if (bx) bx.onclick = () => o.onExplain!(`Explain in everyday words where ${b.name === "Sun" || b.name === "Moon" ? "the " + b.name : b.name} is in the sky ${live ? "right now" : "on " + dayText(yearAt(st.u))}, when and how I can see it, and one thing worth knowing about it.`);
   }
   function openPlace(ra: number, dec: number, name?: string, sub?: string, opt: { field?: number; key?: string } = {}) {
-    closeCard(); st.place = { ra, dec }; const card = $("#skinfo"), [l, b] = toGal(ra, dec); flyTo(l, b, 3); card.classList.add("open", "hud", "ver");
+    closeCard(); st.place = { ra, dec }; const card = $("#skinfo"), [l, b] = toGal(ra, dec); flyTo(l, b, 3); o.onLink?.(name ?? `${ra.toFixed(4)} ${dec >= 0 ? "+" : ""}${dec.toFixed(4)}`); card.classList.add("open", "hud", "ver");
     card.innerHTML = `<button class="icon-btn" id="skbx" aria-label="Close">✕</button>
       <div class="eyebrow">${name ? "On the sky at " + hms(ra, dec) : "A place in the sky"}</div><h3 class="display">${name ? esc(name) : hms(ra, dec)}</h3>
       <p class="sp-lead">${sub ? esc(sub) : "Three NASA surveys have photographed this place. Play them one after another: what changes place is moving."}</p>

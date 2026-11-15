@@ -1,4 +1,4 @@
-# MIRA — product brief (v6, 15 Nov 2026)
+# MIRA — product brief (v7, 15 Nov 2026)
 
 *NASA Space Apps 2026 · challenge "Planet X and SPHEREx" · working document for reviewers*
 
@@ -10,13 +10,15 @@ those who want to go deeper real instruments. In order of audience size:
 
 | Who | What they get | Evidence that it matters |
 |---|---|---|
-| Anyone curious, on a phone | A model of the space around the Sun; each star caught moving has a card in plain words with three real NASA pictures to compare (2MASS about 1999, WISE 2010, SPHEREx today) | The site needs no install, account or server. Not yet measured: the first pilot will count card openings |
+| Anyone curious, on a phone | The sky tonight: the Sun, the Moon and the planets where they are right now, what is above their own horizon, and three NASA surveys of the whole sky on one time bar. And a model of the space around the Sun in which each star caught moving has a card in plain words with three real NASA pictures to compare (2MASS about 1999, WISE 2010, SPHEREx today) | The site needs no install, account or server. Not yet measured: the first pilot will count card openings |
 | Students and teachers | A real-data lab without a telescope: measure a star's motion and check it against Gaia | ε Indi B: 4.70 against Gaia's 4.68″ per year, on NASA's own images |
 | Citizen scientists | 635 confirmed movers with no Gaia source and no SIMBAD entry (36 of them placed on the map, the rest shown without a distance), with pictures and answer buttons (prototype: an answer is recorded by the site's own small endpoint when it runs (no account, nothing about the visitor kept) and the card shows all visitors' tally; without that endpoint it stays on the device) | A precedent, not a result of ours: NASA's Backyard Worlds: Planet 9, where 150,000 volunteers helped find about 3,000 brown dwarfs by spotting moving dots in WISE images (NASA/JPL, 13 Jan 2021) |
+| Mission teams and science centres | SPHEREx's survey played as it really advanced (the dates of its 1.6 million public exposures, per patch of sky), and any view embedded on their own page with one line | The dates come from the same index the Lab reads; one script refreshes them after a release. Not yet measured: whether an outreach team uses it |
 | Researchers | The Lab's instruments on raw exposures for any field; a verified catalogue; exports | Blind control run: 92% of known movers found, no false alarm among 5,757 still stars |
 
-The interface follows that order: the **map** is the first screen and shows results as pictures and cards; the
-**Lab** and the **Catalogue** table are the deep-analysis pages, one click from every card.
+The interface follows that order: the two **maps** (Sky and Space) come first and share one frame, a highlights
+rail, a time dock and a card; the **Lab** and the **Catalogue** table are the deep-analysis pages, one click from
+every card. One header and one search serve all of them.
 
 ## 1. One question
 
@@ -41,7 +43,7 @@ on an HPC cluster. Every instrument serves the chain *find → measure → ident
 
 | Instrument | Question it answers | Output |
 |---|---|---|
-| Map (first screen), two modes | What is out there, and what moved? | *Around the Sun*: the 3D neighbourhood with NASA's SPHEREx all-sky picture as its sky. *The whole sky*: a flat, stable map where 2MASS (~1999), WISE (2010) and SPHEREx (2025–26) fade into one another by year, with a slider through SPHEREx's 102 wavelengths read live from NASA, and a closer look at real tiles with Aladin. On both: confirmed movers marked; a film-style card per object with three real pictures and its measured path, "Explain it to me", and answer buttons where the object is in no reference database |
+| Sky and Space: two maps in one frame (highlights rail, one time dock, one card) | What is in the sky tonight, what did NASA's surveys see, and what moved? | *Sky*: a flat, stable map of the whole sky with one time bar from 1999 to a year ahead. 2MASS (~1999) fades into WISE (2010); SPHEREx's picture then fills in place by place on the dates of its exposures; the Sun, the Moon and the planets stand where they are on the date shown (live at "today"; "My sky now" shades what is below the visitor's horizon); a slider goes through SPHEREx's 102 wavelengths read live from NASA; any place opens a card that plays 2MASS, WISE and each SPHEREx visit, and a closer look at real tiles with Aladin. *Space*: the 3D neighbourhood with NASA's SPHEREx all-sky picture as its sky; among the planets time runs in days, among the stars in millennia. On both: confirmed movers marked; a film-style card per object with three real pictures and its measured path, "Explain it to me", and, for the 635 with no SIMBAD entry, three answer buttons |
 | Six detectors (in the Lab) | What does the field look like in each of SPHEREx's six bands? | six pictures, one per detector array, each the sum of all that detector's exposures; click one to use it alone |
 | Finder (sky chart + verified catalogue) | Where should I point? | target or field |
 | Epoch imager | What does this field look like through time? | three NASA pictures of the same field on one time bar: 2MASS (~1999), WISE (2010), one deep SPHEREx image per visit (2025–26); playback control |

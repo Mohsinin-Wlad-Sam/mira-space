@@ -1,6 +1,6 @@
 # 10 · Submission draft (project page, 7 slides, 30-second video)
 
-Updated 15 Nov 2026 (map-first, impact-first). Our own numbers come from `web/public/data/verified/meta.json` (the
+Updated 15 Nov 2026 (two maps in one frame, live planets, SPHEREx's survey by date; impact first). Our own numbers come from `web/public/data/verified/meta.json` (the
 verification funnel), `detector_validation.json` (blind control run), `web/scripts/test_detect.mts` (field detector)
 and `web/public/validation.json` (engine validation); re-run them before submitting if the index has been
 refreshed. Outside figures are sourced in section "Why it matters" below.
@@ -9,19 +9,19 @@ refreshed. Outside figures are sourced in section "Why it matters" below.
 
 **Project name:** MIRA — the sky is not still
 
-**High-level summary (≈150 words)**
+**High-level summary (≈190 words)**
 NASA's SPHEREx is photographing the whole sky in 102 infrared colours, and every image is public. But one image is
-a 65-megabyte scientific file in which each pixel has a different colour, made for specialists' software. MIRA
-makes them something anyone can look at. Its front door is a model of the space around the Sun where every point is
-a real star at its measured or estimated distance; the 12,329 orange ones (those of the 17,604 confirmed movers that
-have a distance) were caught moving and confirmed, one by
-one, on SPHEREx images. Click one: three real NASA pictures (2MASS about 1999, WISE 2010, SPHEREx today) show it at three places along
-its measured path. For 635 of the confirmed movers there is no Gaia source and no entry in SIMBAD, astronomy's
-reference database; a prototype lets visitors record what they see in their pictures, with no account, following
-NASA's Backyard Worlds, where 150,000 volunteers helped find about 3,000 brown dwarfs.
-One click deeper is the Lab the challenge
-asks for: type any position, watch that field through time, and measure what moved, how fast and what it is.
-No install, no account, no server.
+a 65-megabyte scientific file made for specialists' software. MIRA makes them something anyone can use, in two maps
+that share one frame. **Sky** shows the whole sky with the planets where they are right now, shades what is below
+your own horizon, and runs one time bar back to 1999 through three NASA surveys; SPHEREx's picture fills in on the
+dates it was really taken. **Space** is a model of the Sun's neighbourhood where the planets move on their orbits
+and every point is a real star; the 12,329 orange ones (those of the 17,604 confirmed movers that have a distance)
+were caught moving and confirmed, one by one, on SPHEREx images. Click one: three real NASA pictures (2MASS about
+1999, WISE 2010, SPHEREx today) show it at three places along its measured path. For 635 confirmed movers with no
+Gaia source and no entry in SIMBAD, astronomy's reference database, a prototype lets visitors record what they see,
+with no account, following NASA's Backyard Worlds, where 150,000 volunteers helped find about 3,000 brown dwarfs.
+One click deeper is the Lab the challenge asks for: type any position, watch that field through time, and measure
+what moved, how fast and what it is. No install, no account, no server.
 
 **Link to project / demo:** ⟨hosted URL⟩ · repo: github.com/Mohsinin-Wlad-Sam/assrar-dawla
 
@@ -29,14 +29,17 @@ No install, no account, no server.
 
 0. *Why it matters, and to whom.* SPHEREx cost about US$488 million (NASA/JPL press kit) and its data are public,
    but unusable without a research pipeline. MIRA makes them usable by four groups, in this order of size:
-   - **Anyone curious**: a map that runs in a phone browser with no install or account, where each star caught
-     moving has a card in plain words and three real pictures to compare.
+   - **Anyone curious**: two maps that run in a phone browser with no install or account. They answer what people
+     ask of the sky (where are the planets tonight, what is above my horizon), show three NASA surveys of the whole
+     sky on one time bar, and give each star caught moving a card in plain words with three real pictures to compare.
    - **Students and teachers**: a real-data lab for a classroom without a telescope. Students measure a star's
      motion on NASA's own images and check it against ESA's Gaia (ε Indi B: 4.70 against 4.68″ per year).
    - **Citizen scientists**: NASA's Backyard Worlds: Planet 9 showed what the public can do, with 150,000
      volunteers helping to find about 3,000 brown dwarfs by spotting moving dots in WISE images (NASA, 13 Jan
      2021). MIRA tries the same idea on its own catalogue: 635 confirmed movers with no Gaia source and no SIMBAD
      entry are one click away, with their pictures and three answer buttons. This is a prototype: an answer is recorded by the site's own small endpoint when it runs (no account, nothing about the visitor kept) and the card shows all visitors' tally; without that endpoint it stays on the device.
+   - **Mission teams and science centres**: SPHEREx's survey played as it really advanced, from the dates of its
+     1.6 million public exposures, and any view (a map or a Lab field) embedded on another page with one line.
    - **Researchers**: instruments on raw exposures for any field, a verified catalogue, exports.
    The cost of reaching all of them is that of a static website: the browser reads NASA's archive directly.
    What we will measure in a first pilot (one month, three classrooms and an open call): how many visitors open a
@@ -44,13 +47,20 @@ No install, no account, no server.
 1. *The problem.* SPHEREx re-images the sky every six months in 102 infrared bands; nobody can look at it all.
    Existing blink tools stop at WISE. And SPHEREx is hard to blink: its pixels are 6″, it rolls between visits, and
    every exposure sees a different colour, so a constant star flickers and the eye cannot tell a mover from noise.
-2. *What we built.* **The map** (first screen), in two modes that share everything: *Around the Sun*, the Sun's
-   neighbourhood in 3D out to the oldest light, whose sky is NASA's own SPHEREx all-sky picture; and *The whole
-   sky*, a flat map that pans and zooms like any map, where three NASA all-sky pictures fade into one another by
-   year (2MASS, WISE, SPHEREx) and a slider goes through SPHEREx's 102 wavelengths, read live from NASA. The
-   confirmed movers are marked on both. A click opens a film-style card tied to the object by a target ring: what it is in plain words, its distance,
-   how long it takes to cross a full Moon's width of sky, and three real pictures (2MASS about 1999, WISE 2010, and SPHEREx's own, read from NASA's archive on demand) on a
-   slider with its measured path to today. **The Lab** (deep analysis, one click from every card): RA/Dec or a
+2. *What we built.* **Two maps in one frame**: highlights on the left, one time bar at the bottom, a card on the
+   right. *Sky* is a flat map of the whole sky that pans and zooms like any map. Its time bar runs from 1999 to a
+   year ahead: 2MASS fades into WISE, the stars caught moving in the WISE years appear, then SPHEREx's picture fills
+   in place by place on the dates of its exposures (taken from the exposure index), each mover lighting up when
+   SPHEREx reached it. The Sun, the Moon and the planets stand where they are on the date shown, live at "today"
+   (JPL's orbital elements, within 8′ of JPL Horizons); "My sky now" shades what is below the visitor's horizon and
+   says which planets are up and when the others rise. A slider goes through SPHEREx's 102 wavelengths, read live
+   from NASA. Any place opens a card that plays it as a little film: 2MASS, WISE, then each SPHEREx visit.
+   *Space* is the Sun's neighbourhood in 3D out to the oldest light, whose sky is NASA's own SPHEREx all-sky
+   picture; among the planets time runs in days, among the stars in millennia. On both, a click on a confirmed mover
+   opens a film-style card tied to it by a target ring: what it is in plain words, its distance, how long it takes
+   to cross a full Moon's width of sky, and three real pictures (2MASS about 1999, WISE 2010, and SPHEREx's own,
+   read from NASA's archive on demand) on a slider with its measured path to today.
+   **The Lab** (deep analysis, one click from every card): RA/Dec or a
    name in; out comes (a) **Evolution**, a time bar the user steers through three NASA pictures of the field
    (2MASS, WISE, then one deep SPHEREx image per visit); (b) the **Motion detector**, every source of the field
    judged moved, brighter, fainter, new or steady, with its significance and its Gaia identity; (c) the
@@ -84,7 +94,8 @@ No install, no account, no server.
 
 **Questions we expect, and our answers**
 
-- *Too niche?* The first screen is for everyone: pictures, plain sentences, an assistant that explains on request.
+- *Too niche?* The first screens are for everyone: tonight's planets and your own horizon, pictures, plain
+  sentences, an assistant that explains on request.
   Researchers are the fourth audience, not the first.
 - *Only a visualisation?* The pictures are the way in. Behind them are measurements with errors, checked against
   Gaia, and a catalogue made by re-measuring 202,528 claims on raw exposures.
@@ -115,8 +126,8 @@ data and checked against independent references; the assistant is told to use on
 
 ## 7 slides
 
-1. **The sky is not still.** The map with its introduction card. One line: "NASA photographed the whole sky.
-   MIRA lets anyone see what moves in it."
+1. **The sky is not still.** The Sky map, live: tonight's planets on the whole sky, "My sky now" switched on. One
+   line: "Planets move in days. Stars move in decades. MIRA shows both, on NASA's own pictures."
 2. **The problem, for everyone.** A US$488 million mission whose public images are made for specialists' software:
    65 MB files, 102 colours, never the same wavelength twice.
 3. **Click a star, compare three pictures.** The card of a brown dwarf that is not in the Gaia optical catalogue:
@@ -125,8 +136,10 @@ data and checked against independent references; the assistant is told to use on
 4. **Take part (prototype).** NASA's own precedent: 150,000 volunteers, about 3,000 brown dwarfs. In MIRA: 635
    confirmed movers with no Gaia source and no SIMBAD entry, with pictures and three answer buttons, no account. A
    classroom can do it; the pilot will tell us whether they do.
-4b. **The whole sky, by year and by colour.** The flat map: 2MASS 1999 fading into WISE 2010 into SPHEREx 2025,
-   then the slider through SPHEREx's 102 wavelengths (3.3 µm lights up the Milky Way's dust), live from NASA.
+4b. **27 years on one time bar.** The Sky map playing: 2MASS 1999 fading into WISE 2010, then SPHEREx's picture
+   filling in strip by strip on the dates it was taken, the movers lighting up as it reaches them; then the slider
+   through SPHEREx's 102 wavelengths (3.3 µm lights up the Milky Way's dust), live from NASA. And the Solar System
+   in Space, planets going round at ten days a second.
 5. **One click deeper: the Lab.** ε Indi B: press play, three NASA pictures of the field follow one another and the
    brown dwarf walks along its dated track; "12 sources measured, 1 moved"; Astrometer (+3.99, −2.49″/yr against
    Gaia's +3.98, −2.47), Spectrograph with the methane band. "Read live from NASA's archives. No server."
@@ -140,8 +153,8 @@ data and checked against independent references; the assistant is told to use on
 
 | t | Picture | Caption / voice |
 |---|---|---|
-| 0–5 s | The map: stars drifting as the time slider runs; the introduction card | "The sky is not still. NASA has photographed all of it, in files made for specialists." |
-| 5–12 s | Click "Show me one": fly to a brown dwarf; its card; the slider dragged from 1999 to 2010, the dot following the circle | "MIRA lets anyone compare real NASA pictures and see a star change place." |
+| 0–5 s | The Sky map, live: the planets with their names, "My sky now" shading the horizon; then the time bar played from 1999, SPHEREx's picture filling in | "The sky is not still. Planets move in days; NASA has photographed all of it for 27 years, in files made for specialists." |
+| 5–12 s | Space: "Show me a star that moved": fly to a brown dwarf; its card; the slider dragged from 1999 to 2010, the dot following the circle | "Stars move in decades. MIRA lets anyone compare real NASA pictures and see one change place." |
 | 12–17 s | "Help look at one": an object with no SIMBAD entry, the three answer buttons and the tally | "Some are in no reference database. Anyone can take a first look, as 150,000 volunteers did for NASA." |
 | 17–23 s | "Deep analysis": ε Indi B in the Lab, play pressed, the track growing; the Motion detector's table; the Astrometer plot | "One click deeper, instruments measure any place in the sky: what moved, how fast, what it is." |
 | 23–26 s | Catalogue funnel and the blind-test line | "Every claim checked on NASA's raw images." |

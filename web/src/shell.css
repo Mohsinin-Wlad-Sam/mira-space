@@ -148,3 +148,8 @@ body.about-on #ui .top { background: #000; border-bottom-color: var(--panel-line
 #ui #bk-prev, #ui #bk-next, #ui #bk-loop { border-radius: 50%; border-color: var(--panel-line); background: none; }
 #ui .bk-rate { height: 30px; border-radius: 999px; border-color: var(--panel-line); background: none; }
 #ui #bk-loop.on { background: var(--white); color: #000; }
+
+/* ------------------------------------------------------------------ on someone else's page: no header, one way out */
+body.embed { --header-h: 0px; }
+.embed-out { position: absolute; z-index: 45; top: 10px; right: 12px; padding: 5px 11px; border-radius: 999px; background: rgb(7 8 12 / .8); border: .8px solid var(--panel-line); color: var(--white); font-family: var(--body); font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; text-decoration: none; pointer-events: auto; }
+body.embed #ui .sp-info, body.embed #ui .sp-info.ver { top: 46px; max-height: calc(100% - 150px); }

@@ -11,7 +11,7 @@ assistant's proxy, which holds the model key; without it everything else works a
 | Path | What | Size |
 |---|---|---|
 | `/`, `/explore/`, `/assets/` | landing page and app. First load of the app ≈ 120 kB of gzipped JavaScript; the Catalogue, Cases, the assistant and the 3D view are fetched in the background after the first paint, so moving between sections never waits | ~4 MB |
-| `/data/sphx2/` | exposure index: one JSON per HEALPix nside-32 patch (12,288 files) + `meta.json` | 192 MB (≈ 56 MB gzipped); a field reads one ~15 kB file |
+| `/data/sphx2/` | exposure index: one JSON per HEALPix nside-32 patch (12,288 files) + `meta.json`; and `coverage.json`, the dates of SPHEREx's visits to each patch (the Sky map's "SPHEREx, live") | 192 MB (≈ 56 MB gzipped); a field reads one ~15 kB file; `coverage.json` is 363 kB (88 kB gzipped) |
 | `/data/verified/` | the verified catalogue: `objects.json` (confirmed movers), `changes.json`, `candidates.json`, `meta.json` (the funnel), `detector_validation.json` | 3.5 MB |
 | `/data/space`, `/data/universe`, `/space`, `/live`, `/data/candidates.json`, `/data/neighbors.json` | 3D catalogues, textures, hourly NASA feeds | ~35 MB |
 | `/validation.json` | result of the last engine validation run (shown on the Method page) | 4 kB |
@@ -36,7 +36,10 @@ sudo SITE_ADDRESS=mira.example.org MIRA_ROOT=/srv/mira caddy run --config /opt/m
 
 `deploy/nginx.conf` is the equivalent for nginx, and `deploy/Dockerfile` packs Caddy, the built site and the proxy
 into one container. Memory use is that of a static file server (tens of MB). The app must be allowed to be framed by
-other sites (do not add `X-Frame-Options`): embedding is a feature.
+other sites (do not add `X-Frame-Options`): embedding is a feature. Both maps and the Lab work embedded
+(`?embed=1` hides the header and adds one "Open in MIRA" link); in the app, More → "Copy code to embed it" writes
+the `<iframe>` for the view on screen. The `allow="geolocation"` attribute in that snippet is only needed for
+"My sky now", which asks the visitor's browser for a position and uses it inside the page.
 
 The data under `web/public/data/` are not in git (they are produced on the cluster); `web/sync_data.sh` pulls them.
 For a deployment without cluster access, copy `web/public/data/` from a machine that has them.
@@ -73,7 +76,8 @@ deploy/update_spherex.sh /srv/mira           # ~10 min to download IRSA's invent
 ```
 
 The script re-downloads the inventory through IRSA's TAP service, rebuilds `data/sphx2/` with
-`census/sphx_index2.py` and swaps it in. The Lab ("archive through …") and the Method page read the new date from
+`census/sphx_index2.py`, derives `coverage.json` from it with `census/sphx_coverage.py` (when SPHEREx imaged each
+part of the sky: what the Sky map plays between 2025 and today) and swaps both in. The Lab ("archive through …") and the Method page read the new date from
 `meta.json`; saved cases show a "new data" badge. Suggested cron entry on a machine with Python:
 `17 6 * * 2  /path/to/deploy/update_spherex.sh /srv/mira`.
 
