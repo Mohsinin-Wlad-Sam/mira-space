@@ -28,8 +28,10 @@
 * { box-sizing: border-box; } html, body { height: 100%; margin: 0; background: #000; overflow: hidden; color: var(--w); font-family: var(--sans); -webkit-font-smoothing: antialiased; }
 #stage { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; overflow: hidden; background: var(--bg); }
 #labwrap { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; overflow: hidden; background: #000; will-change: transform, opacity; }
-#fLab { display: block; width: 1920px; height: 1080px; border: 0; }
+#fLab, #fSpace { display: block; width: 1920px; height: 1080px; border: 0; }
+#spacewrap { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; overflow: hidden; background: #000; will-change: transform, opacity; }
 #win { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; border: 1.2px solid rgb(238 242 248 / .2); opacity: 0; pointer-events: none; }
+#sky { display: none; }
 #sky, #map { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; }
 #map { opacity: 0; }
 #ret { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; pointer-events: none; opacity: 0; }
@@ -58,19 +60,20 @@
 <div id="stage">
   <div id="labwrap"><iframe id="fLab" title="The Lab" tabindex="-1"></iframe></div>
   <div id="win"></div>
+  <div id="spacewrap"><iframe id="fSpace" title="The Universe map" tabindex="-1"></iframe></div>
   <canvas id="sky" width="3840" height="2160"></canvas>
   <svg id="ret" viewBox="0 0 1920 1080"><path id="ret-box" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1" /><path id="ret-ticks" /></svg>
   <canvas id="map" width="3840" height="2160"></canvas>
   <div id="capbg"></div><div id="livebg"></div>
   <svg id="lead" viewBox="0 0 1920 1080"><line id="lead-l" /><circle id="lead-c" r="9" /></svg>
   <div class="ov" id="badge">TEAM MOHSININ WLAD DARIO // NASA SPACE APPS CHALLENGE 2026</div>
-  <div class="ov" id="art">ARTIST’S RENDERING · COMPUTER-GENERATED WITH AI ASSISTANCE</div>
+  <div class="ov" id="art">LIVE CAPTURE · MIRA’S 3D MAP OF REAL STARS</div>
   <div class="ov" id="live">[ <i>●</i> LIVE CAPTURE — THE RUNNING MIRA SITE // REAL NASA SPHEREx DATA ]</div>
   <div class="ov" id="ttl"><h1>MIRA</h1><p>The public web observatory on NASA’s SPHEREx data.</p></div>
   <div class="ov" id="cta">Help look at one →</div>
   <div id="flash"></div>
   <div class="ov" id="endc"><div id="endin"><h1>MIRA</h1><p class="tag">Point at the sky. See what moved. Measure it.</p><p class="team"><span>TEAM MOHSININ WLAD DARIO</span>Mohammed Ouabdrrahmane · Hamza Ba-mohammed · Hiba Nemry · Aya Driouche · Abdelmonaim Bounite</p><p class="num" id="end-num"></p>
-    <p class="foot">Built on open data: NASA SPHEREx · 2MASS · WISE · ESA Gaia<br>NASA Space Apps Challenge 2026 · Music: “Time and Space” by Scott Buckley (CC BY 4.0) · Narration: a synthetic voice<br>The opening is an artist’s rendering, computer-generated with AI assistance; the rest is recorded from the running site · Not affiliated with or endorsed by NASA</p></div></div>
+    <p class="foot">Built on open data: NASA SPHEREx · 2MASS · WISE · ESA Gaia<br>NASA Space Apps Challenge 2026 · Music: “Time and Space” by Scott Buckley (CC BY 4.0) · Narration: a synthetic voice<br>Recorded from the running site: its 3D map of real stars, its Lab on NASA’s exposures, its map of the whole sky · Not affiliated with or endorsed by NASA</p></div></div>
   <div class="ov" id="cap"><span></span></div>
 </div>
 <div id="msg">loading…</div>
@@ -78,6 +81,7 @@
 const D = Math.PI / 180, DUR = 29, TAU = 6.283185307;
 const $ = (s) => document.querySelector(s), W = () => $("#fLab").contentWindow, Dc = () => W().document, lab = () => W().__mira.lab, Lq = (s) => Dc().querySelector(s);
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+const Ws = () => $("#fSpace").contentWindow, space = () => Ws().__mira.space();
 const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v)), lerp = (a, b, u) => a + (b - a) * u, seg = (t, a, b) => clamp((t - a) / (b - a));
 const sm = (u) => { u = clamp(u); return u * u * (3 - 2 * u); }, io = (u) => { u = clamp(u); return u < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2; }, out3 = (u) => 1 - Math.pow(1 - clamp(u), 3);
 const fade = (t, a, b, f = 0.32) => Math.min(sm((t - a) / f), sm((b - t) / f));
@@ -342,14 +346,21 @@ function styleLab(t) {
 
 // ------------------------------------------------------------------ one frame
 const set = (e, o, tf) => { e.style.opacity = String(o); if (tf !== undefined) e.style.transform = tf; };
-let running = false, recording = false, t0 = 0, lastT = -1, ready = false, skyState = "";
+let running = false, recording = false, t0 = 0, lastT = -1, ready = false, skyState = "", spaceReady = false, spacePaused = false, zN = 0;
+// how far the map's wheel has been turned at each moment (one unit is one notch): slow off Neptune, fast across the empty
+// Solar System, slower where the stars come in, and it ends with the whole cloud of mapped stars in view
+const ZK = [[0, 0], [1.0, 18], [2.7, 250], [3.8, 300], [5.2, 334], [6.9, 360], [9.9, 373]];
+const zoomLin = (t) => { let k = 0; while (k < ZK.length - 2 && t >= ZK[k + 1][0]) k++; const a = ZK[k], b = ZK[k + 1]; return lerp(a[1], b[1], seg(t, a[0], b[0])); };
+const zoomAt = (t) => { let q = 0; for (let k = -3; k <= 3; k++) q += zoomLin(Math.max(0, t + k * 0.09)); return q / 7; };
 function render(t) {
   // act one, then its last picture settling into the Lab's pane
-  const skyA = 1 - sm(seg(t, ...T.real)); sky.style.opacity = String(skyA); sky.style.visibility = skyA <= 0 ? "hidden" : "visible";
-  if (skyA > 0) { if (t < T.a1 + 0.2) { drawSky(t); skyState = "live"; } else if (skyState !== "held") { drawSky(T.a1 + 0.2); skyState = "held"; }
-    // the picture settles into the Lab's centre pane, where NASA's real picture then takes its place
-    const u = io(seg(t, ...T.pull)), cw = ST.w * LABWIN.s, s2 = cw / 1080, px = LABWIN.x + (ST.x + ST.w / 2) * LABWIN.s, py = LABWIN.y + (ST.y + ST.w / 2) * LABWIN.s, half = cw / 2 / s2, sc = lerp(1, s2, u);
-    sky.style.transform = `translate(${lerp(0, px - 960 * s2, u)}px, ${lerp(0, py - 540 * s2, u)}px) scale(${sc})`; sky.style.clipPath = `inset(${lerp(0, 540 - half, u)}px ${lerp(0, 960 - half, u)}px)`; }
+  // the opening is the site's own Universe map: it starts on Neptune and is zoomed out with the map's own scroll wheel,
+  // out through the real stars until the whole cloud of them is in view; then the picture settles into the Lab's centre pane
+  const spA = 1 - sm(seg(t, ...T.real)), sw = $("#spacewrap"); sw.style.opacity = String(spA); sw.style.visibility = spA <= 0 ? "hidden" : "visible";
+  if (spaceReady) { try { if (spA > 0) { const cv = Ws().document.querySelector("#space canvas"), zn = zoomAt(t); if (cv && Math.abs(zn - zN) > 1e-4) { cv.dispatchEvent(new (Ws().WheelEvent)("wheel", { deltaY: 100 * (zn - zN), clientX: 960, clientY: 540, bubbles: true, cancelable: true })); zN = zn; } if (spacePaused) { space().pause(false); spacePaused = false; } }
+      else if (!spacePaused) { space().pause(true); spacePaused = true; } } catch (e) { /* the map is between two frames */ } }
+  if (spA > 0) { const u = io(seg(t, ...T.pull)), cw = ST.w * LABWIN.s, s2 = cw / 1080, px = LABWIN.x + (ST.x + ST.w / 2) * LABWIN.s, py = LABWIN.y + (ST.y + ST.w / 2) * LABWIN.s, half = cw / 2 / s2, sc = lerp(1, s2, u);
+    sw.style.transform = `translate(${lerp(0, px - 960 * s2, u)}px, ${lerp(0, py - 540 * s2, u)}px) scale(${sc})`; sw.style.clipPath = `inset(${lerp(0, 540 - half, u)}px ${lerp(0, 960 - half, u)}px)`; }
   // the reticle around the picture
   $("#ret").style.opacity = String(sm(seg(t, 8.2, 8.5)) * (1 - sm(seg(t, 10.2, 10.8)))); $("#ret-box").setAttribute("stroke-dashoffset", String(1 - io(seg(t, 8.3, 9.3)))); $("#ret-ticks").style.opacity = String(sm(seg(t, 9.0, 9.5)));
   // the Lab
@@ -370,14 +381,17 @@ function render(t) {
 }
 function tick(tNow) {
   if (!running) return; const t = Math.min(DUR, (tNow - t0) / 1000), dt = lastT < 0 ? 0 : t - lastT; lastT = t; render(t);
-  if (recording) { try { W().__vt?.step(dt * 1000); } catch (e) { /* the frame is not ready */ } }
+  if (recording) { try { W().__vt?.step(dt * 1000); } catch (e) { /* the frame is not ready */ } try { if (!spacePaused) Ws().__vt?.step(dt * 1000); } catch (e) { /* the frame is not ready */ } }
   $("#msg").textContent = `${t.toFixed(2)} s`; if (t < DUR) requestAnimationFrame(tick); else running = false;
 }
 async function prepare() {
   const msg = (s) => ($("#msg").textContent = s), until = async (f, ms = 60000) => { const t1 = Date.now(); while (Date.now() - t1 < ms) { try { if (f()) return true; } catch (e) { /* not yet */ } await wait(250); } return false; };
   try { localStorage.setItem("mira.rail", "1"); localStorage.setItem("mira.pro", "1"); } catch (e) { /* private mode */ }
   $("#fLab").src = "/explore/?embed=1&deck=1&target=eps-indi-b";
-  msg("the dark…"); try { await initSky(); } catch (e) { console.error(String(e)); msg(String(e).slice(0, 300)); }
+  $("#fSpace").src = "/explore/?embed=1&deck=film";
+  msg("the Universe map…"); await until(() => Ws().__mira, 60000); Ws().__mira.showUniverse("3d"); await until(() => Ws().__mira.space(), 120000); await wait(9000);       // its deeper catalogue of stars comes in after the first
+  space().shot("Neptune", 5, 0); await wait(3000); Ws().document.querySelector("#spiclose")?.click(); await wait(400);
+  { const e = Ws().document.createElement("style"); e.textContent = ".embed-out,#spinfo{display:none!important}"; Ws().document.head.appendChild(e); } spaceReady = true; zN = 0;
   msg("the whole sky…"); await buildMap();
   msg("the Lab…"); await until(() => W().__mira?.lab?.isOpen, 90000);
   await until(() => { const c = lab().context(); return !c.loading && c.exposures > 0 && c.field; }, 180000);
@@ -390,7 +404,7 @@ async function prepare() {
   let d = ""; for (let k = 0; k * step <= w / 2 + 0.5; k++) for (const sg of k ? [-1, 1] : [1]) { const o = w / 2 + sg * k * step, Ln = k % 2 === 0 ? 11 : 6; d += `M${x + o} ${y}v${-Ln}M${x + o} ${y + w}v${Ln}M${x} ${y + o}h${-Ln}M${x + w} ${y + o}h${Ln}`; } $("#ret-ticks").setAttribute("d", d);
   applied = { date: null, layers: "", tool: "readings" }; ready = true; await document.fonts.ready; render(0); await wait(300); msg("ready · press Space to play"); window.__film.ready = true;
 }
-function start(rec = false) { recording = rec; if (rec) { document.body.classList.add("rec"); W().__vt?.freeze(); window.__vt?.freeze(); } lastT = -1; skyState = ""; t0 = performance.now(); running = true; requestAnimationFrame(tick); }
+function start(rec = false) { recording = rec; if (rec) { document.body.classList.add("rec"); W().__vt?.freeze(); Ws().__vt?.freeze(); window.__vt?.freeze(); } lastT = -1; skyState = ""; t0 = performance.now(); running = true; requestAnimationFrame(tick); }
 window.__film = { ready: false, start, duration: DUR, seek: (t) => { running = false; if (t < T.a1 + 0.1) skyState = ""; render(t); }, state: () => ({ ST, applied, counts: M.counts, sky: G ? { ok: G.ok } : null }),
   /** how long one frame of the opening takes to compute, in milliseconds (the GPU is asked to finish before the clock is read) */
   bench: () => { const t1 = performance.now(); drawSky(3); gl.finish(); const px = new Uint8Array(4); gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px); return Math.round(performance.now() - t1); },

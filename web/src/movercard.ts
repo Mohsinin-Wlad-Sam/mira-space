@@ -10,7 +10,7 @@ export const KIND_PLAIN: Record<string, string> = { "M dwarf": "Red dwarf star",
   "white dwarf": "White dwarf: the Earth-sized core a dead star leaves", subdwarf: "Old, metal-poor star from the Galaxy's halo", "L dwarf": "Brown dwarf (type L): too small to shine as a star",
   "T dwarf": "Brown dwarf (type T): cold enough for methane, like Jupiter", "Y dwarf": "Brown dwarf (type Y): the coldest kind", "brown dwarf": "Brown dwarf: too small to shine as a star",
   "methane dwarf": "Methane dwarf: cold enough for methane, like Jupiter", "red: brown dwarf?": "Cold and red: possibly a brown dwarf", "cool dwarf?": "Cool dwarf star, not yet classified", unclassified: "Not yet classified" };
-const REPO = (import.meta.env.VITE_MIRA_REPORT_URL as string | undefined) ?? "https://github.com/Mohsinin-Wlad-Sam/assrar-dawla/issues/new";
+const REPO = (import.meta.env.VITE_MIRA_REPORT_URL as string | undefined) ?? "https://github.com/Mohsinin-Wlad-Sam/mira-space/issues/new";
 const VOTES = "mira.votes.v1";
 export const votes = (): Record<string, { v: string; t: number; name: string }> => { try { return JSON.parse(localStorage.getItem(VOTES) ?? "{}"); } catch { return {}; } };
 

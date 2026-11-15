@@ -36,12 +36,12 @@ document on `main` still says 362 or 38.
 
 ## 3. Why is the film under AI transparency?
 
-**Correct, and it should stay there.** The film's opening (the first 6.5 seconds) is a computer-generated artist's
-rendering made with an AI coding assistant. It carries the words "Artist's rendering · computer-generated with AI
-assistance" on screen for as long as it is shown, and the closing card says so again. The narration is a synthetic
-voice, also named on the closing card. Everything between the opening and the closing card is recorded from the
-running site on NASA data.
+**It stays there, for a shorter list of reasons.** The cut that is submitted no longer contains an artist's rendering:
+its opening is recorded from the site's own 3D map of the stars and says "Live capture" on screen. What is still made
+with AI in the film: its narration is a synthetic voice, named on the closing card; the forecast picture shown in the
+Lab's Sky model panel is drawn by the team's network, and the panel says so; and the page that plays the film was
+written with an AI coding assistant, like the rest of the code.
 
-The team's AI statement in `media/submission/README.md` says the same. If the film is changed again, these three
-things must still be true of the file that is submitted: the opening is marked on screen, the narration is named as
-synthetic, and the music credited is the music actually used.
+The team's AI statement in `media/submission/README.md` says the same. If the film is changed again, these must still
+be true of the file that is submitted: the narration is named as synthetic, and the music credited is the music
+actually used.

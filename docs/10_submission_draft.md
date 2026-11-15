@@ -24,7 +24,7 @@ AI runs through it: world models that compare pictures years apart, mark what mo
   beside it). Upload it to YouTube or Drive with public access and paste that link. In the YouTube description put:
   'Time and Space' by Scott Buckley - released under CC-BY 4.0. www.scottbuckley.com.au
 
-**Link to final project:** ⟨hosted URL⟩ · documentation ⟨hosted URL⟩/docs/ · repository github.com/Mohsinin-Wlad-Sam/assrar-dawla (must be public)
+**Link to final project:** ⟨hosted URL⟩ · documentation ⟨hosted URL⟩/docs/ · repository github.com/Mohsinin-Wlad-Sam/mira-space (must be public)
 
 **Project details**
 
@@ -127,9 +127,9 @@ text and layout under the team's direction; every use is logged in `docs/07_si_u
 afterwards. A language model (K2 Horizon) runs the in-product assistant: it explains and operates the page and is
 restricted to numbers the instruments computed. A small neural network trained by the team (the "sky world model")
 draws forecast pictures of a field: these are AI-generated and carry a visible "AI-generated · prediction" label in
-the Lab. The film's opening (6.5 seconds) is an artist's rendering computed by a ray-marching program written with an
-AI coding assistant, and is marked on screen as computer-generated with AI assistance; everything after it is
-recorded from the running site on NASA data; the film's music is "Time and Space" by Scott Buckley (CC BY 4.0). Two more networks only point at places
+the Lab. The film is recorded from the running site from its first picture to its last (it opens
+on the site's own 3D map of the stars, zoomed out from Neptune, and says "live capture" on screen); its narration is a
+synthetic voice, named on the closing card; the film's music is "Time and Space" by Scott Buckley (CC BY 4.0). Two more networks only point at places
 (a whole-sky "scout" trained by the team, and Meta's published V-JEPA 2, fine-tuned): their marks are checked against
 ESA's Gaia catalogue and shown as what they are. The idea, the scientific choices and the validation are the team's.
 
@@ -137,13 +137,13 @@ ESA's Gaia catalogue and shown as what they are. The idea, the scientific choice
 
 | t | Picture | Words on screen |
 |---|---|---|
-| 0–6.5 s | An artist's rendering, marked as such: a dark, cratered frozen world and a brown dwarf beyond Neptune, the far Sun behind dust, the Milky Way (NASA's SPHEREx all-sky picture) far behind; computed ray by ray. The light splits into its colours as the picture dissolves | Team and challenge · "Beyond Neptune, cold worlds drift in the dark." · "NASA's SPHEREx photographs the whole sky in 102 infrared colours." |
-| 6.5–11 s | The name on black; a reticle draws itself, NASA's real picture comes up inside it, then the Lab's own time bar, tools and readings arrive around it | "MIRA. The public web observatory on NASA's SPHEREx data." · "Point anywhere. Watch 27 years of NASA pictures play." |
+| 0–6.5 s | Live capture of the site's own 3D map, marked as such: it starts on Neptune and is zoomed out with the map's own scroll wheel, out of the Solar System and past the Sun's nearest neighbours, until the whole cloud of mapped stars is in view | Team and challenge · "Beyond Neptune, cold worlds drift in the dark." · "NASA's SPHEREx photographs the whole sky in 102 infrared colours." |
+| 6.5–11 s | The name, over the cloud of stars as it settles into the Lab's centre pane; NASA's real picture of one field takes its place there, then the Lab's own time bar, tools and readings arrive around it | "MIRA. The public web observatory on NASA's SPHEREx data." · "Point anywhere. Watch 27 years of NASA pictures play." |
 | 11–22 s | The running Lab, marked "live capture" down the side: the years play from 1999 to 2026 while Gaia's stars stay in place; 4.70″ a year; the spectrum with methane; the readings and the AI estimate | "See what moved, and how fast." · "Read its light. This one shows methane." · "Measured on NASA's raw exposures. Checked by AI models." |
 | 22–26 s | The whole sky in SPHEREx (Mollweide): the 17,604 movers light up in a wave that leaves from the object the film followed; the 635; "Help look at one" | "17,604 stars caught moving. 635 in neither Gaia nor SIMBAD." |
 | 26–29 s | A fade to black as the music falls away; the closing card | "Point at the sky. See what moved. Measure it." · the counts, the data, the credits |
 
 Photographed at 3840x2160 from the site by a virtual clock (`web/scripts/render_film.mjs --fps 60 --to 29 --scale 2`),
 with a check every half second that no words collide or leave the frame. Music: "Time and Space" by Scott Buckley,
-CC BY 4.0, with a few sounds made for the film (`web/scripts/film_score.py --cut 5`). A little grain and a soft glow
+CC BY 4.0, under a narration spoken by a synthetic voice (`web/scripts/film_voice.py`). A little grain and a soft glow
 around the brightest lights are added when the film is encoded. Full credits: `docs/17_credits.md`.

@@ -8,7 +8,7 @@ Deadline: Sunday 15 November 2026, 23:59 in the local event's time (Morocco). Ch
 
 | # | Step | Who | State |
 |---|---|---|---|
-| 1 | Make the repository public: GitHub → Settings → General → Danger zone → Change visibility (or `gh repo edit Mohsinin-Wlad-Sam/assrar-dawla --visibility public --accept-visibility-change-consequences`) | repository owner | **to do** |
+| 1 | Make the repository public: GitHub → Settings → General → Danger zone → Change visibility (or `gh repo edit Mohsinin-Wlad-Sam/mira-space --visibility public --accept-visibility-change-consequences`) | repository owner | **to do** |
 | 2 | Choose a licence and add `LICENSE` (MIT or Apache-2.0 are the usual ones for a Space Apps project) | team | **to do** |
 | 3 | Upload `media/mira_film_30s.mp4` to YouTube (Public or Unlisted) or Drive (anyone with the link). Title, description and thumbnail are in section 4 | any member | **to do** |
 | 4 | Host the site (the Deploy section of `/docs/`, or `docs/14_deployment_and_updates.md`). Optional: without it, the project link is the repository | any member | optional |
@@ -45,7 +45,7 @@ AI runs through it: world models that compare pictures years apart, mark what mo
 
 **Link to final project**
 
-`<hosted address>` · code: https://github.com/Mohsinin-Wlad-Sam/assrar-dawla · documentation: `<hosted address>/docs/`
+`<hosted address>` · code: https://github.com/Mohsinin-Wlad-Sam/mira-space · documentation: `<hosted address>/docs/`
 
 **Detailed project description**
 
@@ -111,10 +111,10 @@ Yes. AI coding assistants (Claude Code; Codex and Antigravity as reviewers) wrot
 text and layout under the team's direction; every use is logged in `docs/07_si_usage_log.md` with what was checked
 afterwards. A language model (K2 Horizon) runs the in-product assistant: it explains and operates the page and is
 restricted to numbers the instruments computed. A small network trained by the team draws forecast pictures of a
-field: these are AI-generated and carry a visible "AI-generated · prediction" label in the Lab. The film's opening
-(6.5 seconds) is an artist's rendering computed by a program written with an AI coding assistant; it is marked on
-screen as computer-generated with AI assistance. Its narration is a synthetic voice, named as such on the closing
-card. The rest of the film is recorded from the running site on NASA data. Two more networks
+field: these are AI-generated and carry a visible "AI-generated · prediction" label in the Lab. The film is recorded
+from the running site from its first picture to its last: it opens on the site's own 3D map of the stars, zoomed out
+from Neptune, and says "live capture" on screen. Its narration is a synthetic voice, named as such on the closing
+card, and the page that plays the film was written with an AI coding assistant. Two more networks
 only point at places (a whole-sky scout trained by the team, and Meta's V-JEPA 2, fine-tuned): their marks are
 checked against ESA's Gaia catalogue and shown as what they are. The idea, the scientific choices and the
 validation are the team's. No NASA logo or mission identifier is used.
@@ -128,7 +128,7 @@ validation are the team's. No NASA logo or mission identifier is used.
   Point at any place in the sky, watch 27 years of NASA pictures, see what moved.
   MIRA is team Mohsinin Wlad Dario's project for the NASA Space Apps Challenge 2026, "Planet X and SPHEREx".
   Every shot is recorded from the running site on real data: NASA SPHEREx, 2MASS and WISE (NASA/IPAC IRSA), ESA Gaia.
-  Project: <hosted address>   Code: https://github.com/Mohsinin-Wlad-Sam/assrar-dawla
+  Project: <hosted address>   Code: https://github.com/Mohsinin-Wlad-Sam/mira-space
 
   Music: 'Time and Space' by Scott Buckley - released under CC-BY 4.0. www.scottbuckley.com.au
   Not affiliated with or endorsed by NASA.

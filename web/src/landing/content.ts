@@ -79,8 +79,8 @@ export const links = {
   tutorials: 'https://caltech-ipac.github.io/irsa-tutorials/spherex/',
   wiseview: 'http://byw.tools/wiseview',
   gaia: 'https://archive.stsci.edu/missions-and-data/gaia',
-  github: 'https://github.com/Mohsinin-Wlad-Sam/assrar-dawla',
-  plan: 'https://github.com/Mohsinin-Wlad-Sam/assrar-dawla/blob/main/docs/13_business_plan.md',
+  github: 'https://github.com/Mohsinin-Wlad-Sam/mira-space',
+  plan: 'https://github.com/Mohsinin-Wlad-Sam/mira-space/blob/main/docs/13_business_plan.md',
 } as const
 
 // ---------------------------------------------------------------------------
