@@ -16,7 +16,18 @@ export const votes = (): Record<string, { v: string; t: number; name: string }> 
 
 let verP: Promise<Ver | null> | null = null;
 /** the verified catalogue, fetched once for every map */
-export const loadVerified = (base: string) => (verP ??= fetch(`${base}data/verified/objects.json`).then((r) => (r.ok ? r.json() : null)).then((j) => (j?.cols as Ver) ?? null, () => null));
+/** What a neural ensemble estimates for a mover from its SPHEREx spectrum, its WISE colour and its motion (census/ai_phys.py, joined to
+ *  the catalogue by census/ai_join.py): a distance with its range, a temperature, a kind. Estimates, each with its own uncertainty. */
+export type Ai = { classes: string[]; d: (number | null)[]; dlo: (number | null)[]; dhi: (number | null)[]; teff: (number | null)[]; et: (number | null)[]; cls: number[]; p: (number | null)[];
+  check: { with_an_estimate: number; no_gaia_source_with_an_estimate: number; distance_on_tiles_never_trained_on: { n: number; scatter_percent: number; within_its_own_error: number }; kind: { known_L_and_T_dwarfs: number; called_brown_dwarf: number } } };
+export let ai: Ai | null = null; let aiP: Promise<Ai | null> | null = null;
+export const loadAi = (base: string) => (aiP ??= fetch(`${base}data/verified/ai.json`).then((r) => (r.ok ? r.json() : null)).then((j: Ai | null) => (ai = j), () => null));
+const LY = 3.2616, lyText = (pc: number) => { const v = pc * LY; return v >= 100 ? Math.round(v).toLocaleString("en-US") : v.toFixed(v < 20 ? 1 : 0); };
+export const aiOf = (k: number) => { if (!ai || k < 0 || ai.d[k] === null || ai.d[k] === undefined || ai.cls[k] < 0) return null; const c = ai.cls[k];
+  return { kind: ai.classes[c], sure: ai.p[k] ?? 0, teff: c <= 2 ? ai.teff[k] : null, et: ai.et[k], pc: ai.d[k]!, ly: lyText(ai.d[k]!), lo: lyText(ai.dlo[k]!), hi: lyText(ai.dhi[k]!) }; };
+export const aiLine = (V: Ver, k: number) => { const a = aiOf(k); if (!a) return "";
+  return `<div class="sp-ai"><b>AI estimate</b> ${a.kind}${a.sure < 0.8 ? ", unsure" : ""}${a.teff ? ` · about ${a.teff.toLocaleString("en-US")} K` : ""} · ${a.ly} light-years <span>(${a.lo} to ${a.hi})</span><small>Read from its SPHEREx spectrum by a neural network${V.known[k] === 0 ? "; Gaia has no distance for this one" : ""}. An estimate, not a measurement. <a href="/docs/#ai" target="_blank" rel="noopener">How good is it?</a></small></div>`; };
+export const loadVerified = (base: string) => (verP ??= Promise.all([fetch(`${base}data/verified/objects.json`).then((r) => (r.ok ? r.json() : null)), loadAi(base)]).then(([j]) => (j?.cols as Ver) ?? null, () => null));
 /** away from the crowded Galactic plane, no Gaia source, no SIMBAD entry: an object a visitor can help look at */
 export const isOpenCase = (V: Ver, k: number) => V.known[k] === 0 && !V.simbad[k] && Math.abs(V.glat[k]) >= 10;
 /** a confirmed mover goes by its SIMBAD name, its Gaia designation, or by none */
@@ -32,9 +43,9 @@ export const gaiaLine = (V: Ver, k: number) => (V.known[k] === 1 ? "Gaia, Europe
 /** the sky model's own look at the whole sky (census/wm2_run.py): its test figures, what it marks, and for every catalogue star whether it marks it too */
 export type Scout = { threshold: number; copies: { weights_millions: number }[]; test: { n: number; recall: number; false_per_sqdeg: number; pm_err_median: number | null; by_pm: { lo: number; hi: number; n: number; recall: number }[] };
   test_forecast?: { recall: number; by_pm: { lo: number; hi: number; n: number; recall: number }[] }; comparison?: Record<string, { patches: number; with_a_real_mover: number; vjepa2_probe_auc: number; vjepa2_surprise_auc: number; mira_auc: number }> | null;
-  sky: { tiles: number; marks: number; marks_on_catalogue_stars: number; marks_in_the_galactic_plane: number; marks_elsewhere: number }; objects: { id: string[]; conf: number[]; pm: number[] }; marks: { ra: number; dec: number; conf: number; pm: number; pa: number; glat: number; vj?: number; gaia?: { pm: number; g: number | null; id: string } | null; simbad?: { name: string; kind: string; pm: number; sp: string | null } }[];
+  sky: { tiles: number; marks: number; marks_on_catalogue_stars: number; marks_in_the_galactic_plane: number; marks_elsewhere: number }; objects: { id: string[]; conf: number[]; pm: number[] }; marks: { ra: number; dec: number; conf: number; pm: number; pa: number; glat: number; vj?: number; gaia?: { pm: number; g: number | null; id: string } | null; simbad?: { name: string; kind: string; pm: number; sp: string | null }; lab?: { verdict: string; pm: number | null; epm: number | null; gaia_pm: number | null } }[];
   /** the marks checked against ESA's Gaia DR3: how many have a fast-moving star at their place */
-  gaia_check?: { asked: number; with_a_gaia_fast_mover: number; without: number; radius_arcsec: number; min_pm_arcsec_yr: number; model_motion_error_median: number | null; with_a_simbad_fast_mover?: number; known_fast_movers?: number; open?: number } | null;
+  gaia_check?: { asked: number; with_a_gaia_fast_mover: number; without: number; radius_arcsec: number; min_pm_arcsec_yr: number; model_motion_error_median: number | null; with_a_simbad_fast_mover?: number; known_fast_movers?: number; open?: number; lab_measured?: number; lab_confirmed_and_in_gaia?: number; lab_tally?: Record<string, number> } | null;
   /** Meta's V-JEPA 2 after fine-tuning on MIRA's examples: its score on the test sky, and how many of the marks it also calls movers */
   vjepa_finetuned?: { auc_test: number; patches?: number; marks_scored?: number; marks_agree?: number; scorer_auc_test?: number } | null };
 let scoutP: Promise<Scout | null> | null = null, scout: Scout | null = null, scoutIdx: Map<string, number> | null = null;
@@ -43,7 +54,7 @@ export const loadScout = (base: string) => (scoutP ??= fetch(`${base}data/wm/sco
 export const scoutLine = (V: Ver, k: number) => { const i = scout && scoutIdx ? scoutIdx.get(V.id[k]) : undefined; if (!scout || i === undefined) return "";
   return scout.objects.conf[i] >= scout.threshold ? `<div class="sp-wm"><b>The sky model marks it too.</b> A neural network shown only three pictures of this patch of sky (1999, 2010, 2025) points at this star by itself and reads about ${scout.objects.pm[i].toFixed(2)}″ per year.</div>`
     : V.pm[k] >= 0.6 ? `<div class="sp-wm off">The sky model does not mark this one. It works on the all-sky pictures (13″ pixels), where this star's shift is small.</div>` : ""; };
-export const evidenceHTML = (V: Ver, k: number) => `${scoutLine(V, k)}<div class="sp-ver"><b>Caught moving: ${V.pm[k].toFixed(2)}″ per year.</b> Checked on ${V.n[k]} raw SPHEREx exposures: it sits ${V.dp[k].toFixed(1)}″ from where this motion predicts and ${V.ds[k].toFixed(1)}″ from where it would be had it stood still. ${gaiaLine(V, k)}</div>`;
+export const evidenceHTML = (V: Ver, k: number) => `${scoutLine(V, k)}<div class="sp-ver"><b>Caught moving: ${V.pm[k].toFixed(2)}″ per year.</b> Checked on ${V.n[k]} raw SPHEREx exposures: it sits ${V.dp[k].toFixed(1)}″ from where this motion predicts and ${V.ds[k].toFixed(1)}″ from where it would be had it stood still. ${gaiaLine(V, k)}</div>${aiLine(V, k)}`;
 export const PICS_HTML = `<div class="sp-pics"><div class="eyebrow">Three real NASA pictures: about 1999, 2010, and SPHEREx today</div><div id="sppv"></div></div>`;
 export const VOTE_HTML = `<div class="sp-vote" id="spvote"><b>Take part <small>(prototype)</small>.</b> This object is in the WISE catalogues but has no entry in SIMBAD, astronomy's reference database, and no Gaia source. Use the slider above: is there a dot inside the circle in 2010, and again in SPHEREx's picture?
         <div class="sp-vbtn"><button data-v="moves">Yes, it follows</button><button data-v="unsure">I can't tell</button><button data-v="no">No dot there</button></div><small id="spvmsg"></small></div>`;

@@ -628,7 +628,12 @@ if (DECK && parent !== window) addEventListener("keydown", (e) => { if (e.key ==
 const blink = mountBlink($("#blinkpage"), { embed: EMBED, toast, onExplain: EMBED ? undefined : (q) => explain(q),
   onAtlas: EMBED ? undefined : async (ra, dec) => { const q = `${ra.toFixed(4)} ${dec >= 0 ? "+" : ""}${dec.toFixed(4)}`; history.replaceState(null, "", location.pathname + "#sky=" + encodeURIComponent(q)); await showUniverse("map", q); },
   onState: (p) => { if (EMBED) p.set("embed", "1"); history.replaceState(null, "", `${location.pathname}?${p.toString()}`); },
-  onSave: EMBED ? undefined : (snap) => { import("./logbook").then((m) => { m.saveSnapshot(snap); toast("Saved to your cases"); }); } });
+  onSave: EMBED ? undefined : (snap) => { import("./logbook").then((m) => { m.saveSnapshot(snap); toast("Saved to your cases"); }); },
+  // the target as one of the catalogue's movers: the nearest one to where the target is at the catalogue's date, within 20 arcseconds
+  aiFor: async (t) => { const m = await import("./movercard"), V = await m.loadVerified(import.meta.env.BASE_URL); if (!V || !m.ai) return null; let best = -1, bd = 20;
+    for (let k = 0; k < V.id.length; k++) { const dy = (V.yr[k] ?? 2026) - (t.epoch ?? 2016), dec = t.dec + ((t.pmdec ?? 0) * dy) / 3600; if (Math.abs(V.dec[k] - dec) > 0.01) continue;
+      const ra = t.ra + ((t.pmra ?? 0) * dy) / 3600 / Math.cos((t.dec * Math.PI) / 180), d = Math.hypot((V.ra[k] - ra) * Math.cos((dec * Math.PI) / 180), V.dec[k] - dec) * 3600; if (d < bd) { bd = d; best = k; } }
+    const a = m.aiOf(best); return a ? { big: a.kind.replace(/^./, (c) => c.toUpperCase()), sub: `${a.teff ? `about ${a.teff.toLocaleString("en-US")} K · ` : ""}${a.ly} light-years (${a.lo} to ${a.hi})` } : null; } });
 const markNav = (v: string = view) => { document.querySelectorAll<HTMLElement>(".mainnav [data-view]").forEach((b) => b.classList.toggle("on", b.dataset.view === v && (!b.dataset.m || b.dataset.m === uniMode))); document.querySelector("#morebtn")?.classList.toggle("on", v === "log"); };
 
 /** point the telescope at a name, at coordinates, or at a ready-made target (`fallback` is used if a name cannot be resolved) */

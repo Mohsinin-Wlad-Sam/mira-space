@@ -59,10 +59,11 @@ const KNOWN = { 0: "no Gaia source", 1: "Gaia star with the same motion", 2: "Ga
 const labUrl = (o) => `/explore/?ra=${o.ra}&dec=${o.dec}&fov=6.6${o.pmra !== undefined ? `&pmra=${o.pmra}&pmdec=${o.pmdec}&epoch=${o.yr ?? 2016}` : ""}${o.id ? `&name=${encodeURIComponent(o.id)}` : ""}`;
 
 /** one row of the catalogue as an object; `full` adds every column */
-function row(c, i, full, sc) {
+function row(c, i, full, sc, ai) {
   const o = { id: c.id[i], ra: c.ra[i], dec: c.dec[i], motion_arcsec_yr: c.pm[i], pmra: c.pmra[i], pmdec: c.pmdec[i], motion_error: c.epm[i], kind: c.kind[i], gaia: KNOWN[c.known[i]] ?? null, gaia_source_id: c.gaia[i] || null, gaia_motion_arcsec_yr: c.gpm[i] ?? null,
     parallax_mas: c.plx[i] ?? null, simbad: c.simbad[i] || null, galactic_latitude: c.glat[i], spherex_exposures: c.n[i] };
   if (sc) o.sky_model = { marks_it: sc.conf[i] >= sc.thr, confidence: sc.conf[i], motion_it_reads: sc.pm[i] };
+  if (ai && ai.d[i] !== null && ai.cls[i] >= 0) o.ai_estimate = { kind: ai.classes[ai.cls[i]], kind_probability: ai.p[i], distance_pc: ai.d[i], distance_pc_low: ai.dlo[i], distance_pc_high: ai.dhi[i], temperature_K: ai.cls[i] <= 2 ? ai.teff[i] : null, temperature_error_K: ai.cls[i] <= 2 ? ai.et[i] : null };
   if (full) for (const k of Object.keys(c)) if (!(k in o) && !["pm", "epm", "known", "plx", "gpm", "glat", "n"].includes(k)) o[k] = c[k][i];
   o.lab = labUrl({ ra: c.ra[i], dec: c.dec[i], pmra: c.pmra[i], pmdec: c.pmdec[i], yr: c.yr[i], id: c.id[i] });
   return o;
@@ -84,10 +85,10 @@ async function movers(q, env) {
     out.push([d, i]);
   }
   out.sort((a, b) => (pos ? a[0] - b[0] : c.pm[b[1]] - c.pm[a[1]]));
-  const rows = out.slice(0, limit).map(([d, i]) => { const o = row(c, i, false, sc); if (d !== null) o.separation_deg = +d.toFixed(5); return o; });
+  const ai = await file(env, "verified/ai.json"), rows = out.slice(0, limit).map(([d, i]) => { const o = row(c, i, false, sc, ai); if (d !== null) o.separation_deg = +d.toFixed(5); return o; });
   return { table: rows, body: { query: Object.fromEntries(q), matched: out.length, returned: rows.length, note: pos ? undefined : "without a position, movers within 10 degrees of the Galactic plane are left out unless plane=1 (crowded, less reliable)", movers: rows } };
 }
-async function mover(id, env) { const c = await catalogue(env), i = c.id.indexOf(id); if (i < 0) throw new Bad(`no confirmed mover with id ${id}`, 404); return { body: row(c, i, true, await scoutOf(env)) }; }
+async function mover(id, env) { const c = await catalogue(env), i = c.id.indexOf(id); if (i < 0) throw new Bad(`no confirmed mover with id ${id}`, 404); return { body: row(c, i, true, await scoutOf(env), await file(env, "verified/ai.json")) }; }
 
 async function indexOf(env, ra, dec) {
   const pix = ang2pixNest(32, ra, dec), j = await file(env, `sphx2/${pix}.json`); if (!j) throw new Bad("this server does not carry the SPHEREx exposure index", 503);
@@ -112,22 +113,22 @@ async function scout(q, env) {
   const s = await scoutOf(env); if (!s) throw new Bad("this server does not carry the sky model's results", 503);
   const pos = position(q, false), radius = num(q, "radius", 2, 0, 180), limit = Math.round(num(q, "limit", 50, 1, 400)), conf = q.get("gaia") ?? "";
   let L = s.marks.map((m) => ({ ra: m.ra, dec: m.dec, confidence: m.conf, motion_it_reads_arcsec_yr: m.pm, direction_deg_east_of_north: m.pa, galactic_latitude: m.glat,
-    gaia_fast_mover: m.gaia ? { source_id: m.gaia.id, motion_arcsec_yr: m.gaia.pm, G: m.gaia.g } : null, simbad_fast_mover: m.simbad ? { name: m.simbad.name.replace(/\s+/g, " "), kind: m.simbad.kind, motion_arcsec_yr: m.simbad.pm, spectral_type: m.simbad.sp } : null, vjepa2_says_mover: m.vj ?? null, sky: `/explore/#sky=${encodeURIComponent(`${m.ra} ${m.dec >= 0 ? "+" : ""}${m.dec}`)}`, lab: labUrl({ ra: m.ra, dec: m.dec }) }));
-  if (conf === "absent") L = L.filter((m) => !m.gaia_fast_mover); else if (conf === "listed") L = L.filter((m) => m.gaia_fast_mover); else if (conf === "open") L = L.filter((m) => !m.gaia_fast_mover && !m.simbad_fast_mover);
+    gaia_fast_mover: m.gaia ? { source_id: m.gaia.id, motion_arcsec_yr: m.gaia.pm, G: m.gaia.g } : null, simbad_fast_mover: m.simbad ? { name: m.simbad.name.replace(/\s+/g, " "), kind: m.simbad.kind, motion_arcsec_yr: m.simbad.pm, spectral_type: m.simbad.sp } : null, lab_measurement: m.lab ? { verdict: m.lab.verdict, motion_arcsec_yr: m.lab.pm, motion_error: m.lab.epm, gaia_motion_arcsec_yr: m.lab.gaia_pm } : null, vjepa2_says_mover: m.vj ?? null, sky: `/explore/#sky=${encodeURIComponent(`${m.ra} ${m.dec >= 0 ? "+" : ""}${m.dec}`)}`, lab: labUrl({ ra: m.ra, dec: m.dec }) }));
+  if (conf === "absent") L = L.filter((m) => !m.gaia_fast_mover); else if (conf === "listed") L = L.filter((m) => m.gaia_fast_mover); else if (conf === "open") L = L.filter((m) => !m.gaia_fast_mover && !m.simbad_fast_mover && !(m.lab_measurement && (m.lab_measurement.gaia_motion_arcsec_yr ?? 0) >= 0.25));
   if (pos) L = L.map((m) => ({ ...m, separation_deg: +sep(pos[0], pos[1], m.ra, m.dec).toFixed(4) })).filter((m) => m.separation_deg <= radius).sort((x, y) => x.separation_deg - y.separation_deg);
   return { table: L.slice(0, limit), body: { built: s.built, whole_sky: s.sky, test: { recall: s.test.recall, false_marks_per_sq_deg: s.test.false_per_sqdeg, movers_tested: s.test.n }, gaia_check: s.gaia_check, vjepa2_finetuned: s.vjepa ? { auc_test: s.vjepa.auc_test, patches: s.vjepa.patches } : null,
-    note: "Marks where MIRA's catalogue has nothing. A mark is a place to look at, not a discovery: 'gaia_fast_mover' says whether ESA's Gaia DR3 lists a star moving at least 0.25 arcsec a year within 30 arcsec; 'simbad_fast_mover' the same for SIMBAD (at least 0.15), asked only where Gaia had none. gaia=open keeps the marks that are in neither.", matched: L.length, marks: L.slice(0, limit) } };
+    note: "Marks where MIRA's catalogue has nothing. A mark is a place to look at, not a discovery: 'gaia_fast_mover' says whether ESA's Gaia DR3 lists a star moving at least 0.25 arcsec a year within 30 arcsec; 'simbad_fast_mover' the same for SIMBAD (at least 0.15), asked only where Gaia had none. 'lab_measurement' is what MIRA's own measurement found at the marks no catalogue lookup confirmed. gaia=open keeps the marks nothing confirmed.", matched: L.length, marks: L.slice(0, limit) } };
 }
 async function crossmatch(body, env) {
   const P = body?.positions; if (!Array.isArray(P) || !P.length) throw new Bad("body must be JSON: { positions: [{ ra, dec, id? }, ...], radius_arcsec? }"); if (P.length > 5000) throw new Bad("at most 5000 positions per call");
-  const rad = Math.min(600, Math.max(1, Number(body.radius_arcsec ?? 30))) / 3600, c = await catalogue(env), s = await scoutOf(env), cov = await file(env, "sphx2/coverage.json");
+  const rad = Math.min(600, Math.max(1, Number(body.radius_arcsec ?? 30))) / 3600, c = await catalogue(env), s = await scoutOf(env), cov = await file(env, "sphx2/coverage.json"), aiC = await file(env, "verified/ai.json");
   // the catalogue in one-degree declination bands, so that each position looks at a few hundred rows at most
   const bands = new Map(); for (let i = 0; i < c.id.length; i++) { const b = Math.floor(c.dec[i]); (bands.get(b) ?? bands.set(b, []).get(b)).push(i); }
   const out = P.map((p, n) => { const ra = Number(p.ra), dec = Number(p.dec); if (!Number.isFinite(ra) || !Number.isFinite(dec) || dec < -90 || dec > 90) return { id: p.id ?? n, error: "ra and dec must be numbers in degrees" };
     let best = -1, bd = rad; for (const b of [Math.floor(dec) - 1, Math.floor(dec), Math.floor(dec) + 1]) for (const i of bands.get(b) ?? []) { if (Math.abs(c.dec[i] - dec) > rad) continue; const d = sep(ra, dec, c.ra[i], c.dec[i]); if (d <= bd) { bd = d; best = i; } }
     let mark = null, md = Math.max(rad, 30 / 3600); if (s) for (const m of s.marks) { if (Math.abs(m.dec - dec) > md) continue; const d = sep(ra, dec, m.ra, m.dec); if (d <= md) { md = d; mark = m; } }
     const days = cov ? cov.visits[ang2pixNest(cov.nside, ra, dec)] ?? [] : null;
-    return { id: p.id ?? n, ra, dec, confirmed_mover: best < 0 ? null : { ...row(c, best, false, s), separation_arcsec: +(bd * 3600).toFixed(2) },
+    return { id: p.id ?? n, ra, dec, confirmed_mover: best < 0 ? null : { ...row(c, best, false, s, aiC), separation_arcsec: +(bd * 3600).toFixed(2) },
       sky_model_mark: mark ? { confidence: mark.conf, motion_it_reads_arcsec_yr: mark.pm, in_gaia: !!mark.gaia, separation_arcsec: +(md * 3600).toFixed(1) } : null,
       spherex_visits: days ? days.length : null, last_visit: days && days.length ? mjdToDate(cov.mjd0 + days[days.length - 1]) : null, lab: labUrl({ ra, dec }) }; });
   return { body: { radius_arcsec: +(rad * 3600).toFixed(1), positions: P.length, with_a_confirmed_mover: out.filter((o) => o.confirmed_mover).length, with_a_sky_model_mark: out.filter((o) => o.sky_model_mark).length, results: out } };

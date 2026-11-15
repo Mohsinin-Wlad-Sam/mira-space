@@ -5,7 +5,7 @@
 **NASA Space Apps Challenge 2026 · "Planet X and SPHEREx"** · team *Mohsinin Wlad Dario* (Ben Guerir) ·
 Mohammed Ouabdrrahmane, Hamza Ba-mohammed, Hiba Nemry, Aya Driouche, Abdelmonaim Bounite
 
-**Documentation** `/docs/` · **Seven-slide deck** `/deck/` (PDF: `media/MIRA_deck.pdf`) · **30-second film** `media/mira_film_30s.mp4` (director page `/film/`) · credits in `docs/17_credits.md`
+**Documentation** `/docs/` · **The film** (29 s) `media/mira_film_30s.mp4` (director page `/film/`) · submission pack `media/submission/` · credits in `docs/17_credits.md`
 
 **Run it:** `cd web && npm ci && npm run dev` (Node 20+; the data pack `mira-data-….tar.gz` from the repository's releases unpacks into `web/public/`). **API:** `/api/v1` (cone search of the verified movers, SPHEREx exposures at a position, visit dates, the sky model's marks, batch cross-match; reference and console at `/docs/#api`).
 

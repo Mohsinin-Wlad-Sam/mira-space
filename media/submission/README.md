@@ -13,17 +13,16 @@ Deadline: Sunday 15 November 2026, 23:59 in the local event's time (Morocco). Ch
 | 3 | Upload `media/mira_film_30s.mp4` to YouTube (Public or Unlisted) or Drive (anyone with the link). Title, description and thumbnail are in section 4 | any member | **to do** |
 | 4 | Host the site (the Deploy section of `/docs/`, or `docs/14_deployment_and_updates.md`). Optional: without it, the project link is the repository | any member | optional |
 | 5 | Paste the texts of section 3 into the project page; add the links | team owner | **to do** |
-| 6 | Team photos into `web/public/deck/team/<mohammed|hamza|hiba|aya|abdelmonaim>.jpg`, then `node web/scripts/deck_pdf.mjs --out media/MIRA_deck.pdf` | team | optional |
 
 ## 2. Files
 
 | File | What | Use |
 |---|---|---|
-| `media/mira_film_30s.mp4` | The film: 1080p, 24 pictures a second, **29.9 s** (the limit is 30), 63 MB | The demo link (upload it) |
-| `media/mira_film_30s_small.mp4` | The same at 720p, 10 MB | When the upload is slow |
-| `media/MIRA_deck.pdf` | Seven slides | The other allowed demo; also for a live talk |
+| `media/mira_film_30s.mp4` | The film: 1920x1080, 60 pictures a second, **29.0 s** (the limit is 30), 74 MB. The 3840x2160 master (`mira_film_4k60.mp4`, 255 MB) is in the repository's release | The demo link (upload it) |
+| `media/mira_film_30s_small.mp4` | The same at 720p, 30 pictures a second | When the upload is slow |
+| `media/submission/mira_film_subtitles.srt` | The film's words as a subtitle file (they are also on the picture) | YouTube: Subtitles → Upload file |
 | `media/submission/cover_1920x1080.jpg` | Title with the team's names | Project image |
-| `media/submission/video_thumbnail_1280x720.jpg` | "17,604 stars caught moving" | YouTube thumbnail |
+| `media/submission/video_thumbnail_1280x720.jpg` | The SPHEREx sky and the 65 MB files | YouTube thumbnail |
 | `media/submission/screens/01…09` | The Sky map, the Lab, a star that moved, its spectrum, the 17,604 movers, the AI scout, the API, the landing page, the sky model | Pictures for the project page |
 
 ## 3. Texts for the project page
@@ -41,7 +40,8 @@ in 1999, WISE in 2010, then every SPHEREx visit), so that what moved is easy to 
 fast it moves, what its light says it is, whether its brightness changed, each with its error and checked against
 ESA's Gaia. A Sky map puts the whole survey on one time bar, with tonight's planets. Behind it are a catalogue of
 17,604 moving stars, each re-measured on raw SPHEREx exposures; an AI scout that searched the whole sky, of whose
-400 strongest new finds 362 are fast-moving stars that Gaia or SIMBAD already list; a data API; and full documentation. NASA's five test targets
+400 strongest new finds 393 are fast-moving stars that Gaia or SIMBAD already list; a second model that estimates
+the distance and temperature of 387 movers Gaia cannot see; a data API; and full documentation. NASA's five test targets
 open at once. No install, no account.
 
 **Link to project demo**
@@ -78,8 +78,8 @@ needs five sigma against the scatter with which those stars are recovered.
 *Does it work?* Epsilon Indi B: 4.70 ± 0.02 arcseconds a year (Gaia: 4.68). Barnard's Star: 10.46 ± 0.05 (Gaia:
 10.39). WISE 0855: 8.21 ± 0.05 (Kirkpatrick et al. 2021: 8.15). In a blind test on 459 fields the detector found
 92% of known movers and raised no false alarm among 5,757 still stars. Of the 400 strongest places the AI scout
-marked where our catalogue had nothing, 276 are fast-moving stars in Gaia DR3 and 86 more are in SIMBAD; 38 are in
-neither and stay open.
+marked where our catalogue had nothing, 393 are fast-moving stars that Gaia or SIMBAD list; 7 are not confirmed.
+A neural ensemble's distances agree with Gaia parallaxes to 15% on 1,348 movers from sky it never trained on.
 
 *Who it is for.* Anyone curious (tonight's planets, any place as a film); classrooms (measure a star on NASA's own
 images and compare with Gaia); volunteers (635 confirmed movers that no reference database names); researchers and
@@ -146,15 +146,14 @@ validation are the team's. No NASA logo or mission identifier is used.
 |---|---|
 | The site is not hosted in time | The project link is the repository; the demo link is the film. Both are allowed. Judges can run the site with `cd web && npm ci && npm run dev` once the data pack is in `web/public/data/` (it is attached to the repository's release) |
 | YouTube refuses or delays the video | Put `media/mira_film_30s_small.mp4` on Google Drive, "anyone with the link"; or use the film's address in the repository's release once the repository is public |
-| The repository cannot be made public in time | `git archive -o mira_source.zip HEAD`, put the zip, the film and `media/MIRA_deck.pdf` in one public Drive folder, and give that folder as the project link |
-| The video is questioned | Use the seven slides instead: `media/MIRA_deck.pdf` on Drive, or `<hosted address>/deck/` |
-| A live presentation happens after all | `media/MIRA_deck.pdf` works with no network. Live: `cd web && npx vite preview --port 4173`, then `http://127.0.0.1:4173/deck/` (arrow keys, F for full screen); NASA's five targets open from prepared copies |
+| The repository cannot be made public in time | `git archive -o mira_source.zip HEAD`, put the zip and the film in one public Drive folder, and give that folder as the project link |
+| A live presentation happens after all | Play the film from the file, then show the site: `cd web && npx vite preview --port 4173` and open `http://127.0.0.1:4173/`; NASA's five targets open from prepared copies with no network |
 | The assistant says it is offline | It needs `MIRA_LLM_KEY` on the host. Everything else works without it |
 
 ## 6. Before pressing Submit
 
 - [ ] The demo link opens in a private window, without signing in
-- [ ] The video is 30 seconds or less (this one: 29.9 s) and in English
+- [ ] The video is 30 seconds or less (this one: 29.0 s) and in English
 - [ ] The project link opens in a private window
 - [ ] The summary and the description are pasted; the AI statement is pasted
 - [ ] NASA data and partner data are listed

@@ -1,4 +1,4 @@
-# 10 · Submission draft (project page, 7 slides, 30-second video)
+# 10 · Submission draft (project page and film)
 
 **The texts to paste, the files to upload and what to do if something goes wrong are in `media/submission/README.md`.**
 This document is the longer working version.
@@ -22,14 +22,13 @@ of any patch under the pointer. **Space** is a 3D model of the Sun's neighbourho
 The **Lab** is the tool the challenge asks for: point at any place, play it through time like a little video, and
 get four answers: what moved, how fast, what its light says, did it change. Tools open only when asked for; NASA's
 five test targets open at once. Behind it is a catalogue of 17,604 moving stars, each re-measured on raw SPHEREx
-exposures; world models (one runs in the browser, a scout searched the whole sky: 362 of its 400 strongest new finds
+exposures; world models (one runs in the browser, a scout searched the whole sky: 393 of its 400 strongest new finds
 are fast-moving stars that Gaia or SIMBAD already list); a data API and full documentation. No install, no account.
 
 **Link to project demo (choose one; both exist):**
 - 30-second film: `media/mira_film_30s.mp4` in the repository (1080p, 24 pictures a second, 30.0 s; a 720p copy
   beside it). Upload it to YouTube or Drive with public access and paste that link. In the YouTube description put:
   'Time and Space' by Scott Buckley - released under CC-BY 4.0. www.scottbuckley.com.au
-- Seven slides: the deck at `⟨hosted URL⟩/deck/` (the product runs inside the slides), or its PDF `media/MIRA_deck.pdf`.
 
 **Link to final project:** ⟨hosted URL⟩ · documentation ⟨hosted URL⟩/docs/ · repository github.com/Mohsinin-Wlad-Sam/assrar-dawla (must be public)
 
@@ -134,40 +133,21 @@ text and layout under the team's direction; every use is logged in `docs/07_si_u
 afterwards. A language model (K2 Horizon) runs the in-product assistant: it explains and operates the page and is
 restricted to numbers the instruments computed. A small neural network trained by the team (the "sky world model")
 draws forecast pictures of a field: these are AI-generated and carry a visible "AI-generated · prediction" label in
-the Lab. The film and the deck show no AI-generated picture: every shot is recorded from the running site on NASA
+the Lab. The film shows no AI-generated picture of its own: every shot is recorded from the running site on NASA
 data; the film's music is "Time and Space" by Scott Buckley (CC BY 4.0). Two more networks only point at places
 (a whole-sky "scout" trained by the team, and Meta's published V-JEPA 2, fine-tuned): their marks are checked against
 ESA's Gaia catalogue and shown as what they are. The idea, the scientific choices and the validation are the team's.
 
-## 7 slides (built: `web/deck/index.html`, served at `/deck/`)
-
-Arrow keys or a clicker turn the slides; F goes full screen. Slides 1, 3 and 4 run the live product inside the slide.
-Each slide is one statement and one picture; the detail is in the documentation.
-
-1. **Title.** MIRA · The sky is not still. Team Mohsinin Wlad Dario, the five names, Ben Guerir, the challenge.
-   Behind it the Sky map plays its 27 years.
-2. **The challenge.** "The sky moves. Almost nobody can watch it." One sentence of what NASA asked; a real picture
-   of a star that moved; 102 colours, 6 months, 27 years.
-3. **The product: Sky.** Live in the slide. Three phrases.
-4. **The product: Lab.** Live on Epsilon Indi B. Four questions; six of the challenge's tips ticked.
-5. **Validity.** 17,604 confirmed · 92% found blind with no false alarm · 0.011″ a year · 362 of the AI scout's 400
-   new finds already listed by Gaia or SIMBAD; the funnel; the scout's marks on the Sky map.
-6. **Impact and plan.** Explorer (free), Researcher, Mission; US$150 a year; no customer yet.
-7. **Next, and who we are.** Each data release re-runs the search; the team with affiliations (photos go in
-   `web/public/deck/team/<first name>.jpg`); data and AI credits.
-
-## 30-second film (built: `web/film/index.html`, rendered to `media/mira_film_30s.mp4`)
-
-Five shots, each one the running site. No 3D scene, no AI-generated picture, fifteen words on screen before the name.
+## The film (built: `web/film/index.html`, rendered to `media/mira_film_30s.mp4`; 29.0 s, 60 pictures a second)
 
 | t | Picture | Words on screen |
 |---|---|---|
-| 0–6 s | The Sky map alone: SPHEREx's survey filling the sky on its real dates, the camera moving in | none |
-| 6–12.5 s | The Lab's picture of one place: Epsilon Indi B crossing its field, 1999 to 2026, in 2MASS, WISE and SPHEREx | the year · Epsilon Indi B · It moved. |
-| 12.5–18.6 s | The Lab's Spectrograph drawing the object's SPHEREx spectrum | Methane · A brown dwarf. 12 light-years away. |
-| 18.6–26 s | The Sky map with every confirmed mover, the camera moving back (the orchestra enters on the cut) | 17,604 · Stars caught moving |
-| 26–30 s | The name | MIRA · The sky is not still · one credit line |
+| 0–2 s | An illustration, labelled so: a dark world and a brown dwarf far from the Sun | Team and challenge · "Out past Neptune, cold worlds may be moving in the dark." |
+| 2–5.5 s | The real SPHEREx sky in its three colours; the 65 MB files falling | "SPHEREx maps the whole sky every 6 months in 102 infrared colours." · "Everything near the Sun that moves is in those 65 MB files." |
+| 5.5–11 s | The name; the Lab drawn line by line at the place of each real part, then the real Lab | "Meet MIRA. Point at any place in the sky, play 27 years of NASA images, see what moved, and measure it." |
+| 11–21.5 s | The running site: the Sky map's spectrum under the pointer; Epsilon Indi B played 1999 to 2026; the four readings; Detection limits; the Spectrograph (methane); the Photometer; the Sky model | "Scrub 27 years: 2MASS, WISE, then SPHEREx." · "Measure its motion, read methane in its light, and let an AI model check every field." · tags that repeat what the instrument beside them reads |
+| 21.5–29 s | The 17,604 at their real places with their measured motions; three counts; one of the 635; the points become the name | "17,604 moving stars confirmed. 635 are in no reference database." · "Anyone can help look at one." · the one-line definition · data, API, challenge |
 
-Photographed at 144 frames a second from the site, finished on our university's GPUs (`web/scripts/film_finish.py`):
-24 pictures a second with a half-open shutter, lens glow, grain, black bars. Music: "Time and Space" by Scott Buckley,
-CC BY 4.0, with sound design made for the film (`web/scripts/film_score.py`). Full credits: `docs/17_credits.md`.
+Photographed at 3840x2160 from the site by a virtual clock (`web/scripts/render_film.mjs --fps 60 --to 29 --scale 2`),
+with a check every half second that no words collide or leave the frame. Music: "Time and Space" by Scott Buckley,
+CC BY 4.0, with sound design made for the film (`web/scripts/film_score.py --cut 3`). Full credits: `docs/17_credits.md`.

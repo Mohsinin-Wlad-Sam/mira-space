@@ -1,0 +1,31 @@
+1
+00:00:00,200 --> 00:00:02,000
+Out past Neptune, cold worlds may be moving in the dark.
+
+2
+00:00:02,000 --> 00:00:03,700
+SPHEREx maps the whole sky every 6 months in 102 infrared colours.
+
+3
+00:00:03,800 --> 00:00:05,400
+Everything near the Sun that moves is in those 65 MB files.
+
+4
+00:00:05,700 --> 00:00:10,800
+Meet MIRA. Point at any place in the sky, play 27 years of NASA images, see what moved, and measure it.
+
+5
+00:00:11,000 --> 00:00:14,800
+Scrub 27 years: 2MASS, WISE, then SPHEREx.
+
+6
+00:00:15,000 --> 00:00:21,300
+Measure its motion, read methane in its light, and let an AI model check every field.
+
+7
+00:00:21,600 --> 00:00:25,300
+17,604 moving stars confirmed. 635 are in no reference database.
+
+8
+00:00:25,500 --> 00:00:27,200
+Anyone can help look at one.
