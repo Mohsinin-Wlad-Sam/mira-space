@@ -13,7 +13,7 @@ WORK=${MIRA_WORK:-$HOME/.cache/mira}
 mkdir -p "$WORK/web_data"
 cd "$REPO"
 python3 -m census.sphx_index2 --web "$WORK/web_data" --cache "$WORK/sphx_inventory.csv" --refresh --k "${MIRA_K:-24}"
-# when SPHEREx imaged each part of the sky (the Sky map's "SPHEREx, live" layer), from the index just built
+# when SPHEREx imaged each part of the sky (the Sky map's "SPHEREx, day by day" layer), from the index just built
 python3 -m census.sphx_coverage --web "$WORK/web_data"
 mkdir -p "$SITE/data"
 rsync -a --delete "$WORK/web_data/sphx2/" "$SITE/data/sphx2/"

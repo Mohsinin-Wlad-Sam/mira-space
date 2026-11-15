@@ -34,7 +34,7 @@ const hms = (ra: number, dec: number) => { const h = ra / 15, hh = Math.floor(h)
   return `${String(hh).padStart(2, "0")}h${String(mm).padStart(2, "0")}m ${dec < 0 ? "−" : "+"}${String(dd).padStart(2, "0")}°${String(dm).padStart(2, "0")}′`; };
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]!));
 const MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-const dayText = (yr: number) => { const d = dateOf(yr); return `${d.getUTCDate()} ${MON[d.getUTCMonth()]} ${d.getUTCFullYear()}`; };
+const dayText = (yr: number) => { const d = dateOf(yr); return `${d.getDate()} ${MON[d.getMonth()]} ${d.getFullYear()}`; };      // the visitor's own calendar day
 const SX = "https://irsa.ipac.caltech.edu/data/hips/SPHEREx/spherex_allsky_cube";
 /** SPHEREx's 102 wavelengths (µm), from the cube's own description; filled from its properties file */
 let LAM: number[] = [];
@@ -55,7 +55,7 @@ export async function openSky(host: HTMLElement, o: SkyOpts): Promise<SkyHandle>
       <div class="mx-body">
         <div class="mx-list" id="skhl">
           ${hl("planets", "#ffd27a", "Planets, live", "Where the Sun, the Moon and the planets are right now")}
-          ${hl("spherex", "#5be3ff", "SPHEREx, live", "Its survey filling the sky by date, up to NASA's newest public images")}
+          ${hl("spherex", "#5be3ff", "SPHEREx, day by day", "Its survey filling the sky on the real dates, up to NASA's newest public images")}
           ${hl("story", "#f0f0fa", "27 years in 25 seconds", "Three NASA surveys of the whole sky: 1999, 2010, today")}
           ${hl("colours", "#c58cff", "102 colours", "The sky at each wavelength SPHEREx sees")}
           ${hl("all", "#ff9d4d", "Stars caught moving", "<b id='skn1'>…</b> confirmed on SPHEREx images")}
@@ -99,7 +99,7 @@ export async function openSky(host: HTMLElement, o: SkyOpts): Promise<SkyHandle>
   const loadPano = (k: string, size: number) => new Promise<void>((res) => { const im = new Image(); im.onload = () => { const cur = pano[k] as HTMLImageElement | null; if (!cur || cur.width <= im.width) pano[k] = im; revKey = NaN; st.dirty = true; res(); }; im.onerror = () => res(); im.src = `${o.base}space/mw_${k}_${size}.jpg`; });
   const first = Promise.all(MISSIONS.map((m) => loadPano(m.k, 2048)));
   if (!o.lowPower) first.then(() => MISSIONS.forEach((m) => loadPano(m.k, 4096)));        // sharper copies once the map is up
-  // ---- SPHEREx, live: the picture as far as the survey had come on a given day, from the dates of its exposures
+  // ---- SPHEREx, day by day: the picture as far as the survey had come on a given day, from the dates of its exposures
   const MW = 360, MH = 180, RW = o.lowPower ? 1024 : 2048, mk = (w: number, h: number) => { const c = document.createElement("canvas"); c.width = w; c.height = h; return c; };
   const maskCv = mk(MW, MH), scanCv = mk(MW, MH), revCv = mk(RW, RW / 2);
   function paint(c: HTMLCanvasElement, val: Float32Array, rgb: number[]) {
@@ -321,7 +321,7 @@ export async function openSky(host: HTMLElement, o: SkyOpts): Promise<SkyHandle>
     $("#skdate").textContent = u < 2 ? String(Math.floor(yr)) : dayText(yr);
     if (u > 2 && u < 3 && cov && cellOf) reveal(dayOf(yr));
     $("#skera").textContent = st.wave >= 0 ? `SPHEREx at ${LAM[st.wave] ? LAM[st.wave].toFixed(2) : "…"} µm${frames.has(st.wave) ? "" : " · loading"}`
-      : live ? "today · live" : u > 3 ? "ahead · the planets' road" : u <= 0.02 ? "2MASS · near-infrared" : u < 0.98 ? "from 2MASS to WISE" : u <= 1.02 ? "WISE · mid-infrared" : u < 2 ? "WISE years · movers caught" : !cov ? "SPHEREx" : prog.pct < 0.999 ? `SPHEREx · ${Math.round(prog.pct * 100)}% of the sky` : `SPHEREx · pass ${Math.ceil(prog.visits + 1e-6)} of the sky`;
+      : live ? "today · live" : u > 3 ? "ahead · the planets' road" : u <= 0.02 ? "2MASS · near-infrared" : u < 0.98 ? "from 2MASS to WISE" : u <= 1.02 ? "WISE · mid-infrared" : u < 2 ? "WISE years · movers caught" : !cov ? "SPHEREx" : prog.pct < 0.999 ? `SPHEREx · ${Math.round(prog.pct * 100)}% of the sky` : `SPHEREx · ${prog.visits.toFixed(1)} visits per place`;
     $("#sknow").classList.toggle("on", live);
     host.querySelectorAll<HTMLButtonElement>(".mx-ticks button").forEach((b) => b.classList.toggle("on", Math.abs(+b.dataset.u! - u) < 0.02));
     host.querySelectorAll<HTMLButtonElement>("#skhl .mx-hl").forEach((b) => { const h = b.dataset.h!; b.classList.toggle("on", h === st.panel || (st.show.movers && h === st.chip && ["all", "nogaia", "open"].includes(h))); });

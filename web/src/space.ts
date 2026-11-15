@@ -520,7 +520,7 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<Spa
   function setTime(t: number, fromSlider = false) {
     S.time = Math.max(-tRange(), Math.min(tRange(), t)); mat.uniforms.uTime.value = S.time + DT0; uncMat.uniforms.uTime.value = S.time + DT0; figMat.uniforms.uTime.value = S.time + DT0;
     const a = Math.abs(S.time), near = a < 6, live = a < 1 / 365, sign = S.time > 0 ? "+" : "−", d = new Date(Date.now() + S.time * 365.25 * 864e5);
-    $("#spyear").textContent = near ? `${d.getUTCDate()} ${MON[d.getUTCMonth()]} ${d.getUTCFullYear()}` : fmtYear(NOW_Y + S.time);
+    $("#spyear").textContent = near ? `${d.getDate()} ${MON[d.getMonth()]} ${d.getFullYear()}` : fmtYear(NOW_Y + S.time);
     $("#spyl").textContent = live ? "today · live" : a < 0.25 ? `${sign}${Math.round(a * 365.25)} days` : near ? `${sign}${a.toFixed(1)} years` : `${sign}${Math.round(a).toLocaleString()} yr · straight-line motion`;
     $("#spnow").classList.toggle("on", live);
     if (!fromSlider) slider.value = String(S.time);

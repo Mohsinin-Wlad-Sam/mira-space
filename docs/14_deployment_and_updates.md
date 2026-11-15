@@ -11,7 +11,7 @@ assistant's proxy, which holds the model key; without it everything else works a
 | Path | What | Size |
 |---|---|---|
 | `/`, `/explore/`, `/assets/` | landing page and app. First load of the app ≈ 120 kB of gzipped JavaScript; the Catalogue, Cases, the assistant and the 3D view are fetched in the background after the first paint, so moving between sections never waits | ~4 MB |
-| `/data/sphx2/` | exposure index: one JSON per HEALPix nside-32 patch (12,288 files) + `meta.json`; and `coverage.json`, the dates of SPHEREx's visits to each patch (the Sky map's "SPHEREx, live") | 192 MB (≈ 56 MB gzipped); a field reads one ~15 kB file; `coverage.json` is 363 kB (88 kB gzipped) |
+| `/data/sphx2/` | exposure index: one JSON per HEALPix nside-32 patch (12,288 files) + `meta.json`; and `coverage.json`, the dates of SPHEREx's visits to each patch (the Sky map's "SPHEREx, day by day") | 192 MB (≈ 56 MB gzipped); a field reads one ~15 kB file; `coverage.json` is 363 kB (88 kB gzipped) |
 | `/data/verified/` | the verified catalogue: `objects.json` (confirmed movers), `changes.json`, `candidates.json`, `meta.json` (the funnel), `detector_validation.json` | 3.5 MB |
 | `/data/space`, `/data/universe`, `/space`, `/live`, `/data/candidates.json`, `/data/neighbors.json` | 3D catalogues, textures, hourly NASA feeds | ~35 MB |
 | `/validation.json` | result of the last engine validation run (shown on the Method page) | 4 kB |

@@ -1,4 +1,4 @@
-"""When did SPHEREx image each part of the sky?  One small file for the Sky map's "SPHEREx, live" layer.
+"""When did SPHEREx image each part of the sky?  One small file for the Sky map's "SPHEREx, day by day" layer.
 
 Reads the exposure index made by sphx_index2.py (<web>/sphx2/<pix>.json, HEALPix nside 32, nested) and writes
 <web>/sphx2/coverage.json: for each of the 12,288 sky cells, the visits SPHEREx paid to it, as pairs of days

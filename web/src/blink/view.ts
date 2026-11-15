@@ -97,7 +97,7 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
         <div class="bk-ctl">
           <div class="bk-ctlrow"><span class="eyebrow">Field</span><div class="seg" id="bk-fov">${SIZES.map((s) => `<button data-s="${s}" title="${s} × ${s} SPHEREx pixels">${((s * PIX_ARCSEC) / 60).toFixed(1)}′</button>`).join("")}</div>
             <span class="eyebrow">Exposures</span><div class="seg" id="bk-n">${BUDGETS.map((b) => `<button data-n="${b}">${b === 144 ? "All" : b}</button>`).join("")}</div><span class="bk-cost mono" id="bk-cost"></span>
-            ${opts.onSave ? `<button class="btn sm ghost" id="bk-save">Save as a case</button>` : ""}</div>
+            ${opts.onAtlas ? `<button class="btn sm ghost" id="bk-onsky" title="This field on the Sky map: where it is, and its pictures since 1999">On the Sky map</button>` : ""}${opts.onSave ? `<button class="btn sm ghost" id="bk-save">Save as a case</button>` : ""}</div>
           <div class="bk-data mono" id="bk-data"></div>
         </div>
       </header>
@@ -862,7 +862,7 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
       <div class="eyebrow sec">Reproduce in Python (astropy)</div><textarea class="bk-code" id="bk-py" readonly rows="7" spellcheck="false">${esc(pythonSnippet(used, N, center, target.name ?? "this position"))}</textarea>
       <div class="bk-actions"><button class="btn sm ghost" data-copy="bk-py">Copy code</button></div>
       <div class="eyebrow sec">The same position elsewhere</div>
-      <div class="bk-actions">${opts.onAtlas ? `<button class="btn sm ghost" id="bk-atlas">MIRA sky map</button>` : ""}
+      <div class="bk-actions">${opts.onAtlas ? `<button class="btn sm ghost" id="bk-atlas">On the Sky map</button>` : ""}
         <a class="btn sm ghost" target="_blank" rel="noopener" href="http://byw.tools/wiseview#ra=${center[0]}&dec=${center[1]}&size=176&band=3&speed=200&minbright=-50&maxbright=500&window=0.5&diff_window=1&linear=1&zoom=9">WiseView ↗</a>
         <a class="btn sm ghost" target="_blank" rel="noopener" href="https://irsa.ipac.caltech.edu/applications/spherex/?__action=layout.showDropDown&view=MultiTableSearchCmd&position=${center[0]}+${center[1]}">IRSA ↗</a>
         <a class="btn sm ghost" target="_blank" rel="noopener" href="https://simbad.cfa.harvard.edu/simbad/sim-coo?Coord=${center[0]}+${center[1]}&Radius=30&Radius.unit=arcsec">SIMBAD ↗</a></div>`;
@@ -959,6 +959,7 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
     limits: "Explain the Detection limits in everyday words: what could still hide in this field, and what could not.", frames: "Explain what this list of exposures is and what NASA's flags mean.", export: "Explain what I can take away from this panel and what each file is for." };
   const exb = host.querySelector("#bk-ask") as HTMLElement | null; if (exb) exb.onclick = () => opts.onExplain!(ASK[tab]);
   $("#bk-help").onclick = () => { explain = !explain; try { localStorage.setItem("mira.explain", explain ? "1" : "0"); } catch { /* private mode */ } syncControls(); };
+  const os = host.querySelector<HTMLButtonElement>("#bk-onsky"); if (os) os.onclick = () => { if (frames.length || center[0] || center[1]) opts.onAtlas?.(center[0], center[1]); };
   const sv = host.querySelector<HTMLButtonElement>("#bk-save");
   if (sv) sv.onclick = () => { if (!frames.length) return; opts.onSave?.(snapshot()); sv.textContent = "Saved ✓"; setTimeout(() => (sv.textContent = "Save as a case"), 1800); };
   const togglePlay = () => { playing = !playing; if (playing && mode === "evolve") { const [a, z] = evoSpan(), last = Math.max(a, ...evoStops().map((q) => q.yr)); if (evo.t >= Math.min(z, last) - 1e-3) evo.t = a; evo.hold = 0; } syncControls(); tick(); };
