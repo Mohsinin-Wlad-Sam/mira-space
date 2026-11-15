@@ -11,11 +11,17 @@
 //   GET  /api/v1/coverage?ra&dec              when SPHEREx visited a position, and about when it comes back
 //   GET  /api/v1/scout?ra&dec&radius          places the sky model marked, with the Gaia check and V-JEPA 2's score
 //   POST /api/v1/crossmatch                   a list of positions against the catalogue, the survey and the scout
+//   GET  /api/v1/prices                       what each call costs in credits, the free allowance, the limits
+//   POST /api/v1/keys                         make a key (shown once)        GET | DELETE /api/v1/keys/me   read it, revoke it
+//   POST /api/v1/keys/rotate                  a new secret for the same key  GET /api/v1/usage              credits and calls, by day and by endpoint
+//   POST /api/v1/keys/{id}/credits            the operator grants credits (X-Admin-Key): web/server/keys.mjs
 //
 //   env: MIRA_DATA (folder of the data files; default ../public/data)   MIRA_API_PER10MIN (default 300)
-//        MIRA_API_KEYS (comma-separated; when set, every call but status and openapi.json needs the header X-API-Key)
+//        MIRA_API_KEYS (comma-separated operator keys; when set, every data call needs a key, and only the operator makes new ones)
+//        keys, credits and their limits: see web/server/keys.mjs
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
+import { costOf, createKey, creditsLeft, findKey, grant, keyLimited, KeyError, priceList, record, revokeKey, rotateKey, usage, view } from "./keys.mjs";
 
 const D2R = Math.PI / 180, S3 = "https://nasa-irsa-spherex.s3.amazonaws.com/", VERSION = "1.0";
 const BANDS = { 1: [0.75, 1.12], 2: [1.10, 1.66], 3: [1.64, 2.44], 4: [2.42, 3.86], 5: [3.82, 4.44], 6: [4.42, 5.02] };
@@ -138,12 +144,13 @@ async function status(env) {
   return { body: { name: "MIRA data API", version: VERSION, documentation: "/docs/#api", openapi: "/api/v1/openapi.json",
     spherex: m ? { exposures_indexed: m.exposures, first: m.first, last: m.last, index_built: m.built } : null, catalogue: o ? { confirmed_movers: o.cols.id.length } : null,
     sky_model: s ? { places_marked: s.sky.marks, built: s.built } : null,
-    endpoints: ["/api/v1/status", "/api/v1/targets", "/api/v1/movers", "/api/v1/movers/{id}", "/api/v1/exposures", "/api/v1/coverage", "/api/v1/scout", "POST /api/v1/crossmatch"] } };
+    endpoints: ["/api/v1/status", "/api/v1/targets", "/api/v1/movers", "/api/v1/movers/{id}", "/api/v1/exposures", "/api/v1/coverage", "/api/v1/scout", "POST /api/v1/crossmatch", "/api/v1/prices", "POST /api/v1/keys", "/api/v1/keys/me", "POST /api/v1/keys/rotate", "/api/v1/usage"],
+    keys: { console: "/console/", prices: "/api/v1/prices", self_service: !(env.MIRA_API_KEYS ?? "").trim(), note: "A key is optional here: with one, calls are counted in credits and may be made more often" } } };
 }
 
 const P = (name, description, extra = {}) => ({ name, in: "query", description, schema: { type: "number" }, ...extra });
 const OPENAPI = { openapi: "3.0.3", info: { title: "MIRA data API", version: VERSION, description: "Read access to what MIRA measured and indexed: the verified catalogue of stars caught moving, the index of NASA SPHEREx Level-2 exposures, the survey's visit dates, and the places the sky model marked. Positions are ICRS degrees. Motions are arcseconds a year." },
-  servers: [{ url: "/api/v1" }], components: { securitySchemes: { key: { type: "apiKey", in: "header", name: "X-API-Key", description: "Only on deployments that set MIRA_API_KEYS" } } },
+  servers: [{ url: "/api/v1" }], components: { securitySchemes: { key: { type: "apiKey", in: "header", name: "X-API-Key", description: "Optional on open deployments: with a key, calls are counted in credits and may be made ten times as often. Make one with POST /keys or at /console/. Authorization: Bearer works too" } } },
   paths: {
     "/status": { get: { summary: "What data this server carries", responses: { 200: { description: "Counts and dates" } } } },
     "/targets": { get: { summary: "NASA's five test targets", responses: { 200: { description: "Names, positions, links" } } } },
@@ -153,6 +160,12 @@ const OPENAPI = { openapi: "3.0.3", info: { title: "MIRA data API", version: VER
     "/exposures": { get: { summary: "SPHEREx Level-2 exposures that hold a position", parameters: [P("ra", "Right ascension, degrees", { required: true }), P("dec", "Declination, degrees", { required: true }), P("detector", "1 to 6"), P("mjd_min", "Earliest date, MJD"), P("mjd_max", "Latest date, MJD"), P("limit", "Rows returned (default 500)"), P("format", "'json' or 'csv'", { schema: { type: "string", enum: ["json", "csv"] } })], responses: { 200: { description: "Exposures with their file addresses on NASA's public bucket" } } } },
     "/coverage": { get: { summary: "When SPHEREx visited a position", parameters: [P("ra", "Right ascension, degrees", { required: true }), P("dec", "Declination, degrees", { required: true })], responses: { 200: { description: "Visit dates and an estimate of the next one" } } } },
     "/scout": { get: { summary: "Places the sky model marked where the catalogue has nothing", parameters: [P("ra", "Right ascension, degrees (optional)"), P("dec", "Declination, degrees"), P("radius", "Degrees (default 2)"), P("gaia", "'absent', 'listed', or 'open' (in neither Gaia nor SIMBAD)", { schema: { type: "string", enum: ["absent", "listed", "open"] } }), P("limit", "Rows returned (default 50, at most 400)")], responses: { 200: { description: "Marks, each with the Gaia check and V-JEPA 2's score" } } } },
+    "/prices": { get: { summary: "What each call costs in credits, the free allowance, the limits", responses: { 200: { description: "The price list" } } } },
+    "/keys": { post: { summary: "Make a key. It is shown once", requestBody: { content: { "application/json": { schema: { type: "object", properties: { label: { type: "string", maxLength: 60 } } } } } }, responses: { 201: { description: "The key and its starting credits" }, 429: { description: "This address made too many keys today" } } } },
+    "/keys/me": { get: { summary: "The key you sent: credits and calls", security: [{ key: [] }], responses: { 200: { description: "The key, without its secret" }, 401: { description: "No key, or not known here" } } }, delete: { summary: "Revoke the key you sent", security: [{ key: [] }], responses: { 200: { description: "Revoked" } } } },
+    "/keys/rotate": { post: { summary: "A new secret for the same key; the earlier one stops working", security: [{ key: [] }], responses: { 200: { description: "The new key, shown once" } } } },
+    "/usage": { get: { summary: "Credits and calls of the key you sent, by day and by endpoint, and its last 40 calls", security: [{ key: [] }], responses: { 200: { description: "Usage" } } } },
+    "/keys/{id}/credits": { post: { summary: "The operator grants credits to a key (header X-Admin-Key)", parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }], requestBody: { required: true, content: { "application/json": { schema: { type: "object", required: ["credits"], properties: { credits: { type: "integer", minimum: 1 } } } } } }, responses: { 200: { description: "The key with its new balance" }, 403: { description: "Grants are off, or the admin key is wrong" } } } },
     "/crossmatch": { post: { summary: "A list of positions against the catalogue, the survey and the sky model", requestBody: { required: true, content: { "application/json": { schema: { type: "object", required: ["positions"], properties: { positions: { type: "array", maxItems: 5000, items: { type: "object", required: ["ra", "dec"], properties: { id: { type: "string" }, ra: { type: "number" }, dec: { type: "number" } } } }, radius_arcsec: { type: "number", default: 30 } } } } } }, responses: { 200: { description: "One result per position" } } } },
   } };
 
@@ -162,17 +175,45 @@ const readBody = (req, max = 2e6) => new Promise((ok, no) => { let n = 0; const 
 
 export async function handleApi(req, res, env = process.env) {
   const u = new URL(req.url ?? "/", "http://x"), path = u.pathname.replace(/^\/api\/v1/, "").replace(/\/+$/, "") || "/status", q = u.searchParams;
-  const send = (code, body, type = "application/json; charset=utf-8") => { res.statusCode = code; res.setHeader("Content-Type", type); res.setHeader("Access-Control-Allow-Origin", "*"); res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-API-Key"); res.setHeader("Cache-Control", "no-store"); res.end(typeof body === "string" ? body : JSON.stringify(body)); };
+  let meter = null;      // the key this call is written against, and what an answer costs
+  const send = (code, body, type = "application/json; charset=utf-8") => { res.statusCode = code; res.setHeader("Content-Type", type); res.setHeader("Access-Control-Allow-Origin", "*"); res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-API-Key, Authorization, X-Admin-Key");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS"); res.setHeader("Access-Control-Expose-Headers", "X-Credits-Cost, X-Credits-Left"); res.setHeader("Cache-Control", "no-store");
+    if (meter) { const cost = code >= 200 && code < 300 ? meter.cost : 0; record(env, meter.key, path, cost, code); res.setHeader("X-Credits-Cost", String(cost)); res.setHeader("X-Credits-Left", String(creditsLeft(meter.key))); meter = null; }     // only an answered call costs
+    res.end(typeof body === "string" ? body : JSON.stringify(body)); };
   try {
     if (req.method === "OPTIONS") return send(204, "");
     if (path === "/openapi.json") return send(200, OPENAPI);
     if (path === "/status") return send(200, (await status(env)).body);
-    const keys = (env.MIRA_API_KEYS ?? "").split(",").map((s) => s.trim()).filter(Boolean);
-    if (keys.length && !keys.includes(String(req.headers["x-api-key"] ?? ""))) throw new Bad("this deployment asks for a key: send it in the header X-API-Key", 401);
-    if (limited(String(req.headers["x-forwarded-for"] ?? req.socket?.remoteAddress ?? "?").split(",")[0], env)) throw new Bad("too many calls in ten minutes", 429);
-    let r;
-    if (path === "/crossmatch") { if (req.method !== "POST") throw new Bad("POST a JSON body: { positions: [{ ra, dec }] }", 405); r = await crossmatch(await readBody(req), env); }
+    if (path === "/prices") return send(200, priceList(env));
+    const address = String(req.headers["x-forwarded-for"] ?? req.socket?.remoteAddress ?? "?").split(",")[0].trim();
+    const sent = String(req.headers["x-api-key"] ?? "") || (/^Bearer\s+(\S+)$/i.exec(String(req.headers.authorization ?? ""))?.[1] ?? "");
+    const fixed = (env.MIRA_API_KEYS ?? "").split(",").map((s) => s.trim()).filter(Boolean), operator = !!sent && fixed.includes(sent), key = sent && !operator ? findKey(env, sent) : null;
+    // ---- keys, credits, usage
+    if (path === "/keys") { if (req.method !== "POST") throw new Bad("POST { label } to make a key", 405);
+      if (fixed.length && !operator) throw new Bad("this deployment does not hand out keys by itself: ask its operator", 403);
+      if (limited(address, env)) throw new Bad("too many calls in ten minutes", 429);
+      const b = await readBody(req, 4000); return send(201, { ...createKey(env, address, b.label), note: "Keep this key: it is shown once. Send it in the header X-API-Key." }); }
+    if (/^\/keys\/[0-9a-f]{10}\/credits$/.test(path)) { if (req.method !== "POST") throw new Bad("POST { credits }", 405); const b = await readBody(req, 4000); return send(200, grant(env, path.split("/")[2], b.credits, req.headers["x-admin-key"])); }
+    if (path === "/keys/me" || path === "/keys/rotate" || path === "/usage") {
+      if (!key) throw new Bad(sent ? "this key is not known here" : "send your key in the header X-API-Key", 401);
+      if (key.revoked) throw new Bad("this key was revoked", 401);
+      if (path === "/usage") { if (req.method !== "GET") throw new Bad("GET only", 405); return send(200, usage(key)); }
+      if (path === "/keys/rotate") { if (req.method !== "POST") throw new Bad("POST only", 405); return send(200, { ...rotateKey(env, key), note: "The earlier secret no longer works. Keep this one: it is shown once." }); }
+      if (req.method === "DELETE") return send(200, { ...revokeKey(env, key), note: "This key no longer works." });
+      if (req.method !== "GET") throw new Bad("GET to read the key, DELETE to revoke it", 405);
+      return send(200, view(key)); }
+    // ---- the data
+    if (sent && !operator && !key) throw new Bad("this key is not known here", 401);
+    if (key?.revoked) throw new Bad("this key was revoked", 401);
+    if (fixed.length && !operator && !key) throw new Bad("this deployment asks for a key: send it in the header X-API-Key", 401);
+    if (key ? keyLimited(env, key) : !operator && limited(address, env)) throw new Bad("too many calls in ten minutes", 429);
+    let r, body = null;
+    if (path === "/crossmatch") { if (req.method !== "POST") throw new Bad("POST a JSON body: { positions: [{ ra, dec }] }", 405); body = await readBody(req); }
     else if (req.method !== "GET") throw new Bad("GET only", 405);
+    if (key) { const cost = costOf(path, Array.isArray(body?.positions) ? body.positions.length : 0); meter = { key, cost: 0 };
+      if (creditsLeft(key) < cost) throw new Bad(`this key has ${creditsLeft(key)} credits left and this call costs ${cost}. No payment is connected in this build: the operator grants credits`, 402);
+      meter.cost = cost; }
+    if (path === "/crossmatch") r = await crossmatch(body, env);
     else if (path === "/targets") r = { body: { targets: TARGETS.map((t) => ({ ...t, lab: `/explore/?target=${t.key}` })) } };
     else if (path === "/movers") r = await movers(q, env);
     else if (path.startsWith("/movers/")) r = await mover(decodeURIComponent(path.slice(8)), env);
@@ -182,5 +223,6 @@ export async function handleApi(req, res, env = process.env) {
     else throw new Bad(`no such endpoint: ${path}. See /api/v1/openapi.json`, 404);
     if (q.get("format") === "csv" && r.table) return send(200, csv(r.table), "text/csv; charset=utf-8");
     send(200, r.body);
-  } catch (e) { send(e instanceof Bad ? e.code : 500, { error: e instanceof Bad ? e.message : "the server could not answer" }); if (!(e instanceof Bad)) console.error("api", e); }
+  } catch (e) { const known = e instanceof Bad || e instanceof KeyError; send(known ? e.code : 500, { error: known ? e.message : "the server could not answer" }); if (!known) console.error("api", e); }
 }
+

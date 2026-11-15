@@ -68,13 +68,13 @@ figure { margin: 18px 0 26px; } figure img, figure video { display: block; width
 </style>
 </head>
 <body>
-<header><a class="logo" href="/">MIRA</a><nav><a href="/explore/#sky">Sky</a><a href="/explore/">Space</a><a href="/explore/#lab">Lab</a><a href="/explore/#catalogue">Catalogue</a><a href="#api">API</a><a href="https://github.com/Mohsinin-Wlad-Sam/assrar-dawla">GitHub</a></nav></header>
+<header><a class="logo" href="/">MIRA</a><nav><a href="/explore/#sky">Sky</a><a href="/explore/">Space</a><a href="/explore/#lab">Lab</a><a href="/explore/#catalogue">Catalogue</a><a href="#api">API</a><a href="/console/">Console</a><a href="https://github.com/Mohsinin-Wlad-Sam/assrar-dawla">GitHub</a></nav></header>
 <div class="wrap">
 <aside id="toc">
   <div class="g">Get started</div><a href="#start">Overview</a><a href="#quick">Quick start</a><a href="#tour">See it run</a><a href="#install">Install and run</a><a href="#layout">Project layout</a><a href="#architecture">Architecture</a>
   <div class="g">Guides</div><a href="#sky">Sky map</a><a href="#space">Space map</a><a href="#lab">The Lab</a><a href="#five">NASA's five targets</a><a href="#search">Search</a><a href="#catalogue">Catalogue</a><a href="#assistant">Assistant</a>
   <div class="g">How it works</div><a href="#pipeline">Pipeline</a><a href="#accuracy">Accuracy</a><a href="#limits">Known limits</a><a href="#ai">AI in MIRA</a><a href="#worldmodel">World models</a><a href="#atlas">V-JEPA 2 atlas</a>
-  <div class="g">Reference</div><a href="#api">API</a><a href="#link">Link and embed</a><a href="#data">Data files</a><a href="#config">Configuration</a>
+  <div class="g">Reference</div><a href="#api">API</a><a href="/console/">API console ↗</a><a href="#link">Link and embed</a><a href="#data">Data files</a><a href="#config">Configuration</a>
   <div class="g">Operate</div><a href="#update">New data releases</a><a href="#deploy">Deploy</a>
   <div class="g">Project</div><a href="#plans">Plans</a><a href="#roadmap">Roadmap</a><a href="#contrib">Contributing</a><a href="#faq">FAQ</a><a href="#credits">Credits</a>
 </aside>
@@ -411,6 +411,25 @@ with fits.open(exp["url"], use_fsspec=True) as hdul:          # reads only the p
     wcs = WCS(hdul["IMAGE"].header)
     cut = Cutout2D(hdul["IMAGE"].section, SkyCoord(331.0966, -56.8007, unit="deg"), 3 * u.arcmin, wcs=wcs)</pre>
 <p><b>Errors</b> are JSON too, <code>{ "error": "…" }</code>, with status 400 (a parameter), 401 (a key is asked for), 404, 429 (too many calls) or 503 (the server does not carry that file). <b>Private deployments</b> can ask for a key: set <code>MIRA_API_KEYS</code> and callers send <code>X-API-Key</code>. <b>A purely static copy</b> of the site has no API: the same answers are in the <a href="#data">data files</a>. <b>Planned</b> for the Mission plan: <code>POST /measure</code>, the Lab's whole chain on a position, run on the server (the engine already runs without a browser in our verification pipeline), and a call-back at each data release.</p>
+
+<h3 id="keys">Keys, usage and credits</h3>
+<figure><img src="/docimg/console.jpg" alt="The API console" loading="lazy" /><figcaption><b>The console.</b> A key, the credits it has left, a call run with it, and what that call cost.</figcaption></figure>
+<p>A key is optional. Without one the API answers 300 calls in ten minutes from one address. With one it answers ten times as many, and each answered call is counted in credits, so that a group can see what it uses and an operator can bill for heavy use. The <a href="/console/">console</a> makes keys, shows the credits left and the calls day by day, and runs a call with the key you choose.</p>
+<table><tr><th>Endpoint</th><th>What it does</th></tr>
+<tr><td><code>POST /api/v1/keys</code></td><td>Makes a key. It is shown once: the server keeps only a fingerprint of it. Body: <code>{"label": "my notebook"}</code></td></tr>
+<tr><td><code>GET /api/v1/keys/me</code></td><td>The key you sent: credits granted, used and left, calls, last use</td></tr>
+<tr><td><code>GET /api/v1/usage</code></td><td>Credits and calls by day and by endpoint, and the last 40 calls</td></tr>
+<tr><td><code>POST /api/v1/keys/rotate</code></td><td>A new secret for the same key; the earlier one stops working</td></tr>
+<tr><td><code>DELETE /api/v1/keys/me</code></td><td>Revokes the key</td></tr>
+<tr><td><code>GET /api/v1/prices</code></td><td>What each call costs, the free credits of a new key, the limits</td></tr>
+<tr><td><code>POST /api/v1/keys/{id}/credits</code></td><td>The operator grants credits to a key (header <code>X-Admin-Key</code>)</td></tr></table>
+<pre>curl -X POST -H "Content-Type: application/json" -d '{"label":"my notebook"}' https://your-host/api/v1/keys
+curl -i -H "X-API-Key: mira_sk_…" "https://your-host/api/v1/movers?ra=331.0966&amp;dec=-56.8007&amp;radius=0.5"
+#   X-Credits-Cost: 1
+#   X-Credits-Left: 1999</pre>
+<p><b>What a call costs.</b> A cone search, one mover, a visit history or the scout's marks: 1 credit. Exposures at a position: 2. A cross-match: 1 for each started hundred of positions. Status, the interface, the targets and the prices are free, and so is any call that is refused. A new key starts with 2,000 credits.</p>
+<p class="note"><b>Pay as you go is not connected.</b> The meter, the limits and the refusal at zero (HTTP 402) are real and tested (<code>web/scripts/test_api_keys.mjs</code>). No payment provider is wired in, so nobody is charged: credits are granted by the operator, at the place where a provider's confirmation would arrive. The rate we would start from, US$1 for 10,000 credits, has not been tested with a customer.</p>
+<p>Operators: <code>MIRA_API_FREE_CREDITS</code>, <code>MIRA_API_KEY_PER10MIN</code>, <code>MIRA_API_NEW_KEYS_PER_DAY</code>, <code>MIRA_API_ADMIN</code> and <code>MIRA_API_STORE</code> are described at the head of <code>web/server/keys.mjs</code>. Setting <code>MIRA_API_KEYS</code> closes the API to callers without a key and leaves the making of keys to the operator.</p>
 </section>
 <section class="pg" id="link">
 <h2>Link and embed</h2>
@@ -471,8 +490,8 @@ MIRA_DATA=/srv/mira/data MIRA_LLM_KEY=… node /opt/mira/deploy/assistant-proxy.
 <p class="note"><b>Prototype.</b> Everything is free today: the Researcher tools are behind one switch at the foot of the Lab's tool rail (PRO). Each plan contains the one before it. No price has been tested with a customer yet.</p>
 <div class="plans">
 <div class="plan"><div class="k">The public · classrooms</div><h4>Explorer</h4><div class="p">Free, no account</div><ul><li>The Sky map: tonight's planets, your own sky, 27 years on one time bar</li><li>Any place as a little film, 1999 to today</li><li>What moved, what its light says, did it change</li><li>Field of view, layers, 102 colours</li><li>Ask the assistant</li><li>Links and embeds</li></ul></div>
-<div class="plan hi"><div class="k">Research groups · courses</div><h4>Researcher</h4><div class="p">Per seat or site · free for students</div><ul><li>Everything in Explorer</li><li>Astrometer: motion, parallax and distance with errors</li><li>Detection limits: what could still hide in a field</li><li>Every exposure with NASA's flags, in or out</li><li>FITS, CSV, Python (Astropy), a printable field report</li><li>Watchlists: a list of targets in one run</li><li>The sky model, the scout's marks, V-JEPA 2</li><li><i>Planned:</i> re-runs and alerts at each data release, an API</li></ul></div>
-<div class="plan"><div class="k">Agencies · missions · science centres</div><h4>Mission</h4><div class="p">Per project</div><ul><li>Everything in Researcher</li><li>The verification pipeline on your candidate lists at each data release</li><li>A scout trained on your survey; V-JEPA 2 fine-tuned on your objects</li><li>Instruments built for the project</li><li>Private deployment, single sign-on</li><li>Every number traced to its exposures; a data-quality report per release</li><li>Your own name on the public pages; training and support</li></ul></div>
+<div class="plan hi"><div class="k">Research groups · courses</div><h4>Researcher</h4><div class="p">Per seat or site · free for students</div><ul><li>Everything in Explorer</li><li>Astrometer: motion, parallax and distance with errors</li><li>Detection limits: what could still hide in a field</li><li>Every exposure with NASA's flags, in or out</li><li>FITS, CSV, Python (Astropy), a printable field report</li><li>Watchlists: a list of targets in one run</li><li>The sky model, the scout's marks, V-JEPA 2</li><li>An API key with its usage console; pay as you go beyond the free credits (metered today, not charged)</li><li><i>Planned:</i> re-runs and alerts at each data release</li></ul></div>
+<div class="plan"><div class="k">Agencies · missions · science centres</div><h4>Mission</h4><div class="p">Per project</div><ul><li>Everything in Researcher</li><li>The verification pipeline on your candidate lists at each data release</li><li>A scout trained on your survey; V-JEPA 2 fine-tuned on your objects</li><li>Instruments built for the project</li><li>Private deployment, single sign-on; an API closed to outside callers, with keys made by your operator</li><li>Every number traced to its exposures; a data-quality report per release</li><li>Your own name on the public pages; training and support</li></ul></div>
 </div>
 <p>The full business plan is in the repository: <code>docs/13_business_plan.md</code>.</p>
 </section>
