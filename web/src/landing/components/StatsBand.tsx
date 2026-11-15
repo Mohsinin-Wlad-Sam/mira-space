@@ -59,10 +59,13 @@ function CountUp({ value, start, decimals = 0, duration = 1600 }: CountUpProps) 
 
 export default function StatsBand() {
   const [ref, visible] = useReveal<HTMLDListElement>(0.35)
-  const items = liveStats(useSummary()) ?? stats.items
+  // the band answers "who is this for and how do we know": the impact figures of content.ts. The live census
+  // numbers (billions of detections) stay available to the app's Method page; here they are only a fallback.
+  const live = liveStats(useSummary())
+  const items = stats.items.length ? stats.items : (live ?? [])
 
   return (
-    <section className="panel panel--stats" aria-label="The census by the numbers">
+    <section className="panel panel--stats" aria-label="Who it is for, in numbers">
       <div className="panel__backdrop">
         <div className="panel__media">
           <BackgroundImage image={stats.image} />
