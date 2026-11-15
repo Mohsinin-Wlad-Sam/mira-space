@@ -18,7 +18,7 @@ Deadline: Sunday 15 November 2026, 23:59 in the local event's time (Morocco). Ch
 
 | File | What | Use |
 |---|---|---|
-| `media/mira_film_30s.mp4` | The film: 1920x1080, 60 pictures a second, **29.0 s** (the limit is 30), 74 MB. The 3840x2160 master (`mira_film_4k60.mp4`, 255 MB) is in the repository's release | The demo link (upload it) |
+| `media/mira_film_30s.mp4` | The film, fourth cut: 1920x1080, 60 pictures a second, **29.0 s** (the limit is 30), 21 MB. The 3840x2160 master (`mira_film_4k60.mp4`, 72 MB) is in the repository's release | The demo link (upload it; YouTube takes the 4K master too) |
 | `media/mira_film_30s_small.mp4` | The same at 720p, 30 pictures a second | When the upload is slow |
 | `media/submission/mira_film_subtitles.srt` | The film's words as a subtitle file (they are also on the picture) | YouTube: Subtitles → Upload file |
 | `media/submission/cover_1920x1080.jpg` | Title with the team's names | Project image |
@@ -116,8 +116,9 @@ Yes. AI coding assistants (Claude Code; Codex and Antigravity as reviewers) wrot
 text and layout under the team's direction; every use is logged in `docs/07_si_usage_log.md` with what was checked
 afterwards. A language model (K2 Horizon) runs the in-product assistant: it explains and operates the page and is
 restricted to numbers the instruments computed. A small network trained by the team draws forecast pictures of a
-field: these are AI-generated and carry a visible "AI-generated · prediction" label in the Lab. The film and the
-slides show no AI-generated picture: every shot is recorded from the running site on NASA data. Two more networks
+field: these are AI-generated and carry a visible "AI-generated · prediction" label in the Lab. The film shows no
+AI-generated picture: its opening is drawn by the film's own code from ESA Gaia star positions, and the rest is
+recorded from the running site on NASA data. Two more networks
 only point at places (a whole-sky scout trained by the team, and Meta's V-JEPA 2, fine-tuned): their marks are
 checked against ESA's Gaia catalogue and shown as what they are. The idea, the scientific choices and the
 validation are the team's. No NASA logo or mission identifier is used.
