@@ -41,7 +41,8 @@ on an HPC cluster. Every instrument serves the chain *find → measure → ident
 
 | Instrument | Question it answers | Output |
 |---|---|---|
-| Map (first screen) | What is out there, and what moved? | 3D neighbourhood of the Sun with the confirmed movers marked; a card per object with three real pictures (2MASS ~1999, WISE 2010, SPHEREx read on demand) and its measured path; answer buttons for the unnamed ones |
+| Map (first screen), two modes | What is out there, and what moved? | *Around the Sun*: the 3D neighbourhood with NASA's SPHEREx all-sky picture as its sky. *The whole sky*: a flat, stable map where 2MASS (~1999), WISE (2010) and SPHEREx (2025–26) fade into one another by year, with a slider through SPHEREx's 102 wavelengths read live from NASA, and a closer look at real tiles with Aladin. On both: confirmed movers marked; a film-style card per object with three real pictures and its measured path, "Explain it to me", and answer buttons where the object is in no reference database |
+| Six detectors (in the Lab) | What does the field look like in each of SPHEREx's six bands? | six pictures, one per detector array, each the sum of all that detector's exposures; click one to use it alone |
 | Finder (sky chart + verified catalogue) | Where should I point? | target or field |
 | Epoch imager | What does this field look like through time? | three NASA pictures of the same field on one time bar: 2MASS (~1999), WISE (2010), one deep SPHEREx image per visit (2025–26); playback control |
 | Motion detector | Which sources in this field moved? | table: motion, significance, known/unknown; vectors on the image |

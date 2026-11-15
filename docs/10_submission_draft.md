@@ -125,6 +125,8 @@ data and checked against independent references; the assistant is told to use on
 4. **Take part (prototype).** NASA's own precedent: 150,000 volunteers, about 3,000 brown dwarfs. In MIRA: 635
    confirmed movers with no Gaia source and no SIMBAD entry, with pictures and three answer buttons, no account. A
    classroom can do it; the pilot will tell us whether they do.
+4b. **The whole sky, by year and by colour.** The flat map: 2MASS 1999 fading into WISE 2010 into SPHEREx 2025,
+   then the slider through SPHEREx's 102 wavelengths (3.3 µm lights up the Milky Way's dust), live from NASA.
 5. **One click deeper: the Lab.** ε Indi B: press play, three NASA pictures of the field follow one another and the
    brown dwarf walks along its dated track; "12 sources measured, 1 moved"; Astrometer (+3.99, −2.49″/yr against
    Gaia's +3.98, −2.47), Spectrograph with the methane band. "Read live from NASA's archives. No server."
