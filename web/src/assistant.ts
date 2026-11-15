@@ -24,6 +24,13 @@ export function toggleAssistant(el: HTMLElement, ctx: AsstCtx) {
   state.ctx = ctx; el.hidden = !el.hidden; document.body.classList.toggle("asst-on", !el.hidden);
   if (!el.hidden) { draw(); (el.querySelector("textarea") as HTMLTextAreaElement | null)?.focus(); }
 }
+/** open the assistant (if it is not) and put a question to it: the "Explain it to me" buttons */
+export function askAssistant(el: HTMLElement, ctx: AsstCtx, q: string) {
+  if (!state) { state = { el, ctx, msgs: [], busy: false, ok: null, model: "" }; mount(); }
+  state.ctx = ctx; el.hidden = false; document.body.classList.add("asst-on"); draw();
+  const go = (n: number) => { if (!state) return; if (state.ok === null && n < 40) { setTimeout(() => go(n + 1), 100); return; } if (state.ok !== false && !state.busy) ask(q); };       // wait for the availability check
+  go(0);
+}
 function mount() {
   const s = state!;
   s.el.innerHTML = `<header><div><b>Assistant</b><small id="as-model"></small></div><button class="icon-btn" id="as-x" aria-label="Close the assistant">✕</button></header>

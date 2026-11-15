@@ -11,7 +11,7 @@ const N = 96, Y_TM = 1999.5, Y_WISE = 2010.5;
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]!));
 const ease = (u: number) => { const v = Math.min(1, Math.max(0, u)); return v * v * (3 - 2 * v); };
 
-export function mountPastView(host: HTMLElement, t: MoveTarget, o: { label?: string } = {}): { destroy: () => void } {
+export function mountPastView(host: HTMLElement, t: MoveTarget, o: { label?: string; /** play once through the three pictures when they have arrived */ autoplay?: boolean } = {}): { destroy: () => void } {
   const ac = new AbortController(), yNow = Math.max(t.epoch, Y_WISE + 1), pm = Math.hypot(t.pmra, t.pmdec), track = pm * (yNow - Y_TM);
   const field = Math.min(600, Math.max(90, 2.6 * track)), pix = field / N, yMid = (Y_TM + yNow) / 2, cosd = Math.cos((t.dec * Math.PI) / 180);
   // the cutout is centred on the middle of the path, so that the whole of it is in view
@@ -107,7 +107,10 @@ export function mountPastView(host: HTMLElement, t: MoveTarget, o: { label?: str
   range.oninput = () => { playing = false; cancelAnimationFrame(raf); let v = Y_TM + (+range.value / 1000) * (yNow - Y_TM); for (const q of [Y_TM, Y_WISE, yNow]) if (Math.abs(v - q) < 0.35) v = q; go(v); };
   host.querySelectorAll<HTMLButtonElement>(".pv-stops button").forEach((b) => (b.onclick = () => { playing = false; cancelAnimationFrame(raf); go(+b.dataset.y!); }));
   const ro = typeof ResizeObserver === "function" ? new ResizeObserver(() => draw()) : null; ro?.observe(cv);
-  for (const sv of SURVEYS) pastCutout(sv, ra0, dec0, N, pix, ac.signal).catch(() => null).then((a) => { if (dead) return; img[sv.key] = a ? disp(a) : null; done++; draw(); });
+  // a quick overview: once the two archive pictures are in, the three dates are played through a single time, slowly;
+  // the visitor can stop it, and nothing loops
+  const overview = () => { if (dead || playing || !o.autoplay || !(img.tm || img.wise)) return; y = img.tm ? Y_TM : Y_WISE; playing = true; hold = 1.1; last = performance.now(); if (y >= Y_WISE) loadSpherex(); raf = requestAnimationFrame(step); draw(); };
+  for (const sv of SURVEYS) pastCutout(sv, ra0, dec0, N, pix, ac.signal).catch(() => null).then((a) => { if (dead) return; img[sv.key] = a ? disp(a) : null; done++; draw(); if (done === SURVEYS.length) overview(); });
   draw();
   return { destroy() { dead = true; playing = false; cancelAnimationFrame(raf); ac.abort(); ro?.disconnect(); host.innerHTML = ""; } };
 }

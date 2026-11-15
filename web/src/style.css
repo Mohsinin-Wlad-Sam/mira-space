@@ -820,3 +820,19 @@ body.asst-on .blinkpage, body.asst-on .catpage, body.asst-on .logpage { right: m
 @media (max-width: 760px) { .sp-key { grid-column: 1 / -1; } }
 
 .sp-ctl > .sp-search { display: none; }   /* the header search flies on the map: one search, not two */
+/* ---- film-style display for a confirmed mover's card: bracketed corners, a target ring on the object and a line to the card */
+.hud { border: .8px solid rgb(240 240 250 / .26); box-shadow: 0 18px 60px rgb(0 0 0 / .6); animation: hud-in .45s cubic-bezier(.2, .7, .2, 1) both;
+  background: linear-gradient(#ff9d4d, #ff9d4d) left top / 20px 1.5px no-repeat, linear-gradient(#ff9d4d, #ff9d4d) left top / 1.5px 20px no-repeat,
+    linear-gradient(#ff9d4d, #ff9d4d) right top / 20px 1.5px no-repeat, linear-gradient(#ff9d4d, #ff9d4d) right top / 1.5px 20px no-repeat,
+    linear-gradient(#ff9d4d, #ff9d4d) left bottom / 20px 1.5px no-repeat, linear-gradient(#ff9d4d, #ff9d4d) left bottom / 1.5px 20px no-repeat,
+    linear-gradient(#ff9d4d, #ff9d4d) right bottom / 20px 1.5px no-repeat, linear-gradient(#ff9d4d, #ff9d4d) right bottom / 1.5px 20px no-repeat, rgb(3 5 10 / .86); }
+@keyframes hud-in { from { opacity: 0; clip-path: inset(0 0 100% 0); } to { opacity: 1; clip-path: inset(0 0 0 0); } }
+.hud > .eyebrow { color: #ff9d4d; letter-spacing: .14em; }
+.hud .pv-stage::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(rgb(255 255 255 / .055), rgb(255 255 255 / 0) 2px) 0 0 / 100% 4px; }
+.hud .pv-cv { border-color: rgb(255 157 77 / .45); }
+.sp-leader { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; overflow: visible; transition: opacity .3s; }
+.sp-leader[hidden] { display: none; }
+.sp-leader circle:first-child { fill: none; stroke: #ff9d4d; stroke-width: 1.2; stroke-dasharray: 7 5; animation: hud-lock 8s linear infinite; transform-box: fill-box; transform-origin: center; }
+.sp-leader circle:nth-child(2) { fill: #ff9d4d; } .sp-leader polyline { fill: none; stroke: rgb(255 157 77 / .75); stroke-width: 1; }
+@keyframes hud-lock { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .hud { animation: none; } .sp-leader circle:first-child { animation: none; } }

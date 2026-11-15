@@ -650,7 +650,7 @@ function ensureSpace(): Promise<SpaceHandle | null> {
     const host = $("#space");
     try {
       const { openSpace } = await import("./space");
-      space = await openSpace(host, { lowPower: set.saver || LOW_POWER,
+      space = await openSpace(host, { lowPower: set.saver || LOW_POWER, onExplain: explain,
         onObserve: (t) => { if (t.pmra !== undefined) { observe({ ra: t.ra, dec: t.dec, pmra: t.pmra, pmdec: t.pmdec, epoch: t.epoch, name: t.name ?? "Confirmed mover", source: "The survey of the WISE years (2010–2020)" } as BlinkTarget); return; } const pos = `${t.ra.toFixed(5)} ${t.dec >= 0 ? "+" : ""}${t.dec.toFixed(5)}`; if (t.name) observe(t.name, { ra: t.ra, dec: t.dec, name: t.name, epoch: REF_YEAR }); else observe(pos); },
       });
     } catch (e) { console.warn("3D universe unavailable", e); space = null; }
@@ -876,6 +876,11 @@ function preload() {
   const idle = (f: () => void, ms: number) => ((window as any).requestIdleCallback ? (window as any).requestIdleCallback(f, { timeout: ms }) : setTimeout(f, ms));
   idle(() => { import("./catalogue"); import("./logbook"); import("./assistant"); for (const f of ["meta", "objects", "changes"]) fetch(`${import.meta.env.BASE_URL}data/verified/${f}.json`).catch(() => {}); }, 1500);
 }
+/** what the assistant can read and operate */
+const asstCtx = () => ({ view: () => view, lab: () => blink.context(), labAct: (a: any) => blink.act(a), catalogue: async () => (await ensureCatalogue()).context(), catalogueAct: async (a: any) => (await ensureCatalogue()).act(a),
+  observe: (q: string) => observe(q), go: (v: string) => (v === "universe" ? showUniverse("3d") : setView(v as View)), method: renderAbout, map: () => space?.context() ?? null, mapAct: (a: any) => space?.act(a) });
+/** "Explain it to me": the assistant opens with the question already asked */
+async function explain(q: string) { const m = await import("./assistant"); m.askAssistant($("#asst"), asstCtx(), q); $("#asstbtn").classList.add("on"); }
 async function boot() {
   document.querySelectorAll<HTMLButtonElement>(".mainnav button").forEach((b) => b.onclick = () => { const v = b.dataset.view as View;
     // the address follows the section, so that a reload comes back to it; a field's parameters belong to the Lab only
@@ -883,8 +888,7 @@ async function boot() {
     if (v === "universe") showUniverse(uniMode); else setView(v); });
   document.querySelectorAll<HTMLButtonElement>("#unimode button").forEach((b) => b.onclick = () => showUniverse(b.dataset.m as UniMode));
   $("#aboutbtn").onclick = () => ($("#about").classList.contains("open") ? closeAbout() : renderAbout());
-  $("#asstbtn").onclick = async () => { const m = await import("./assistant"); m.toggleAssistant($("#asst"), { view: () => view, lab: () => blink.context(), labAct: (a) => blink.act(a), catalogue: async () => (await ensureCatalogue()).context(), catalogueAct: async (a) => (await ensureCatalogue()).act(a),
-    observe: (q) => observe(q), go: (v) => (v === "universe" ? showUniverse("3d") : setView(v as View)), method: renderAbout, map: () => space?.context() ?? null, mapAct: (a) => space?.act(a) }); $("#asstbtn").classList.toggle("on", !$("#asst").hidden); };
+  $("#asstbtn").onclick = async () => { const m = await import("./assistant"); m.toggleAssistant($("#asst"), asstCtx()); $("#asstbtn").classList.toggle("on", !$("#asst").hidden); };
   $("#pclose").onclick = closePanel;
   wireSheet();
   $("#tourbtn").onclick = async () => { await showUniverse("map"); renderStep(0); };

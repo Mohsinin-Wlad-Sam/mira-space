@@ -10,6 +10,7 @@ import { Exo } from "./exo";
 import { Universe } from "./universe";
 import { LiveLayer, nasaImages, rockSize, jdOf, craftAt, neoToday, type Live } from "./live";
 import { mountPastView } from "./pastview";
+import { KIND_PLAIN, VOTE_HTML, PICS_HTML, evidenceHTML, isOpenCase, loadVerified, moonYears, mountMoverCard, votes, wireVote, type Ver } from "./movercard";
 
 const BASE = import.meta.env.BASE_URL;
 const PCYR = 1.0227121650537077e-6;        // 1 km/s in pc/yr
@@ -29,23 +30,13 @@ const SOURCES = ["–", "Gaia DR3 parallax", "UltracoolSheet parallax", "AI: SPH
 // survive that verification and are no longer read.
 const LENS = [{ bit: 2, name: "Methane dip", c: "#c792ff" }, { bit: 4, name: "Not in Gaia", c: "#ff5d6c" }, { bit: 8, name: "Cold and red", c: "#e58cff" },
   { bit: 1, name: "Confirmed mover", c: "#ff9d4d" }, { bit: 32, name: "Named", c: "#ffffff" }];
-/** the verified catalogue's columns used here (web/public/data/verified/objects.json) */
-type Ver = { glat: number[]; id: string[]; ra: number[]; dec: number[]; pm: number[]; pmra: number[]; pmdec: number[]; epm: number[]; conf: number[]; known: number[]; gaia: string[]; kind: string[];
-  w12: (number | null)[]; methane: number[]; simbad: string[]; yr: number[]; dp: number[]; ds: number[]; n: number[] };
-const KIND_PLAIN: Record<string, string> = { "M dwarf": "Red dwarf star", "late M or L dwarf": "Very cool dwarf, at the edge between star and brown dwarf", "K dwarf": "Orange dwarf star", "F/G star": "Sun-like star",
-  "white dwarf": "White dwarf: the Earth-sized core a dead star leaves", subdwarf: "Old, metal-poor star from the Galaxy's halo", "L dwarf": "Brown dwarf (type L): too small to shine as a star",
-  "T dwarf": "Brown dwarf (type T): cold enough for methane, like Jupiter", "Y dwarf": "Brown dwarf (type Y): the coldest kind", "brown dwarf": "Brown dwarf: too small to shine as a star",
-  "methane dwarf": "Methane dwarf: cold enough for methane, like Jupiter", "red: brown dwarf?": "Cold and red: possibly a brown dwarf", "cool dwarf?": "Cool dwarf star, not yet classified", unclassified: "Not yet classified" };
-const REPO = (import.meta.env.VITE_MIRA_REPORT_URL as string | undefined) ?? "https://github.com/Mohsinin-Wlad-Sam/assrar-dawla/issues/new";
-const VOTES = "mira.votes.v1";
-const votes = (): Record<string, { v: string; t: number; name: string }> => { try { return JSON.parse(localStorage.getItem(VOTES) ?? "{}"); } catch { return {}; } };
 const CLS_COL = ["#ffe6b8", "#ff9a5a", "#d05cff", "#5cc8ff"];
 
 type Meta = { record: number; core: { file: string; n: number; named: number }; deep: { file: string; n: number }; names: string[];
   counts: { gaia: number; ucs: number; ai: number }; classes: string[] };
 type Cat = { n: number; pos: Float32Array; vel: Float32Array; teff: Uint16Array; M: Float32Array; cls: Uint8Array; src: Uint8Array; hasRV: Uint8Array;
   sig: Float32Array; lens: Uint8Array; dflux: Float32Array; tile: Uint16Array; obj: Uint32Array };
-export type SpaceOpts = { lowPower: boolean; focus?: string; lab?: boolean; onLab?: () => void; onSky?: (ra: number, dec: number) => void; onDossier?: (id: string) => void;
+export type SpaceOpts = { /** ask the assistant a question about what is on the map */ onExplain?: (question: string) => void; lowPower: boolean; focus?: string; lab?: boolean; onLab?: () => void; onSky?: (ra: number, dec: number) => void; onDossier?: (id: string) => void;
   /** "put it under the telescope": hand a selected object to the Observe section */
   onObserve?: (t: { ra: number; dec: number; name?: string; pmra?: number; pmdec?: number; epoch?: number }) => void };
 /** close(); pause(true/false) suspends rendering while another section of the observatory is in front */
@@ -161,6 +152,7 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<Spa
       <p class="sp-sub" id="spsub">Loading the 3D catalogue…</p>
     </div>
     <div class="sp-loading" id="spload">Loading the map of the Sun's neighbourhood…</div>
+    <svg class="sp-leader" id="spleader" aria-hidden="true" hidden><circle r="16"/><circle r="3"/><polyline points=""/></svg>
     <div class="sp-intro" id="spintro" hidden>
       <button class="icon-btn" id="spintrox" aria-label="Hide this introduction">✕</button>
       <b>The sky is not still.</b>
@@ -190,7 +182,7 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<Spa
         <label class="row chk"><input type="checkbox" id="spgrid" checked><span>Distance rings & Galactic centre</span></label>
         <label class="row chk"><input type="checkbox" id="spfig" checked><span>Constellation figures (true 3D)</span></label>
         <label class="row chk"><input type="checkbox" id="spunc"><span>Distance uncertainty (AI ±1σ)</span></label>
-        <label class="row"><span>Backdrop</span><select id="spbg"><option value="2mass">Near-IR (2MASS)</option><option value="dss">Visible (DSS)</option><option value="wise">Mid-IR (WISE)</option><option value="none">None</option></select></label>
+        <label class="row"><span>Backdrop</span><select id="spbg"><option value="spherex">SPHEREx (NASA, 2025–26)</option><option value="2mass">Near-IR (2MASS, ~1999)</option><option value="wise">Mid-IR (WISE, 2010)</option><option value="dss">Visible (DSS)</option><option value="none">None</option></select></label>
         <div class="sp-legend" id="splegend"></div>
       </details>
       <button id="splab" hidden></button>
@@ -239,7 +231,7 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<Spa
     if (bgCache[url]) { skyMat.uniforms.uTex.value = bgCache[url]; return; }
     texLoader.load(url, (t) => { t.colorSpace = THREE.SRGBColorSpace; t.wrapS = THREE.RepeatWrapping; t.anisotropy = 4; bgCache[url] = t; skyMat.uniforms.uTex.value = t; });
   }
-  setBackdrop("2mass");
+  setBackdrop("spherex");          // the sky around the map is SPHEREx's own all-sky picture: three of its 102 colours (1.1, 2.2, 4.4 µm) as blue, green, red
 
   // rings in the Galactic plane + direction to the Galactic centre
   const grid = new THREE.Group(); scene.add(grid);
@@ -336,11 +328,10 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<Spa
   let ver: Ver | null = null, vi = new Int32Array(0), todo: number[] = [], todoOff: number[] = []; const verIdx = new Map<string, number>(), tally = { movers: 0, noGaia: 0 };
   /** survey ids of every object a visitor can help look at: those placed on the map and those that have no distance yet */
   const poolIds = () => [...todo.map((q) => `${cat!.tile[q]}-${cat!.obj[q]}`), ...(ver ? todoOff.map((k) => ver!.id[k]) : [])];
-  const VOTE_HTML = `<div class="sp-vote" id="spvote"><b>Take part <small>(prototype)</small>.</b> This object is in the WISE catalogues but has no entry in SIMBAD, astronomy's reference database, and no Gaia source. Use the slider above: is there a dot inside the circle in 2010, and again in SPHEREx's picture?
-        <div class="sp-vbtn"><button data-v="moves">Yes, it follows</button><button data-v="unsure">I can't tell</button><button data-v="no">No dot there</button></div><small id="spvmsg"></small></div>`;
+  const nextCase = () => (host.querySelector('#spfind [data-f="help"]') as HTMLElement).click();
   function applyVerified() {
     const c = cat!; vi = new Int32Array(c.n).fill(-1); todo = []; todoOff = []; let nMov = 0, nNoG = 0; const placed = new Set<number>();
-    const open2 = (k: number) => !!ver && ver.known[k] === 0 && !ver.simbad[k] && Math.abs(ver.glat[k]) >= 10;      // away from the crowded Galactic plane, where the position test loses its meaning
+    const open2 = (k: number) => !!ver && isOpenCase(ver, k);
     for (let i = 0; i < c.n; i++) {
       let L = c.lens[i] & 32;                                   // "named" stays; the rest comes from the verified catalogue
       const k = ver && c.tile[i] !== 65535 ? verIdx.get(`${c.tile[i]}-${c.obj[i]}`) : undefined;
@@ -464,7 +455,7 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<Spa
       .catch(() => {}).then(() => { deepPending = false; const f = wanted; wanted = null; if (f && S.sel < 0 && !handle.focus(f)) $("#sphint").textContent = `"${f}" is not on the map: its distance is not known yet`; });
   }
 
-  fetch(`${BASE}data/verified/objects.json`).then((r) => (r.ok ? r.json() : null)).then((j) => { if (!j?.cols) return; ver = j.cols as Ver; ver.id.forEach((id, k) => verIdx.set(id, k)); build(); if (S.sel >= 0) info(S.sel); }).catch(() => {});      // a card opened before the catalogue arrived is completed
+  loadVerified(BASE).then((v) => { if (!v) return; ver = v; ver.id.forEach((id, k) => verIdx.set(id, k)); build(); if (S.sel >= 0) info(S.sel); });      // a card opened before the catalogue arrived is completed
   // the introduction is shown once per visit and leaves as soon as an object is opened
   const intro = $("#spintro"); let introSeen = false; try { introSeen = sessionStorage.getItem("mira.intro") === "1"; } catch { /* storage off */ }
   const hideIntro = () => { intro.hidden = true; try { sessionStorage.setItem("mira.intro", "1"); } catch { /* storage off */ } };
@@ -618,78 +609,35 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<Spa
    *  than a star can travel in our Galaxy (550 km/s): the distance, estimated or from a weak parallax, is then too large. */
   const farFetched = (i: number) => { const k = vi.length > i ? vi[i] : -1; if (k < 0 || !ver) return false; const c = cat!; return 4.74 * ver.pm[k] * Math.hypot(c.pos[i * 3], c.pos[i * 3 + 1], c.pos[i * 3 + 2]) > 550; };
   /** the "send" link is offered only where the public place for such notes can actually be reached */
-  /** Is this site collecting answers (the optional server process is running)? Then an answer is sent there, with no
-   *  account and nothing about the visitor, and the tally of everyone's answers is shown. Otherwise it stays on the device. */
-  let answersApi: Promise<boolean> | null = null;
-  const answersOn = () => (answersApi ??= fetch("/api/answers").then((r) => (r.ok ? r.json() : null)).then((j) => !!j?.ok, () => false));
-  const tallyText = (t: { moves: number; unsure: number; no: number } | null | undefined) => { const n = t ? t.moves + t.unsure + t.no : 0;
-    return n ? `All visitors so far (${n}): ${t!.moves} saw it follow · ${t!.unsure} could not tell · ${t!.no} saw no dot.` : "No answer yet for this object."; };
-  let reportOpenP: Promise<boolean> | null = null;
-  const reportOpen = () => (reportOpenP ??= (() => { const m = REPO.match(/^https:\/\/github\.com\/([^/]+\/[^/]+)\/issues\/new/); if (!m) return Promise.resolve(true);
-    return fetch(`https://api.github.com/repos/${m[1]}`).then((r) => r.ok, () => false); })());
-  /** the take-part buttons of a card: the answer is kept on the device, sent to the site's endpoint when one is
-   *  running (no account), and everyone's tally is shown */
-  function wireVote(el: HTMLElement, vid: string, label: string) {
-    const vb = el.querySelector("#spvote") as HTMLElement | null; if (!vb) return;
-    const msg = el.querySelector("#spvmsg") as HTMLElement;
-    const show = (sentTally?: { moves: number; unsure: number; no: number }) => {
-      const v = votes(), mine = v[vid], ids = poolIds(), seen = ids.filter((q) => v[q]).length;
-      vb.querySelectorAll<HTMLButtonElement>(".sp-vbtn button").forEach((b) => b.classList.toggle("on", mine?.v === b.dataset.v));
-      const next = `You have looked at <b>${seen} of ${ids.length.toLocaleString()}</b>. <button class="link" id="spvnext">Next one</button>`;
-      // first as if nothing is collected here; completed below if this site runs the answers endpoint
-      msg.innerHTML = mine ? `<span id="spvwhere">Saved on this device.</span> ${next}<span id="spvlocal"> · <button class="link" id="spvcopy">Copy my answers</button><a class="link" id="spvsend" target="_blank" rel="noopener" hidden> · Send them as a public note</a></span><br><span id="spvtally"></span><span id="spvhow">Prototype: nothing is collected here automatically.</span>`
-        : `<span id="spvtally"></span>No account is needed and nothing about you is kept.`;
-      const q = <T extends HTMLElement>(sel: string) => msg.querySelector(sel) as T | null;
-      const nx = q("#spvnext"); if (nx) nx.onclick = () => (host.querySelector('#spfind [data-f="help"]') as HTMLElement).click();
-      const lines = Object.entries(v).slice(-40).map(([id, a]) => `${id} | ${a.v} | ${a.name}`), cp = q("#spvcopy"), sd = q<HTMLAnchorElement>("#spvsend");
-      if (cp) cp.onclick = () => { const t = `MIRA map: is there a dot in the circle in the 2010 and SPHEREx pictures?\nid | answer | label\n${lines.join("\n")}`; (navigator.clipboard?.writeText(t) ?? Promise.reject()).then(() => (cp.textContent = "Copied"), () => (cp.textContent = "Copying is not allowed here")); };
-      answersOn().then((on) => {
-        if (!msg.isConnected) return;
-        if (!on) { if (sd) { sd.href = `${REPO}?title=${encodeURIComponent(`Visitor answers on ${lines.length} objects`)}&body=${encodeURIComponent(`Sent from the MIRA map. For each object: is there a dot in the circle in the 2010 and SPHEREx pictures?\n\nid | answer | label\n${lines.join("\n")}`)}`; reportOpen().then((ok) => { sd.hidden = !ok; }); } return; }
-        const tl = q("#spvtally"), where = q("#spvwhere"), how = q("#spvhow"), loc = q("#spvlocal");
-        if (where) where.textContent = "Sent: no account, nothing about you kept."; if (loc) loc.hidden = true;
-        if (how) how.textContent = "A person on the team reads the answers; objects on which several visitors agree go first for a deep analysis.";
-        if (tl && sentTally) tl.textContent = tallyText(sentTally) + " ";
-        else if (tl) fetch(`/api/answers?ids=${vid}`).then((r) => r.json()).then((j) => { if (msg.contains(tl)) tl.textContent = tallyText(j?.tallies?.[vid]) + " "; }).catch(() => {});
-      });
-    };
-    vb.querySelectorAll<HTMLButtonElement>(".sp-vbtn button").forEach((b) => (b.onclick = () => {
-      const v = votes(), prev = v[vid]?.v, ans = b.dataset.v!; if (prev === ans) return;
-      v[vid] = { v: ans, t: Date.now(), name: label }; try { localStorage.setItem(VOTES, JSON.stringify(v)); } catch { /* private mode: the answer lasts for this page only */ }
-      show();
-      answersOn().then((on) => { if (on) fetch("/api/answers", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ id: vid, v: ans, prev }) }).then((r) => r.json()).then((j) => { if (j?.tally) show(j.tally); }).catch(() => {}); });
-    }));
-    show();
-  }
   let pastView: { destroy: () => void } | null = null;
+  let leaderOn = false;
+  /** the target ring and the line to the card, as on a film's display; drawn from the selected object's place on the screen at every frame */
+  function setLeader(on: boolean) { leaderOn = on; const sv = host.querySelector("#spleader") as SVGElement | null; if (sv) sv.toggleAttribute("hidden", !on); }
+  function drawLeader() {
+    if (!leaderOn || S.sel < 0) return; const sv = host.querySelector("#spleader") as SVGSVGElement | null, card = $("#spinfo"); if (!sv) return;
+    const [x, y, vis] = project(cur(S.sel)), r = card.getBoundingClientRect(), h = host.getBoundingClientRect();
+    if (!vis || innerWidth < 760) { sv.style.opacity = "0"; return; } sv.style.opacity = "1";
+    const cx = r.left - h.left, cy = Math.min(Math.max(y, r.top - h.top + 30), r.bottom - h.top - 30);
+    sv.querySelectorAll("circle").forEach((q) => { q.setAttribute("cx", String(x)); q.setAttribute("cy", String(y)); });
+    (sv.querySelector("polyline") as SVGPolylineElement).setAttribute("points", `${x + 16},${y} ${Math.max(x + 40, cx - 40)},${cy} ${cx},${cy}`);
+  }
+  let cardOff: (() => void) | null = null;
   /** A confirmed mover with no distance cannot be placed in space, but it can be looked at: its card, without a flight */
   function infoOff(k: number) {
-    const V = ver!, el = $("#spinfo"), vid = V.id[k]; S.sel = -1; S.body = null; pastView?.destroy(); pastView = null; intro.hidden = true;
-    el.classList.add("ver");
-    el.innerHTML = `<button class="icon-btn" id="spiclose">✕</button>
-      <div class="eyebrow">${KIND_PLAIN[V.kind[k]] ?? V.kind[k]}</div>
-      <h3 class="display">Unnamed mover ${vid}</h3>
-      <p class="sp-lead">Its distance is not known yet, so it has no place on this map; here is where it is in the sky. It crosses the width of the full Moon every <b>${Math.round(1800 / Math.max(V.pm[k], 1e-3)).toLocaleString()} years</b>, and it is not in Gaia, Europe's optical star catalogue.</p>
-      <div class="sp-ver"><b>Caught moving: ${V.pm[k].toFixed(2)}″ per year.</b> Checked on ${V.n[k]} raw SPHEREx exposures: it sits ${V.dp[k].toFixed(1)}″ from where this motion predicts and ${V.ds[k].toFixed(1)}″ from where it would be had it stood still. Gaia, Europe's optical star-mapping satellite, lists nothing at this place.</div>
-      <div class="sp-pics"><div class="eyebrow">Three real NASA pictures: about 1999, 2010, and SPHEREx today</div><div id="sppv"></div></div>
-      ${VOTE_HTML}
-      <div class="actions"><button class="btn sm solid" id="spobs" title="Read the SPHEREx exposures of this object and run the instruments on it">Deep analysis in the Lab</button></div>`;
-    el.classList.add("open");
-    $("#spiclose").onclick = () => info(-1);
-    wireVote(el, vid, `Unnamed mover ${vid}`);
-    pastView = mountPastView(el.querySelector("#sppv") as HTMLElement, { ra: V.ra[k], dec: V.dec[k], pmra: V.pmra[k], pmdec: V.pmdec[k], epoch: V.yr[k] });
-    const ob = el.querySelector("#spobs") as HTMLElement; ob.onclick = () => opts.onObserve?.({ ra: V.ra[k], dec: V.dec[k], pmra: V.pmra[k], pmdec: V.pmdec[k], epoch: V.yr[k], name: `Unnamed mover ${vid}` });
+    const V = ver!, el = $("#spinfo"); S.sel = -1; S.body = null; pastView?.destroy(); pastView = null; cardOff?.(); intro.hidden = true; setLeader(false);
+    cardOff = mountMoverCard(el, V, k, { lead: `Its distance is not known yet, so it has no place on this map; here is where it is in the sky. It crosses the width of the full Moon every <b>${moonYears(V, k)} years</b>, and it is not in Gaia, Europe's optical star catalogue.`,
+      poolIds, next: nextCase, onClose: () => info(-1), onObserve: opts.onObserve, onExplain: opts.onExplain, autoplay: !opts.lowPower });
   }
   function info(i: number) {
     const c = cat!, el = $("#spinfo");
-    pastView?.destroy(); pastView = null; el.classList.remove("ver");
+    pastView?.destroy(); pastView = null; cardOff?.(); cardOff = null; el.classList.remove("ver", "hud"); setLeader(false);
     if (i < 0) { el.classList.remove("open"); if (exo.sysHost >= 0 && exo.star[exo.sysHost] >= 0) exo.show(-1); return; }
     const p0 = new THREE.Vector3(c.pos[i * 3], c.pos[i * 3 + 1], c.pos[i * 3 + 2]), p = cur(i), d0 = p0.length(), d = p.length();
     const v = new THREE.Vector3(c.vel[i * 3], c.vel[i * 3 + 1], c.vel[i * 3 + 2]).divideScalar(PCYR), sp = v.length(), vr = d0 > 0 ? v.dot(p0) / d0 : 0;
     const lens = LENS.filter((l) => c.lens[i] & l.bit && l.bit !== 32).map((l) => `<span style="--c:${l.c}">${l.name}</span>`).join("");
     const isSun = c.obj[i] === 999999 && c.tile[i] === 65535, vk = vi.length > i ? vi[i] : -1, V = vk >= 0 ? ver : null;
-    const T = c.teff[i], vid = `${c.tile[i]}-${c.obj[i]}`, badDist = farFetched(i), isTodo = !!V && V.known[vk] === 0 && !V.simbad[vk] && Math.abs(V.glat[vk]) >= 10;
-    if (V) el.classList.add("ver");
+    const T = c.teff[i], vid = `${c.tile[i]}-${c.obj[i]}`, badDist = farFetched(i), isTodo = !!V && isOpenCase(V, vk);
+    if (V) { el.classList.add("ver", "hud"); setLeader(true); }
     intro.hidden = true;
     const lightLeft = EPOCH - d0 * LY;
     el.innerHTML = `<button class="icon-btn" id="spiclose">✕</button>
@@ -706,20 +654,20 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<Spa
       ${exo.byStar.has(i) ? planetsHTML(exo.byStar.get(i)!) : ""}
       <p class="why">${isSun ? "Everything here moves relative to the Sun, which sits at the centre of the rings." :
         `${c.src[i] ? `Distance from ${SOURCES[c.src[i]]}.` : ""} ${d0 * LY < 3000 ? `The light reaching SPHEREx in 2025 left it around <b>${fmtYear(lightLeft)}</b>.` : ""}`}</p>
-      ${V ? `<div class="sp-ver"><b>Caught moving: ${V.pm[vk].toFixed(2)}″ per year.</b> Checked on ${V.n[vk]} raw SPHEREx exposures: it sits ${V.dp[vk].toFixed(1)}″ from where this motion predicts and ${V.ds[vk].toFixed(1)}″ from where it would be had it stood still. ${V.known[vk] === 1 ? "Gaia, Europe's star-mapping satellite, lists the same motion." : V.known[vk] === 0 ? "Gaia, Europe's optical star-mapping satellite, lists nothing at this place." : "Gaia lists a source here, but not this motion."}</div>
-      <div class="sp-pics"><div class="eyebrow">Three real NASA pictures: about 1999, 2010, and SPHEREx today</div><div id="sppv"></div></div>
-      ${isTodo ? VOTE_HTML : ""}` : ""}
+      ${V ? evidenceHTML(V, vk) + PICS_HTML + (isTodo ? VOTE_HTML : "") : ""}
       <div class="actions">
         ${!isSun && opts.onObserve ? `<button class="btn sm solid" id="spobs" title="Read the SPHEREx exposures of this object and run the instruments on it">Deep analysis in the Lab</button>` : ""}
+        ${V && opts.onExplain ? `<button class="btn sm ghost" id="spexplain" title="Ask the assistant to explain this object in everyday words">Explain it to me</button>` : ""}
         <button class="btn sm${!isSun && opts.onObserve ? " ghost" : ""}" id="spfly">Fly here</button>
         ${!isSun ? `<button class="btn sm ghost" id="spback">Look back at the Sun</button>` : ""}
         ${!isSun && opts.onSky ? `<button class="btn sm ghost" id="spsky">Show on sky map</button>` : ""}
         ${c.tile[i] !== 65535 && opts.onDossier ? `<button class="btn sm ghost" id="spdos">Evidence</button>` : ""}
       </div>`;
     el.classList.add("open");
-    wireVote(el, vid, labelText(i));
+    wireVote(el, vid, labelText(i), { poolIds, next: nextCase });
+    const ex = el.querySelector("#spexplain") as HTMLElement | null; if (ex) ex.onclick = () => opts.onExplain!(`Explain ${labelText(i)} to me in everyday words: what it is, how we know it moved, and why it matters.`);
     const pvh = el.querySelector("#sppv") as HTMLElement | null;
-    if (pvh && V) pastView = mountPastView(pvh, { ra: V.ra[vk], dec: V.dec[vk], pmra: V.pmra[vk], pmdec: V.pmdec[vk], epoch: V.yr[vk] });
+    if (pvh && V) pastView = mountPastView(pvh, { ra: V.ra[vk], dec: V.dec[vk], pmra: V.pmra[vk], pmdec: V.pmdec[vk], epoch: V.yr[vk] }, { autoplay: !opts.lowPower });
     if (exo.sysHost !== (exo.byStar.get(i) ?? -1)) exo.show(exo.byStar.get(i) ?? -1);
     const shp = el.querySelector("#spplanets") as HTMLElement | null; if (shp) shp.onclick = () => { const k = exo.byStar.get(i)!; flyTo(cur(i), maxA(k) * 2.6, i, 3000); };
     $("#spiclose").onclick = () => { S.sel = -1; info(-1); };
@@ -1116,7 +1064,7 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<Spa
     skyMat.uniforms.uA.value = Math.max(0, Math.min(0.85, 0.85 * (1 - (camera.position.length() - 150) / 1500)));
     const rf = (R: number) => { const x = Math.log10(R / dist); return Math.max(0, Math.min(0.32, 0.32 - 0.16 * Math.abs(x + 0.3))); };
     ringRadii.forEach((R, k) => { ringMats[k].opacity = rf(R); });
-    renderer.render(scene, camera);
+    renderer.render(scene, camera); drawLeader();
     if ((frame++ & 1) === 0) labels();
     if ((frame & 15) === 0) { const nm = uni.scaleName(Math.max(camera.position.length(), dist)), rung = nm === "Solar System" ? (dist < 2e-9 ? 0 : 1) : nm === "Around the Sun" || nm === "Stellar neighbourhood" ? 2 : nm === "Milky Way" ? 3 : nm === "Local Group" ? 4 : nm === "Cosmic web" ? 5 : 6;
       host.querySelectorAll("#spdest .rungx").forEach((b, k) => b.classList.toggle("on", k === rung)); }
