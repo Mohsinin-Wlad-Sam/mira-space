@@ -113,7 +113,8 @@ afterwards. A language model (K2 Horizon) runs the in-product assistant: it expl
 restricted to numbers the instruments computed. A small network trained by the team draws forecast pictures of a
 field: these are AI-generated and carry a visible "AI-generated · prediction" label in the Lab. The film's opening
 (6.5 seconds) is an artist's rendering computed by a program written with an AI coding assistant; it is marked on
-screen as computer-generated with AI assistance. The rest of the film is recorded from the running site on NASA data. Two more networks
+screen as computer-generated with AI assistance. Its narration is a synthetic voice, named as such on the closing
+card. The rest of the film is recorded from the running site on NASA data. Two more networks
 only point at places (a whole-sky scout trained by the team, and Meta's V-JEPA 2, fine-tuned): their marks are
 checked against ESA's Gaia catalogue and shown as what they are. The idea, the scientific choices and the
 validation are the team's. No NASA logo or mission identifier is used.
