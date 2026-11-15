@@ -144,7 +144,7 @@ validation are the team's. No NASA logo or mission identifier is used.
 
 | If | Then |
 |---|---|
-| The site is not hosted in time | The project link is the repository; the demo link is the film. Both are allowed. Judges can run the site with `cd web && npm ci && npm run dev` once the data pack is in `web/public/data/` (it is attached to the repository's release) |
+| The site is not hosted in time | The project link is the repository; the demo link is the film. Both are allowed. Judges can run the site from a clone with `cd web && npm ci && npm run dev`: the data it reads is in the repository (`web/public/data/`) |
 | YouTube refuses or delays the video | Put `media/mira_film_30s_small.mp4` on Google Drive, "anyone with the link"; or use the film's address in the repository's release once the repository is public |
 | The repository cannot be made public in time | `git archive -o mira_source.zip HEAD`, put the zip and the film in one public Drive folder, and give that folder as the project link |
 | A live presentation happens after all | Play the film from the file, then show the site: `cd web && npx vite preview --port 4173` and open `http://127.0.0.1:4173/`; NASA's five targets open from prepared copies with no network |

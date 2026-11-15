@@ -5,7 +5,6 @@ __pycache__/
 *.fits
 bundles/cache/
 .env
-web/public/data/
 web/node_modules/
 web/dist/
 
@@ -15,5 +14,5 @@ web/.env*
 deploy/.env*
 *.local
 
-# packs built for a GitHub release (the data pack is too large for git)
+# packs built for a GitHub release (the 4K film master is too large for git)
 release/

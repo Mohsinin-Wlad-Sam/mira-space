@@ -1,0 +1,17 @@
+{
+ "galaxies": {
+  "n": 331989,
+  "z_max": 0.06,
+  "source": "NED objdir, prefphytype G, spectroscopic z (zunc < 0.0005)"
+ },
+ "quasars": {
+  "n": 0,
+  "note": "skipped"
+ },
+ "cmb": {
+  "source": "Planck PR2 SMICA (IRSA mirror)",
+  "scale": "\u00b1300 \u00b5K, blue cold / red hot",
+  "frame": "Galactic, equirectangular, l = 0 at left, increasing to the right",
+  "radius_pc": 13884420658.31242
+ }
+}

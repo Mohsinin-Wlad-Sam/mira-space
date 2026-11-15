@@ -1,0 +1,1227 @@
+{
+ "built": "2026-11-14T21:33Z",
+ "n": 22,
+ "items": [
+  {
+   "id": "6661-325678",
+   "ra": 162.880127,
+   "dec": -14.671423,
+   "census_pm": [
+    -0.3541,
+    0.0156
+   ],
+   "frames": 56,
+   "visits": 3,
+   "detected": true,
+   "snr": 15.6,
+   "tags": [
+    "MOVED"
+   ],
+   "why": "",
+   "pm": {
+    "ra": -0.3516,
+    "dec": -0.0161,
+    "err": 0.0484,
+    "sigma": 7.3,
+    "baseline": 15.9,
+    "using": "SPHEREx + WISE 2010"
+   },
+   "gaia": null,
+   "allwise": "WISEA J105131.36-144017.2",
+   "twomass": null,
+   "flux": {
+    "J": null,
+    "H": 0.3021569041594527,
+    "K": 0.26116003857109693,
+    "W1": 0.16286518616361448,
+    "W2": 0.16498396442592886
+   },
+   "dW1": 0.73,
+   "dW2": 0.57,
+   "ch4": 0.23,
+   "field": {
+    "sources": 36,
+    "ref_stars": 7,
+    "gaia_recovery": 0.009,
+    "limit_pm": 0.09
+   },
+   "catwise": {
+    "name": "CWISE J105131.25-144017.1",
+    "pmra": -0.35687,
+    "pmdec": 0.02229,
+    "epm": 0.013324038426843416,
+    "w1": 15.184,
+    "w2": 14.544
+   },
+   "simbad": "WISEA J105131.36-144017.2 (PM*)",
+   "cats": {
+    "gaia": true,
+    "wise": true,
+    "tm": true
+   },
+   "sec": 30
+  },
+  {
+   "id": "1573-354743",
+   "ra": 111.133747,
+   "dec": 28.840497,
+   "census_pm": [
+    -0.0972,
+    -0.2141
+   ],
+   "frames": 58,
+   "visits": 2,
+   "detected": true,
+   "snr": 14.8,
+   "tags": [
+    "MOVED"
+   ],
+   "why": "",
+   "pm": {
+    "ra": -0.1123,
+    "dec": -0.2505,
+    "err": 0.047,
+    "sigma": 5.8,
+    "baseline": 15.7,
+    "using": "SPHEREx + WISE 2010"
+   },
+   "gaia": null,
+   "allwise": "WISEA J072432.13+285026.9",
+   "twomass": null,
+   "flux": {
+    "J": 0.25610217590969414,
+    "H": 0.2660548001693869,
+    "K": 0.431951337480804,
+    "W1": 0.4451350139025222,
+    "W2": 0.4591119367577145
+   },
+   "dW1": 1.05,
+   "dW2": 1.15,
+   "ch4": null,
+   "field": {
+    "sources": 39,
+    "ref_stars": 22,
+    "gaia_recovery": 0.013,
+    "limit_pm": 0.1
+   },
+   "catwise": {
+    "name": "CWISE J072432.10+285025.9",
+    "pmra": -0.10143,
+    "pmdec": -0.23113,
+    "epm": 0.009656345064256971,
+    "w1": 14.595,
+    "w2": 13.988
+   },
+   "simbad": "",
+   "cats": {
+    "gaia": true,
+    "wise": true,
+    "tm": true
+   },
+   "sec": 30
+  },
+  {
+   "id": "8962-327096",
+   "ra": 44.298512,
+   "dec": -39.107488,
+   "census_pm": [
+    -0.1213,
+    -0.0061
+   ],
+   "frames": 72,
+   "visits": 4,
+   "detected": true,
+   "snr": 13.5,
+   "tags": [],
+   "why": "",
+   "pm": {
+    "ra": -0.1044,
+    "dec": -0.0146,
+    "err": 0.0406,
+    "sigma": 2.6,
+    "baseline": 27,
+    "using": "SPHEREx + WISE 2010 + 2MASS"
+   },
+   "gaia": null,
+   "allwise": "WISEA J025711.71-390626.8",
+   "twomass": "2MASS J02571184-3906268",
+   "flux": {
+    "J": 0.4766634587536661,
+    "H": 0.14103749912592117,
+    "K": 0.13433480735961154,
+    "W1": 0.05916675863985373,
+    "W2": 0.20290372575351792
+   },
+   "dW1": 0.42,
+   "dW2": 0.63,
+   "ch4": 0.06,
+   "field": {
+    "sources": 42,
+    "ref_stars": 5,
+    "gaia_recovery": 0.023,
+    "limit_pm": 0.24
+   },
+   "catwise": {
+    "name": "CWISE J025711.65-390626.9",
+    "pmra": -0.12944,
+    "pmdec": -0.01972,
+    "epm": 0.013452323219429425,
+    "w1": 15.911,
+    "w2": 14.399
+   },
+   "simbad": "2MASS J02571184-3906268 (LM*)",
+   "cats": {
+    "gaia": true,
+    "wise": true,
+    "tm": true
+   },
+   "sec": 28
+  },
+  {
+   "id": "9209-151542",
+   "ra": 44.094017,
+   "dec": -4.937327,
+   "census_pm": [
+    0.2465,
+    -0.0007
+   ],
+   "frames": 72,
+   "visits": 4,
+   "detected": true,
+   "snr": 24.6,
+   "tags": [
+    "MOVED"
+   ],
+   "why": "",
+   "pm": {
+    "ra": 0.2356,
+    "dec": 0.02,
+    "err": 0.0392,
+    "sigma": 6,
+    "baseline": 27.8,
+    "using": "SPHEREx + WISE 2010 + 2MASS"
+   },
+   "gaia": null,
+   "allwise": "WISEA J025622.47-045614.4",
+   "twomass": "2MASS J02562228-0456147",
+   "flux": {
+    "J": 0.259973546868833,
+    "H": null,
+    "K": 0.33395370040990413,
+    "W1": 0.33421911398388027,
+    "W2": 0.3549251970625724
+   },
+   "dW1": 0.93,
+   "dW2": 0.91,
+   "ch4": null,
+   "field": {
+    "sources": 32,
+    "ref_stars": 4,
+    "gaia_recovery": 0.027,
+    "limit_pm": 0.26
+   },
+   "catwise": {
+    "name": "CWISE J025622.54-045614.3",
+    "pmra": 0.25448,
+    "pmdec": -0.00137,
+    "epm": 0.010401922899156675,
+    "w1": 14.83,
+    "w2": 14.192
+   },
+   "simbad": "",
+   "cats": {
+    "gaia": true,
+    "wise": true,
+    "tm": true
+   },
+   "sec": 28
+  },
+  {
+   "id": "4823-156546",
+   "ra": 346.561543,
+   "dec": 10.58218,
+   "census_pm": [
+    -0.303,
+    0.1626
+   ],
+   "frames": 70,
+   "visits": 3,
+   "detected": false,
+   "snr": null,
+   "tags": [],
+   "why": "",
+   "pm": null,
+   "gaia": null,
+   "allwise": null,
+   "twomass": null,
+   "flux": null,
+   "dW1": null,
+   "dW2": null,
+   "ch4": null,
+   "field": {
+    "sources": 3,
+    "ref_stars": 1,
+    "gaia_recovery": null,
+    "limit_pm": 0.17
+   },
+   "catwise": null,
+   "simbad": "",
+   "cats": {
+    "gaia": true,
+    "wise": true,
+    "tm": true
+   },
+   "sec": 28
+  },
+  {
+   "id": "2797-38043",
+   "ra": 186.560247,
+   "dec": 57.044307,
+   "census_pm": [
+    -0.137,
+    -0.0192
+   ],
+   "frames": 71,
+   "visits": 3,
+   "detected": true,
+   "snr": 18.6,
+   "tags": [],
+   "why": "",
+   "pm": {
+    "ra": -0.1362,
+    "dec": -0.0121,
+    "err": 0.0575,
+    "sigma": 2.4,
+    "baseline": 15.9,
+    "using": "SPHEREx + WISE 2010"
+   },
+   "gaia": null,
+   "allwise": "WISEA J122614.53+570239.6",
+   "twomass": null,
+   "flux": {
+    "J": 0.28597358061768563,
+    "H": 0.1594979445078388,
+    "K": 0.20790293789439485,
+    "W1": 0.18636798835078144,
+    "W2": 0.2526521029015701
+   },
+   "dW1": 0.78,
+   "dW2": 0.95,
+   "ch4": 0.33,
+   "field": {
+    "sources": 27,
+    "ref_stars": 3,
+    "gaia_recovery": 0.008,
+    "limit_pm": 0.19
+   },
+   "catwise": {
+    "name": "CWISE J122614.47+570239.5",
+    "pmra": -0.14748,
+    "pmdec": -0.01833,
+    "epm": 0.012114866899805376,
+    "w1": 15.273,
+    "w2": 14.524
+   },
+   "simbad": "",
+   "cats": {
+    "gaia": true,
+    "wise": true,
+    "tm": true
+   },
+   "sec": 29
+  },
+  {
+   "id": "9703-45212",
+   "ra": 154.793664,
+   "dec": -28.88144,
+   "census_pm": [
+    0.1674,
+    -0.1193
+   ],
+   "frames": 71,
+   "visits": 5,
+   "detected": true,
+   "snr": 27,
+   "tags": [
+    "MOVED"
+   ],
+   "why": "",
+   "pm": {
+    "ra": 0.1767,
+    "dec": -0.1068,
+    "err": 0.0281,
+    "sigma": 7.3,
+    "baseline": 27.3,
+    "using": "SPHEREx + WISE 2010 + 2MASS"
+   },
+   "gaia": null,
+   "allwise": "WISEA J101910.40-285252.3",
+   "twomass": "2MASS J10191022-2852514",
+   "flux": {
+    "J": 0.49329913543510384,
+    "H": 0.393720711156694,
+    "K": 0.439634737033658,
+    "W1": 0.4194146723017723,
+    "W2": 0.38943605718482255
+   },
+   "dW1": 1.03,
+   "dW2": 0.94,
+   "ch4": 0.54,
+   "field": {
+    "sources": 33,
+    "ref_stars": 15,
+    "gaia_recovery": 0.017,
+    "limit_pm": 0.12
+   },
+   "catwise": {
+    "name": "CWISE J101910.46-285253.1",
+    "pmra": 0.16446,
+    "pmdec": -0.11563,
+    "epm": 0.00882779700718135,
+    "w1": 14.612,
+    "w2": 13.989
+   },
+   "simbad": "",
+   "cats": {
+    "gaia": true,
+    "wise": true,
+    "tm": true
+   },
+   "sec": 32
+  },
+  {
+   "id": "3029-217498",
+   "ra": 263.960182,
+   "dec": 78.218158,
+   "census_pm": [
+    0.0308,
+    -0.1043
+   ],
+   "frames": 71,
+   "visits": 4,
+   "detected": true,
+   "snr": 52.4,
+   "tags": [
+    "MOVED"
+   ],
+   "why": "",
+   "pm": {
+    "ra": -0.0158,
+    "dec": -0.1102,
+    "err": 0.0197,
+    "sigma": 5.7,
+    "baseline": 27.3,
+    "using": "SPHEREx + WISE 2010 + 2MASS"
+   },
+   "gaia": null,
+   "allwise": "WISEA J173550.36+781305.9",
+   "twomass": "2MASS J17355028+7813068",
+   "flux": {
+    "J": 0.4494970404691992,
+    "H": 0.5635931066418054,
+    "K": 0.6055266740936728,
+    "W1": 0.5256605280980083,
+    "W2": 0.6404048233380988
+   },
+   "dW1": 0.84,
+   "dW2": 0.99,
+   "ch4": null,
+   "field": {
+    "sources": 41,
+    "ref_stars": 12,
+    "gaia_recovery": 0.011,
+    "limit_pm": 0.09
+   },
+   "catwise": {
+    "name": "CWISE J173550.46+781305.4",
+    "pmra": 0.02215,
+    "pmdec": -0.09623,
+    "epm": 0.005600892785976179,
+    "w1": 14.177,
+    "w2": 13.513
+   },
+   "simbad": "",
+   "cats": {
+    "gaia": true,
+    "wise": true,
+    "tm": true
+   },
+   "sec": 29
+  },
+  {
+   "id": "11464-49114",
+   "ra": 310.223175,
+   "dec": -62.458568,
+   "census_pm": [
+    0.1056,
+    -0.1777
+   ],
+   "frames": 72,
+   "visits": 4,
+   "detected": true,
+   "snr": 18.9,
+   "tags": [],
+   "why": "",
+   "pm": {
+    "ra": 0.0808,
+    "dec": -0.1605,
+    "err": 0.0415,
+    "sigma": 4.3,
+    "baseline": 16.2,
+    "using": "SPHEREx + WISE 2010"
+   },
+   "gaia": null,
+   "allwise": "WISEA J204053.48-622729.9",
+   "twomass": null,
+   "flux": {
+    "J": null,
+    "H": 0.19795756588593416,
+    "K": 0.24052401090884148,
+    "W1": 0.2777813358078598,
+    "W2": 0.2839409593737289
+   },
+   "dW1": 0.84,
+   "dW2": 0.82,
+   "ch4": 0.56,
+   "field": {
+    "sources": 42,
+    "ref_stars": 10,
+    "gaia_recovery": 0.015,
+    "limit_pm": 0.11
+   },
+   "catwise": {
+    "name": "CWISE J204053.54-622730.6",
+    "pmra": 0.10464,
+    "pmdec": -0.165,
+    "epm": 0.011503912377969503,
+    "w1": 14.937,
+    "w2": 14.304
+   },
+   "simbad": "",
+   "cats": {
+    "gaia": true,
+    "wise": true,
+    "tm": true
+   },
+   "sec": 29
+  },
+  {
+   "id": "6587-381627",
+   "ra": 189.477269,
+   "dec": 6.127115,
+   "census_pm": [
+    0.0741,
+    0.1737
+   ],
+   "frames": 70,
+   "visits": 4,
+   "detected": true,
+   "snr": 25.8,
+   "tags": [
+    "BLENDED"
+   ],
+   "why": "its red and blue light are centred 1.6″ apart: two sources in one pixel",
+   "pm": {
+    "ra": 0.098,
+    "dec": 0.1096,
+    "err": 0.0435,
+    "sigma": 3.4,
+    "baseline": 15.9,
+    "using": "SPHEREx + WISE 2010"
+   },
+   "gaia": null,
+   "allwise": "WISEA J123754.51+060736.7",
+   "twomass": null,
+   "flux": {
+    "J": 0.24007656677060127,
+    "H": 0.3298757131137163,
+    "K": 0.2927248551162839,
+    "W1": 0.2896618887734725,
+    "W2": 0.28960301757580265
+   },
+   "dW1": 1.06,
+   "dW2": 0.92,
+   "ch4": null,
+   "field": {
+    "sources": 33,
+    "ref_stars": 5,
+    "gaia_recovery": 0.028,
+    "limit_pm": 0.22
+   },
+   "catwise": {
+    "name": "CWISE J123754.52+060737.2",
+    "pmra": 0.04473,
+    "pmdec": 0.16733,
+    "epm": 0.013518135966175219,
+    "w1": 15.111,
+    "w2": 14.41
+   },
+   "simbad": "ULAS J123754.49+060736.0 (BD?)",
+   "cats": {
+    "gaia": true,
+    "wise": true,
+    "tm": true
+   },
+   "sec": 26
+  },
+  {
+   "id": "8199-138692",
+   "ra": 61.489222,
+   "dec": -81.870884,
+   "census_pm": [
+    0.1745,
+    0.1674
+   ],
+   "frames": 70,
+   "visits": 4,
+   "detected": false,
+   "snr": null,
+   "tags": [],
+   "why": "",
+   "pm": null,
+   "gaia": null,
+   "allwise": null,
+   "twomass": null,
+   "flux": null,
+   "dW1": null,
+   "dW2": null,
+   "ch4": null,
+   "field": {
+    "sources": 11,
+    "ref_stars": 12,
+    "gaia_recovery": 0.008,
+    "limit_pm": 0.07
+   },
+   "catwise": null,
+   "simbad": "",
+   "cats": {
+    "gaia": true,
+    "wise": true,
+    "tm": true
+   },
+   "sec": 30
+  },
+  {
+   "id": "3021-2740",
+   "ra": 226.038117,
+   "dec": 75.148845,
+   "census_pm": [
+    -0.0723,
+    0.028
+   ],
+   "frames": 72,
+   "visits": 3,
+   "detected": true,
+   "snr": 13.5,
+   "tags": [],
+   "why": "",
+   "pm": {
+    "ra": -0.0595,
+    "dec": -0.0104,
+    "err": 0.0381,
+    "sigma": 1.6,
+    "baseline": 16.3,
+    "using": "SPHEREx + WISE 2010"
+   },
+   "gaia": null,
+   "allwise": "WISEA J150409.24+750855.7",
+   "twomass": null,
+   "flux": {
+    "J": null,
+    "H": 0.1620164595396201,
+    "K": 0.18249857604745956,
+    "W1": 0.18114768930377853,
+    "W2": 0.2529827945437271
+   },
+   "dW1": 0.78,
+   "dW2": 0.85,
+   "ch4": 0.35,
+   "field": {
+    "sources": 28,
+    "ref_stars": 9,
+    "gaia_recovery": 0.013,
+    "limit_pm": 0.09
+   },
+   "catwise": {
+    "name": "CWISE J150409.15+750855.8",
+    "pmra": -0.08549,
+    "pmdec": 0.02609,
+    "epm": 0.009419129471453291,
+    "w1": 15.303,
+    "w2": 14.425
+   },
+   "simbad": "",
+   "cats": {
+    "gaia": true,
+    "wise": true,
+    "tm": true
+   },
+   "sec": 29
+  },
+  {
+   "id": "1741-148279",
+   "ra": 109.232168,
+   "dec": 50.511828,
+   "census_pm": [
+    -0.0162,
+    -0.1293
+   ],
+   "frames": 67,
+   "visits": 4,
+   "detected": true,
+   "snr": 11.8,
+   "tags": [],
+   "why": "",
+   "pm": {
+    "ra": -0.0006,
+    "dec": -0.1482,
+    "err": 0.0661,
+    "sigma": 2.2,
+    "baseline": 16.2,
+    "using": "SPHEREx + WISE 2010"
+   },
+   "gaia": null,
+   "allwise": "WISEA J071655.72+503043.3",
+   "twomass": null,
+   "flux": {
+    "J": 0.1948952854587815,
+    "H": 0.25022431471913437,
+    "K": 0.2650814033530047,
+    "W1": 0.261394323481503,
+    "W2": 0.31767200845067534
+   },
+   "dW1": 0.79,
+   "dW2": 0.88,
+   "ch4": 0.41,
+   "field": {
+    "sources": 41,
+    "ref_stars": 20,
+    "gaia_recovery": 0.015,
+    "limit_pm": 0.12
+   },
+   "catwise": {
+    "name": "CWISE J071655.72+503042.7",
+    "pmra": -0.01108,
+    "pmdec": -0.13817,
+    "epm": 0.010259873293564592,
+    "w1": 14.829,
+    "w2": 14.109
+   },
+   "simbad": "",
+   "cats": {
+    "gaia": true,
+    "wise": true,
+    "tm": true
+   },
+   "sec": 32
+  },
+  {
+   "id": "1466-174957",
+   "ra": 143.233589,
+   "dec": 48.132084,
+   "census_pm": [
+    -0.18,
+    -0.0962
+   ],
+   "frames": 72,
+   "visits": 3,
+   "detected": true,
+   "snr": 23.6,
+   "tags": [
+    "MOVED"
+   ],
+   "why": "",
+   "pm": {
+    "ra": -0.2238,
+    "dec": -0.115,
+    "err": 0.029,
+    "sigma": 8.7,
+    "baseline": 15.8,
+    "using": "SPHEREx + WISE 2010"
+   },
+   "gaia": null,
+   "allwise": "WISEA J093256.15+480755.9",
+   "twomass": null,
+   "flux": {
+    "J": 0.02758109095181382,
+    "H": 0.18919650004943583,
+    "K": 0.2288398954720149,
+    "W1": 0.21803239449847123,
+    "W2": 0.18949084837776656
+   },
+   "dW1": 0.79,
+   "dW2": 0.6,
+   "ch4": null,
+   "field": {
+    "sources": 26,
+    "ref_stars": 6,
+    "gaia_recovery": 0.01,
+    "limit_pm": 0.09
+   },
+   "catwise": {
+    "name": "CWISE J093256.07+480755.6",
+    "pmra": -0.17428,
+    "pmdec": -0.101,
+    "epm": 0.011221853679316978,
+    "w1": 15.11,
+    "w2": 14.352
+   },
+   "simbad": "",
+   "cats": {
+    "gaia": true,
+    "wise": true,
+    "tm": true
+   },
+   "sec": 30
+  },
+  {
+   "id": "1903-103759",
+   "ra": 149.550379,
+   "dec": 71.862275,
+   "census_pm": [
+    -0.1621,
+    -0.0696
+   ],
+   "frames": 72,
+   "visits": 5,
+   "detected": true,
+   "snr": 22.1,
+   "tags": [
+    "MOVED"
+   ],
+   "why": "",
+   "pm": {
+    "ra": -0.1476,
+    "dec": -0.0544,
+    "err": 0.0275,
+    "sigma": 5.7,
+    "baseline": 27.6,
+    "using": "SPHEREx + WISE 2010 + 2MASS"
+   },
+   "gaia": null,
+   "allwise": "WISEA J095812.28+715144.5",
+   "twomass": "2MASS J09581273+7151451",
+   "flux": {
+    "J": 0.12035443808496198,
+    "H": 0.22674047327708396,
+    "K": 0.3965816654524423,
+    "W1": 0.46096292822425006,
+    "W2": 0.2827594130510625
+   },
+   "dW1": 1.02,
+   "dW2": 0.72,
+   "ch4": null,
+   "field": {
+    "sources": 32,
+    "ref_stars": 8,
+    "gaia_recovery": 0.008,
+    "limit_pm": 0.07
+   },
+   "catwise": {
+    "name": "CWISE J095812.11+715144.1",
+    "pmra": -0.1694,
+    "pmdec": -0.0681,
+    "epm": 0.0074060785845142104,
+    "w1": 14.596,
+    "w2": 13.981
+   },
+   "simbad": "",
+   "cats": {
+    "gaia": true,
+    "wise": true,
+    "tm": true
+   },
+   "sec": 35
+  },
+  {
+   "id": "9129-207764",
+   "ra": 27.546046,
+   "dec": -19.659607,
+   "census_pm": [
+    0.1371,
+    -0.1361
+   ],
+   "frames": 61,
+   "visits": 4,
+   "detected": true,
+   "snr": 20.2,
+   "tags": [],
+   "why": "",
+   "pm": {
+    "ra": 0.158,
+    "dec": -0.0693,
+    "err": 0.092,
+    "sigma": 1.9,
+    "baseline": 16,
+    "using": "SPHEREx + WISE 2010"
+   },
+   "gaia": null,
+   "allwise": "WISEA J015011.00-193933.9",
+   "twomass": null,
+   "flux": {
+    "J": null,
+    "H": 0.14420655220844217,
+    "K": 0.2069539537991945,
+    "W1": 0.22803417540568408,
+    "W2": 0.1491554034615516
+   },
+   "dW1": 0.99,
+   "dW2": 0.55,
+   "ch4": null,
+   "field": {
+    "sources": 38,
+    "ref_stars": 4,
+    "gaia_recovery": 0.022,
+    "limit_pm": 0.24
+   },
+   "catwise": {
+    "name": "CWISE J015011.04-193934.4",
+    "pmra": 0.1541,
+    "pmdec": -0.12844,
+    "epm": 0.01655611669444257,
+    "w1": 15.387,
+    "w2": 14.667
+   },
+   "simbad": "",
+   "cats": {
+    "gaia": true,
+    "wise": true,
+    "tm": true
+   },
+   "sec": 98
+  },
+  {
+   "id": "6759-206622",
+   "ra": 166.854999,
+   "dec": 1.33718,
+   "census_pm": [
+    0.0327,
+    -0.0979
+   ],
+   "frames": 72,
+   "visits": 4,
+   "detected": true,
+   "snr": 10,
+   "tags": [],
+   "why": "",
+   "pm": {
+    "ra": 0.0724,
+    "dec": -0.0088,
+    "err": 0.0667,
+    "sigma": 1.1,
+    "baseline": 15.9,
+    "using": "SPHEREx + WISE 2010"
+   },
+   "gaia": null,
+   "allwise": "WISEA J110725.18+012014.5",
+   "twomass": null,
+   "flux": {
+    "J": null,
+    "H": 0.16786454844868565,
+    "K": 0.14535930864571592,
+    "W1": 0.17821507252142668,
+    "W2": 0.20735197044946943
+   },
+   "dW1": 0.91,
+   "dW2": 0.78,
+   "ch4": 0.32,
+   "field": {
+    "sources": 38,
+    "ref_stars": 6,
+    "gaia_recovery": 0.008,
+    "limit_pm": 0.16
+   },
+   "catwise": {
+    "name": "CWISE J110725.20+012013.8",
+    "pmra": 0.03879,
+    "pmdec": -0.10809,
+    "epm": 0.01694254998517047,
+    "w1": 15.513,
+    "w2": 14.625
+   },
+   "simbad": "ULAS J110725.16+012014.2 (BD?)",
+   "cats": {
+    "gaia": true,
+    "wise": true,
+    "tm": true
+   },
+   "sec": 35
+  },
+  {
+   "id": "4136-240406",
+   "ra": 351.962283,
+   "dec": -30.912269,
+   "census_pm": [
+    0.0491,
+    -0.0743
+   ],
+   "frames": 72,
+   "visits": 3,
+   "detected": true,
+   "snr": 28.4,
+   "tags": [],
+   "why": "",
+   "pm": {
+    "ra": -0.0146,
+    "dec": -0.0723,
+    "err": 0.0166,
+    "sigma": 4.4,
+    "baseline": 27.5,
+    "using": "SPHEREx + WISE 2010 + 2MASS"
+   },
+   "gaia": null,
+   "allwise": "WISEA J232750.92-305444.0",
+   "twomass": "2MASS J23275091-3054429",
+   "flux": {
+    "J": 0.35201630424373986,
+    "H": 0.2971995613751896,
+    "K": 0.34496742980140743,
+    "W1": 0.2275294535848534,
+    "W2": 0.3199457383441552
+   },
+   "dW1": 0.9,
+   "dW2": 1.22,
+   "ch4": null,
+   "field": {
+    "sources": 24,
+    "ref_stars": 4,
+    "gaia_recovery": 0.011,
+    "limit_pm": 0.13
+   },
+   "catwise": {
+    "name": "CWISE J232750.94-305444.0",
+    "pmra": 0.02556,
+    "pmdec": -0.07404,
+    "epm": 0.015605127362504925,
+    "w1": 15.38,
+    "w2": 14.599
+   },
+   "simbad": "",
+   "cats": {
+    "gaia": true,
+    "wise": true,
+    "tm": true
+   },
+   "sec": 62
+  },
+  {
+   "id": "9128-243291",
+   "ra": 25.828307,
+   "dec": -21.521296,
+   "census_pm": [
+    0.0804,
+    -0.0107
+   ],
+   "frames": 72,
+   "visits": 3,
+   "detected": true,
+   "snr": 19,
+   "tags": [],
+   "why": "",
+   "pm": {
+    "ra": 0.0578,
+    "dec": -0.0235,
+    "err": 0.0217,
+    "sigma": 2.9,
+    "baseline": 27.9,
+    "using": "SPHEREx + WISE 2010 + 2MASS"
+   },
+   "gaia": null,
+   "allwise": "WISEA J014318.76-213116.7",
+   "twomass": "2MASS J01431872-2131161",
+   "flux": {
+    "J": 0.12515036452704623,
+    "H": 0.20207049155686296,
+    "K": 0.31935168120998747,
+    "W1": 0.28002491623161074,
+    "W2": 0.3491453953663146
+   },
+   "dW1": 0.88,
+   "dW2": 0.84,
+   "ch4": 0.46,
+   "field": {
+    "sources": 27,
+    "ref_stars": 5,
+    "gaia_recovery": 0.008,
+    "limit_pm": 0.11
+   },
+   "catwise": {
+    "name": "CWISE J014318.78-213116.6",
+    "pmra": 0.0825,
+    "pmdec": -0.00033,
+    "epm": 0.011352752970094962,
+    "w1": 14.831,
+    "w2": 14.163
+   },
+   "simbad": "",
+   "cats": {
+    "gaia": true,
+    "wise": true,
+    "tm": true
+   },
+   "sec": 35
+  },
+  {
+   "id": "2791-65538",
+   "ra": 189.93671,
+   "dec": 55.840368,
+   "census_pm": [
+    0.6058,
+    0.0589
+   ],
+   "frames": 72,
+   "visits": 3,
+   "detected": false,
+   "snr": null,
+   "tags": [],
+   "why": "",
+   "pm": null,
+   "gaia": null,
+   "allwise": null,
+   "twomass": null,
+   "flux": null,
+   "dW1": null,
+   "dW2": null,
+   "ch4": null,
+   "field": null,
+   "catwise": null,
+   "simbad": "",
+   "cats": {
+    "gaia": true,
+    "wise": true,
+    "tm": true
+   },
+   "sec": 29
+  },
+  {
+   "id": "8873-42784",
+   "ra": 4.311535,
+   "dec": -40.913131,
+   "census_pm": [
+    -0.0652,
+    -0.3811
+   ],
+   "frames": 71,
+   "visits": 4,
+   "detected": true,
+   "snr": 263.3,
+   "tags": [
+    "MOVED"
+   ],
+   "why": "",
+   "pm": {
+    "ra": -0.1044,
+    "dec": -0.3728,
+    "err": 0.019,
+    "sigma": 20.4,
+    "baseline": 26.9,
+    "using": "SPHEREx + WISE 2010 + 2MASS"
+   },
+   "gaia": {
+    "id": "Gaia DR3 4995537965909399552",
+    "pmra": -0.083243,
+    "pmdec": -0.388678,
+    "plx": 26.0051,
+    "G": 19.108599
+   },
+   "allwise": "WISEA J001714.82-405445.0",
+   "twomass": "2MASS J00171491-4054410",
+   "flux": {
+    "J": 2.2546872354936593,
+    "H": 3.1393363110382637,
+    "K": 2.513643410746577,
+    "W1": 1.484843869172241,
+    "W2": 1.1078494652875757
+   },
+   "dW1": 0.94,
+   "dW2": 0.79,
+   "ch4": null,
+   "field": {
+    "sources": 38,
+    "ref_stars": 4,
+    "gaia_recovery": 0.008,
+    "limit_pm": 0.1
+   },
+   "catwise": {
+    "name": "CWISE J001714.76-405447.6",
+    "pmra": -0.08862,
+    "pmdec": -0.44091,
+    "epm": 0.004701063709417263,
+    "w1": 13.38,
+    "w2": 13.018
+   },
+   "simbad": "SIPS J0017-4054 (LM*)",
+   "cats": {
+    "gaia": true,
+    "wise": true,
+    "tm": true
+   },
+   "sec": 55
+  },
+  {
+   "id": "11208-172090",
+   "ra": 221.507312,
+   "dec": -15.304087,
+   "census_pm": [
+    -0.408,
+    0.0269
+   ],
+   "frames": 72,
+   "visits": 5,
+   "detected": true,
+   "snr": 475.9,
+   "tags": [
+    "MOVED"
+   ],
+   "why": "",
+   "pm": {
+    "ra": -0.4831,
+    "dec": 0.0182,
+    "err": 0.0226,
+    "sigma": 21.4,
+    "baseline": 25.5,
+    "using": "SPHEREx + WISE 2010 + 2MASS"
+   },
+   "gaia": {
+    "id": "Gaia DR3 6309958285320848896",
+    "pmra": -0.46645299999999995,
+    "pmdec": 0.025995,
+    "plx": 22.6454,
+    "G": 17.32032
+   },
+   "allwise": "WISEA J144601.92-151814.9",
+   "twomass": "2MASS J14460222-1518153",
+   "flux": {
+    "J": 5.851528175010122,
+    "H": 6.723128424195719,
+    "K": 6.056136331407986,
+    "W1": 3.495303498309252,
+    "W2": 2.362715347270006
+   },
+   "dW1": 1.06,
+   "dW2": 1,
+   "ch4": null,
+   "field": {
+    "sources": 32,
+    "ref_stars": 14,
+    "gaia_recovery": 0.019,
+    "limit_pm": 0.12
+   },
+   "catwise": {
+    "name": "CWISE J144601.71-151814.9",
+    "pmra": -0.501,
+    "pmdec": -0.02113,
+    "epm": 0.009156691542254767,
+    "w1": 12.61,
+    "w2": 12.384
+   },
+   "simbad": "PM J14460-1518 (LM*)",
+   "cats": {
+    "gaia": true,
+    "wise": true,
+    "tm": true
+   },
+   "sec": 52
+  }
+ ]
+}

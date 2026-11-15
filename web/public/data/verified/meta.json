@@ -1,0 +1,91 @@
+{
+ "built": "2026-11-15 01:25",
+ "epoch_census": 2016.41,
+ "zp": {
+  "W1": 0.943,
+  "W2": 0.944
+ },
+ "claims": {
+  "motion_fast": 177221,
+  "motion_slow": 1014881,
+  "methane": 70097,
+  "brightened": 192074,
+  "vanished": 112240,
+  "total": 1564553
+ },
+ "remeasured": 202528,
+ "funnel": {
+  "motion_fast": {
+   "moved": 17017,
+   "static": 303,
+   "elsewhere": 71571,
+   "undetected": 76326,
+   "saturated": 7570,
+   "unclear": 4434,
+   "tested": 177221
+  },
+  "motion_slow_sample": {
+   "moved": 587,
+   "static": 8,
+   "elsewhere": 2659,
+   "undetected": 2295,
+   "saturated": 268,
+   "unclear": 290,
+   "tested": 6107
+  },
+  "motion_fast_bright": {
+   "moved": 13354,
+   "static": 227,
+   "elsewhere": 13350,
+   "undetected": 9880,
+   "saturated": 7540,
+   "unclear": 1250,
+   "tested": 45601
+  },
+  "brightness_checked": {
+   "tested": 3375,
+   "clean": 1981,
+   "brighter": 16,
+   "fainter": 1,
+   "unchanged": 1964
+  },
+  "methane": {
+   "tested": 4905,
+   "measurable": 1635,
+   "confirmed": 44,
+   "ratio_only": 51
+  }
+ },
+ "confirmed_movers": 17604,
+ "movers_known": 14323,
+ "movers_gaia_other": 1536,
+ "movers_gaia_nopm": 397,
+ "movers_no_gaia": 1348,
+ "gaia_list": "Gaia DR3, proper motion > 100 mas/yr (499,359 of 506,589 sources retrieved); cone searches for the rest",
+ "kinds": {
+  "M dwarf": 12365,
+  "K dwarf": 2609,
+  "cool dwarf?": 996,
+  "late M or L dwarf": 456,
+  "F/G star": 387,
+  "white dwarf": 286,
+  "unclassified": 256,
+  "L dwarf": 92,
+  "T dwarf": 82,
+  "red: brown dwarf?": 53,
+  "subdwarf": 12,
+  "brown dwarf": 9,
+  "methane dwarf": 1
+ },
+ "cone_checked": 3093,
+ "high_latitude": {
+  "n": 15065,
+  "known": 13210,
+  "gaia_other": 721,
+  "gaia_nopm": 227,
+  "no_gaia": 907,
+  "plane_n": 2539,
+  "plane_known": 1113
+ },
+ "rule": "moved: the deep-stack centroid lies within 3 sigma of where the WISE-era motion predicts and more than 4 sigma (and twice as far) from where it would be if it had not moved"
+}
