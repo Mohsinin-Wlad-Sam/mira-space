@@ -96,7 +96,7 @@ cd assrar-dawla/web
 npm ci
 npm run dev            # http://127.0.0.1:5173   landing /   app /explore/   docs /docs/   API /api/v1</pre>
 <table><tr><th>Step</th><th>Command</th><th>Notes</th></tr>
-<tr><td><b>Data</b></td><td><code>./sync_data.sh</code></td><td>The measured data (<code>web/public/data/</code>, about 0.6 GB) are not in git: they are produced on our cluster. With cluster access the script pulls them; otherwise ask the team for the data pack and unpack it there. Without it the landing page, this documentation and the deck open; the maps and the Lab need it.</td></tr>
+<tr><td><b>Data</b></td><td><code>./sync_data.sh</code></td><td>The measured data (<code>web/public/data/</code>, about 0.6 GB) are not in git: they are produced on our cluster. With cluster access the script pulls them; otherwise take <code>mira-data-….tar.gz</code> from the repository's releases and unpack it in <code>web/public/</code> (<code>tar -xzf mira-data-….tar.gz -C web/public</code>). Without it the landing page, this documentation and the deck open; the maps and the Lab need it.</td></tr>
 <tr><td><b>Build</b></td><td><code>npm run build</code></td><td>Type-checks, then writes the site to <code>web/dist/</code>.</td></tr>
 <tr><td><b>Preview</b></td><td><code>npx vite preview --port 4173</code></td><td>Serves <code>dist/</code> with the assistant and the API, as in production.</td></tr>
 <tr><td><b>Assistant</b></td><td><code>web/.env.local</code></td><td>Optional. One line, <code>MIRA_LLM_KEY=…</code>, for an OpenAI-compatible endpoint. Never commit it. Without it the assistant says it is offline; everything else works.</td></tr>

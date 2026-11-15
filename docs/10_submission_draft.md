@@ -1,5 +1,8 @@
 # 10 · Submission draft (project page, 7 slides, 30-second video)
 
+**The texts to paste, the files to upload and what to do if something goes wrong are in `media/submission/README.md`.**
+This document is the longer working version.
+
 Updated 15 Nov 2026 (two maps in one frame, live planets, SPHEREx's survey by date; impact first). Our own numbers come from `web/public/data/verified/meta.json` (the
 verification funnel), `detector_validation.json` (blind control run), `web/scripts/test_detect.mts` (field detector)
 and `web/public/validation.json` (engine validation); re-run them before submitting if the index has been
@@ -19,8 +22,8 @@ of any patch under the pointer. **Space** is a 3D model of the Sun's neighbourho
 The **Lab** is the tool the challenge asks for: point at any place, play it through time like a little video, and
 get four answers: what moved, how fast, what its light says, did it change. Tools open only when asked for; NASA's
 five test targets open at once. Behind it is a catalogue of 17,604 moving stars, each re-measured on raw SPHEREx
-exposures, and a small sky world model, trained on our university's GPUs, that runs in the browser. No install, no
-account, no server.
+exposures; world models (one runs in the browser, a scout searched the whole sky: 276 of its 400 strongest new finds
+are confirmed by ESA's Gaia); a data API and full documentation. No install, no account.
 
 **Link to project demo (choose one; both exist):**
 - 30-second film: `media/mira_film_30s.mp4` in the repository (1080p, 24 pictures a second, 30.0 s; a 720p copy

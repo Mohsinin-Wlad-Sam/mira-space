@@ -14,3 +14,6 @@ web/dist/
 web/.env*
 deploy/.env*
 *.local
+
+# packs built for a GitHub release (the data pack is too large for git)
+release/
