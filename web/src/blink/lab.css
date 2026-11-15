@@ -147,3 +147,47 @@
 .lx-clip { position: absolute; inset: 0; overflow: hidden; } .lx-clip canvas { transform-origin: 50% 50%; will-change: transform; }
 .lx-zoom { position: absolute; right: 12px; bottom: 12px; z-index: 4; padding: 5px 10px; background: rgb(0 0 0 / .78); border: .8px solid rgb(240 240 250 / .3); border-radius: 4px; color: var(--white); font-family: var(--mono); font-size: 10.5px; letter-spacing: .06em; cursor: pointer; } .lx-zoom:hover { border-color: #fff; }
 .lab-f input[type=range] { flex: 1 1 100%; accent-color: #f0f0fa; }
+
+/* ============================================================================================
+   ORDER. Every region of the workspace has its edge, every group inside a panel has its box.
+   The picture is the only thing on black; everything around it sits on one panel colour.
+   ============================================================================================ */
+.labx { --hl: rgb(240 240 250 / .22); --hl2: rgb(240 240 250 / .13); --panel: #08090d; --card: #0c0d12; }
+.lx-rail, .lx-top, .lx-time, .lx-insp, .lx-status { background: var(--panel); }
+.lx-rail { border-right: 1px solid var(--hl); } .lx-top { border-bottom: 1px solid var(--hl); } .lx-time { border-top: 1px solid var(--hl); } .lx-insp { border-left: 1px solid var(--hl); } .lx-status { border-top: 1px solid var(--hl); }
+.lx-g { border-top: 1px solid var(--hl2); } .lx-g.foot { border-top: 1px solid var(--hl); }
+/* top bar: the target, the views, the field of view: three boxes side by side */
+.lx-top { gap: 0; padding: 0; } .labx .bk-target { flex: 1 1 auto; align-self: stretch; align-content: center; padding: 0 22px; }
+.lx-opts { align-self: stretch; gap: 0; } .lx-tabs { align-self: stretch; align-items: center; gap: 20px; padding: 0 20px; border-left: 1px solid var(--hl2); } .lx-sel { align-self: stretch; padding: 0 18px; border-left: 1px solid var(--hl2); }
+.lx-sel select, .labx .bk-rate, #ui .labx .bk-rate { border: 1px solid var(--hl); }
+/* the picture: a frame that can be seen */
+.labx .bk-stage { box-shadow: 0 0 0 1px rgb(240 240 250 / .34), 0 24px 80px rgb(0 0 0 / .6); } .lx-c { border-color: rgb(240 240 250 / .8); }
+/* timeline: transport | track | speed */
+.lx-time { gap: 0; padding: 0; } .lx-trans { align-self: stretch; padding: 0 18px 0 22px; border-right: 1px solid var(--hl2); } .labx .bk-strip { margin: 0 18px; }
+.lx-time > .bk-rate, .lx-time > select { margin-right: 22px; } #ui .labx #bk-prev, #ui .labx #bk-next, .labx #bk-prev, .labx #bk-next { border: 1px solid var(--hl); }
+/* status line: one fact per cell */
+.lx-status { padding: 0; } .labx .bk-data { gap: 0; align-self: stretch; align-items: stretch; } .labx .bk-data > span, .labx .bk-data > a { display: flex; align-items: center; padding: 0 16px; border-right: 1px solid var(--hl2); } .labx .bk-data > span:first-child { padding-left: 22px; }
+.lx-read { padding: 0 22px; border-left: 1px solid var(--hl2); align-self: stretch; display: flex; align-items: center; }
+/* inspector: a header, then cards */
+.lab-dh { background: #0b0c11; border-bottom: 1px solid var(--hl); }
+.lx-insp .lab-facts, .lx-insp .lab-tool { padding: 16px 18px 32px; }
+.lab-facts { gap: 10px; } .labx .lab-fact { margin: 0; padding: 14px 16px 15px; background: var(--card); border: 1px solid var(--hl2); border-radius: 6px; transition: border-color .15s, background-color .15s; }
+.labx .lab-fact:hover { border-color: rgb(240 240 250 / .5); background: #11131a; } .labx .lab-fact.on { border-color: #fff; }
+.lab-tool > .bk-srcbar, .labx .bk-srcbar { margin: 0 0 14px; padding: 13px 15px; background: var(--card); border: 1px solid var(--hl2); border-radius: 6px; }
+.labx .lab-sec { display: flex; flex-direction: column; gap: 0; padding: 0; border: 1px solid var(--hl2); border-radius: 6px; background: var(--card); overflow: hidden; } .labx .lab-sec[hidden] { display: none; }
+.labx .lab-sec > .lab-f { margin: 0; padding: 13px 15px; border-bottom: 1px solid var(--hl2); } .labx .lab-sec > .lab-f:last-child, .labx .lab-sec > :last-child { border-bottom: 0; }
+.labx .lab-sec > .bk-cap, .labx .lab-sec > p { margin: 0; padding: 12px 15px; border-bottom: 1px solid var(--hl2); } .labx .lab-sec > .bk-layers, .labx .lab-sec > .bk-legend, .labx .lab-sec > .bk-det6 { margin: 0; padding: 13px 15px; border-bottom: 1px solid var(--hl2); }
+.labx #bk-wm, .labx #bk-watch { border: 0; background: none; border-radius: 0; overflow: visible; }
+.labx .bk-panel > h3.bk-h, .labx .lab-sec h3.bk-h, .labx #bk-wm h3.bk-h { margin: 20px 0 10px; padding-top: 16px; border-top: 1px solid var(--hl2); } .labx .bk-panel > h3.bk-h:first-child { margin-top: 0; padding-top: 0; border-top: 0; }
+.labx .bk-reading { padding: 12px 14px; background: var(--card); border: 1px solid var(--hl2); border-left: 2px solid rgb(240 240 250 / .7); border-radius: 0 6px 6px 0; }
+.labx .bk-tw { border: 1px solid var(--hl2); border-radius: 6px; background: var(--card); } .labx .bk-tw.tall { border: 1px solid var(--hl2); } .labx .bk-table th { padding-left: 10px; background: #10121a; border-bottom: 1px solid var(--hl); } .labx .bk-table td { padding-left: 10px; border-bottom: 1px solid rgb(240 240 250 / .08); }
+.labx .bk-table th:first-child, .labx .bk-table td:first-child { padding-left: 12px; } .labx .bk-table tr:last-child td { border-bottom: 0; }
+.labx .bk-plot-host { padding: 8px; background: var(--card); border: 1px solid var(--hl2); border-radius: 6px; }
+.labx .bk-bar2 { padding: 10px 2px 0; } .labx .wm-steps, .labx .wm-big { border-color: var(--hl); }
+/* controls of one family: the same height, edge and corner everywhere in the inspector */
+.labx .seg { border: 1px solid var(--hl); border-radius: 5px; overflow: hidden; } .labx .seg button { height: 30px; border: 0; border-left: 1px solid var(--hl2); border-radius: 0; } .labx .seg button:first-child { border-left: 0; }
+.labx .lab-tg, .labx .bk-toggles button, .labx .bk-layers button, .labx .bk-dets button { height: 30px; border: 1px solid var(--hl); border-radius: 5px; } .labx .bk-toggles select { height: 30px; border: 1px solid var(--hl); border-radius: 5px; }
+.labx .lx-hint { margin: 4px 2px 0; }
+@media (max-width: 900px) { .lx-top { padding: 12px 14px 10px; } .labx .bk-target { padding: 0; } .lx-tabs, .lx-sel { border-left: 0; padding: 0; } .lx-time { padding: 10px 14px; } .lx-trans { padding: 0; border-right: 0; } .labx .bk-strip { margin: 0; } .lx-time > .bk-rate, .lx-time > select { margin-right: 0; }
+  .lx-status { padding: 8px 14px 14px; } .labx .bk-data > span, .labx .bk-data > a { padding: 0 12px 0 0; border-right: 0; } .labx .bk-data > span:first-child { padding-left: 0; } .lx-rail { border-right: 0; border-top: 1px solid var(--hl); } .lx-insp { border-left: 0; } }
+.labx a.lab-fact.ai { display: grid; grid-template-columns: minmax(0, 1fr); text-decoration: none; color: inherit; border-color: rgb(0 240 255 / .38); background: rgb(0 240 255 / .05); } .labx a.lab-fact.ai > * { display: block; } .labx a.lab-fact.ai .k { color: #7ff6ff; } .labx a.lab-fact.ai:hover { border-color: #00f0ff; }

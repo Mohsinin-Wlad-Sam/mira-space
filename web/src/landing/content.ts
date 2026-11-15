@@ -215,8 +215,8 @@ export const features: Feature[] = [
     eyebrow: 'Research preview',
     title: 'An AI scout for the whole sky.',
     body:
-      'A network looked at every patch of sky three times. Of its 400 strongest new marks, 362 are fast-moving ' +
-      'stars that Gaia or SIMBAD already list; 38 are open. Meta’s V-JEPA 2, fine-tuned, gives a second opinion.',
+      'A network looked at every patch of sky three times: 393 of its 400 strongest new marks are known ' +
+      'fast-moving stars. Another estimates the distance and temperature of 387 movers Gaia cannot see.',
     cta: { label: 'How it was tested', href: '/docs/#worldmodel' },
     image: images.starfield,
   },
@@ -249,7 +249,7 @@ export const stats: { image: SiteImage; items: Stat[] } = {
   image: images.stats,
   items: [
     { value: 17604, suffix: '', label: 'Stars caught moving' },
-    { value: 362, suffix: '', label: 'Of the AI scout’s 400 new finds, known to Gaia or SIMBAD' },
+    { value: 393, suffix: '', label: 'Of the AI scout’s 400 new finds, confirmed as known fast movers' },
     { value: 635, suffix: '', label: 'Movers in no reference database' },
   ],
 }
@@ -269,7 +269,6 @@ export const team: Feature = {
 export const footerLinks: NavLink[] = [
   { label: 'Documentation', href: '/docs/' },
   { label: 'Film', href: '/film/mira_film_720.mp4' },
-  { label: 'Deck', href: '/deck/' },
   { label: 'Universe (3D)', href: viewer.home },
   { label: 'Sky', href: viewer.sky },
   { label: 'The Lab', href: viewer.lab },

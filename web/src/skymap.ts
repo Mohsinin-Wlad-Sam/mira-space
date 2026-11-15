@@ -62,7 +62,8 @@ export async function openSky(host: HTMLElement, o: SkyOpts): Promise<SkyHandle>
           ${hl("planets", "#ffd27a", "Planets, live", "Where the Sun, the Moon and the planets are right now")}
           ${hl("spherex", "#5be3ff", "SPHEREx, day by day", "Its survey filling the sky on the real dates, up to NASA's newest public images")}
           ${hl("story", "#f0f0fa", "27 years in 25 seconds", "Three NASA surveys of the whole sky: 1999, 2010, today")}
-          ${hl("colours", "#c58cff", "What the sky is made of", "Starlight, carbon dust, hydrogen: read off SPHEREx's 102 colours")}
+          ${hl("colours", "#c58cff", "The sky in 102 colours", "Slide through SPHEREx's wavelengths; bring out starlight, carbon dust, hydrogen")}
+          ${hl("place", "#9fe8c8", "Play any place as a film", "Click anywhere on the map, or start here with a star that moved")}
           ${hl("all", "#ff9d4d", "Stars caught moving", "<b id='skn1'>…</b> confirmed on SPHEREx images")}
           ${hl("nogaia", "#ff5d6c", "Not in Gaia", "<b id='skn2'>…</b> missing from Europe's star catalogue")}
           ${hl("open", "#7df0a6", "Help look at one", "<b id='skn3'>…</b> are in no reference database")}
@@ -366,13 +367,14 @@ export async function openSky(host: HTMLElement, o: SkyOpts): Promise<SkyHandle>
     // the places the sky model marks where the catalogue has nothing: unverified, each one a click away from its pictures and from the Lab
     if (scoutOn && scout && st.wave < 0 && !st.layer) { g.strokeStyle = "#b48cff"; g.lineWidth = 1.3;
       // a filled mark is a fast-moving star that ESA's Gaia or SIMBAD lists at that place (the model was right); a hollow one is in neither
-      scoutGal.forEach(([gl, gb], i) => { const x = cw / 2 - wrap(gl - view.l) * s, y = ch / 2 - (gb - view.b) * s; if (x < -6 || y < -6 || x > cw + 6 || y > ch + 6) return; const m = scout!.marks[i], known = !!m.gaia || !!m.simbad, r = s < 8 ? 3 : 5;
+      scoutGal.forEach(([gl, gb], i) => { const x = cw / 2 - wrap(gl - view.l) * s, y = ch / 2 - (gb - view.b) * s; if (x < -6 || y < -6 || x > cw + 6 || y > ch + 6) return; const m = scout!.marks[i], labOk = !!m.lab && (m.lab.gaia_pm ?? 0) >= 0.25, known = !!m.gaia || !!m.simbad || labOk, r = s < 8 ? 3 : 5;
         g.fillStyle = known ? "rgba(180,140,255,.85)" : "rgba(0,0,0,.55)";
         g.beginPath(); g.moveTo(x, y - r); g.lineTo(x + r, y); g.lineTo(x, y + r); g.lineTo(x - r, y); g.closePath(); g.fill(); g.stroke();
-        marks.push({ x, y, r: 9, go: () => openPlace(m.ra, m.dec, m.gaia ? "The sky model found a star Gaia knows" : m.simbad ? `The sky model found ${m.simbad.name.replace(/\s+/g, " ")}` : "Marked by the sky model, in no catalogue we asked",
+        marks.push({ x, y, r: 9, go: () => openPlace(m.ra, m.dec, m.gaia ? "The sky model found a star Gaia knows" : m.simbad ? `The sky model found ${m.simbad.name.replace(/\s+/g, " ")}` : labOk ? "The sky model found a star, and the Lab measured it" : "Marked by the sky model, not confirmed",
           m.gaia ? `The model reads ${m.pm.toFixed(1)}″ a year here from three pictures; ESA's Gaia lists a star moving ${m.gaia.pm.toFixed(2)}″ a year. MIRA's catalogue did not have it.`
             : m.simbad ? `The model reads ${m.pm.toFixed(1)}″ a year here from three pictures; SIMBAD lists ${m.simbad.name.replace(/\s+/g, " ")}${m.simbad.sp ? ` (${m.simbad.sp})` : ""}, moving ${m.simbad.pm.toFixed(2)}″ a year. MIRA's catalogue did not have it.`
-            : `The model reads ${m.pm.toFixed(1)}″ a year here. Neither Gaia nor SIMBAD lists a fast-moving star within 30″, and MIRA's catalogue has nothing. Open: watch the pictures, then measure it in the Lab.`) }); }); }
+            : labOk ? `The model reads ${m.pm.toFixed(1)}″ a year here from three pictures. The Lab ${m.lab!.pm !== null ? `measured ${m.lab!.pm!.toFixed(2)}″ a year on SPHEREx exposures` : "looked at the place"}, and Gaia lists the star with ${m.lab!.gaia_pm?.toFixed(2)}″. MIRA's catalogue did not have it.`
+            : `The model reads ${m.pm.toFixed(1)}″ a year here. ${m.lab ? (m.lab.verdict === "not judged" ? "The Lab could not judge it (the source is blended with a neighbour), and Gaia lists no fast mover here." : m.lab.verdict === "steady" ? "The Lab measured the place and found nothing moving: most likely a false mark." : "The Lab could not read the place.") : "No catalogue we asked lists a fast-moving star here."} Not confirmed.`) }); }); }
     if (tileNote !== tileShown) { tileShown = tileNote; const e3 = host.querySelector<HTMLElement>("#sktile"); if (e3) e3.textContent = tileNote; }
     const lod = scoutOn ? "" : made || !st.show.movers ? "" : pmMin ? `Showing the ${shown.length.toLocaleString("en-US")} fastest in view. Zoom in for the rest.` : ""; if (lod !== lodText) { lodText = lod; const e2 = host.querySelector<HTMLElement>("#sklod"); if (e2) { e2.textContent = lod; e2.hidden = !lod; } }
     // the wanderers, with their names
@@ -432,7 +434,7 @@ export async function openSky(host: HTMLElement, o: SkyOpts): Promise<SkyHandle>
       if (!scout) { el.innerHTML = `<p class="mx-note">Reading what the model marked…</p>`; return; }
       const t = scout.test, ft = scout.vjepa_finetuned ?? null, cmp = scout.comparison?.vjz ?? null, gc = scout.gaia_check ?? null, n = (v: number) => v.toLocaleString("en-US"), kv = (b: string, t2: string) => `<div class="sk-kv"><b>${b}</b><span>${t2}</span></div>`;
       el.innerHTML = kv(n(scout.sky.marks), "places marked on the whole sky, from three pictures of each") + kv(n(scout.sky.marks_on_catalogue_stars), "are movers MIRA's catalogue already holds")
-        + (gc ? kv(`${gc.known_fast_movers ?? gc.with_a_gaia_fast_mover}<small> / ${gc.asked}</small>`, `of the strongest others are known fast movers: ${gc.with_a_gaia_fast_mover} in ESA's Gaia${gc.with_a_simbad_fast_mover ? `, ${gc.with_a_simbad_fast_mover} more in SIMBAD` : ""} <i class="sk-d on"></i>`) + kv(String(gc.open ?? gc.without), "are in neither: open <i class=\"sk-d\"></i>") : "")
+        + (gc ? kv(`${gc.known_fast_movers ?? gc.with_a_gaia_fast_mover}<small> / ${gc.asked}</small>`, `of the strongest others are fast-moving stars that Gaia or SIMBAD list <i class="sk-d on"></i>`) + kv(String(gc.open ?? gc.without), `not confirmed <i class="sk-d"></i>`) : "")
         + kv(`${Math.round(100 * t.recall)}%`, `of ${n(t.n)} known fast movers found on sky kept for testing`)
         + (cmp && ft ? kv(ft.auc_test.toFixed(2), `Meta's V-JEPA 2, fine-tuned, telling movers from still stars (our scout ${cmp.mira_auc.toFixed(2)}, chance 0.5)`) : "")
         + `<p class="mx-note">The model points; the Lab measures. <a href="/docs/#worldmodel" target="_blank" rel="noopener">How it was tested</a></p>`; }
@@ -571,6 +573,7 @@ export async function openSky(host: HTMLElement, o: SkyOpts): Promise<SkyHandle>
       if (open && what !== "spherex") { rail.classList.remove("shut"); fold.setAttribute("aria-expanded", "true"); }       // its panel must be in sight (on a phone the list starts folded)
       if (open && what === "planets") { st.show.planets = true; if (st.u < 2) jump(3); } if (open && what === "spherex") { whole(); playTo(2, 3); } if (!open && what === "colours") { st.wave = -1; st.layer = ""; specPin = false; } if (open && what === "colours" && !st.layer && st.wave < 0) { st.layer = "mix"; st.u = 3; loadLayer("mix"); } sync(); return true; }
     if (what === "story") { st.panel = ""; whole(); playTo(0, 3); return true; }
+    if (what === "place") { openPlace(331.09671, -56.80068, "Epsilon Indi B", "A pair of brown dwarfs 12 light-years away: 27 years of NASA pictures of this place"); return true; }
     if (what === "scout") { const open = st.panel !== "scout"; st.panel = open ? "scout" : ""; st.chip = open ? "scout" : "all"; st.wave = -1; st.layer = ""; st.playing = false; if (st.u < 2.999 || st.u > 3) { nowY = yearOf(); st.u = 3; }
       if (open) { rail.classList.remove("shut"); fold.setAttribute("aria-expanded", "true"); loadScout(o.base).then((j) => { scout = j; scoutGal = j ? j.marks.map((m) => toGal(m.ra, m.dec)) : []; subKey = ""; sync(); }); } sync(); return true; }
     if (what === "all" || what === "nogaia" || what === "open") { st.show.movers = true; st.panel = ""; st.wave = -1; if (what === "open" && st.chip === "open") { nextCase(); return true; } st.chip = what; if (st.u < 2) jump(3); sync(); if (what === "open") nextCase(); return true; }

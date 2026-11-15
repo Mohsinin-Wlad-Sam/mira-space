@@ -2,14 +2,23 @@
 
 Everything MIRA shows or plays that the team did not make itself, with its source and the terms under which it is used.
 
-## The 30-second film (`web/film/`, photographed by `web/scripts/render_film.mjs`, finished by `web/scripts/film_finish.py`, sound by `web/scripts/film_score.py`)
+## The film (`web/film/`, 29.0 seconds; photographed by `web/scripts/render_film.mjs`, sound by `web/scripts/film_score.py`)
 
 | What | Source | Credit and terms |
 |---|---|---|
-| Music | "Time and Space" by Scott Buckley, www.scottbuckley.com.au. The stretch from 1:49 to 2:15: the quiet piano part, then the orchestra's entry, which the film puts on its fourth shot. The last second rings out in a reverberation added here | 'Time and Space' by Scott Buckley - released under CC-BY 4.0. www.scottbuckley.com.au. On YouTube the composer asks for this line in the video description |
-| Sound design | Made for the film from sines and noise (`film_score.py`): a low drop at the start, a rise into the orchestra's entry, soft ticks while the years run, a low note under the name | The team's own |
-| Every shot | Recorded from the running site: the Sky map and the Lab | Real data (see below). No picture in the film is AI-generated |
-| The look | A half-open shutter (each of the 24 pictures a second is the average of three of six photographed sub-frames), lens glow and streak, grain, darker corners, black bars | Computed on our university's GPUs from the photographed frames. Nothing is added that was not in them |
+| Music | "Time and Space" by Scott Buckley, www.scottbuckley.com.au. The stretch from 2:01 to 2:27: six quiet seconds, then the orchestra's entry, which the film puts on its title; it plays through the Lab and the whole sky and is cut at 26 seconds, where only a quiet reverberation added here rings on | 'Time and Space' by Scott Buckley - released under CC-BY 4.0. www.scottbuckley.com.au. On YouTube the composer asks for this line in the video description |
+| Sound design | Made for the film from filtered noise and one low tone (`film_score.py --cut 5`): a breath of air into the orchestra's entry and a low note under it, a soft click when the time bar seats and at each stop of the years, the plotter drawing the spectrum | The team's own |
+| The opening (0 to 6.5 s) | An artist's rendering, marked on screen as computer-generated with AI assistance: a dark frozen world and a brown dwarf beyond Neptune, in dust lit from behind by the far Sun. Computed by a volumetric ray-marcher written for the film (`web/film/index.html`): light is marched through the dust with shadow rays toward the Sun, emission and absorption, then a film tone curve. At the end the light is split into its colours and brought to a focus | The team's own, made with an AI coding assistant; no outside picture, model or footage. It shows no real place and makes no claim |
+| The Lab (9 to 22 s) | The running site in a frame, marked "live capture" down the side: NASA's real pictures of the field of Epsilon Indi B (2MASS 1999, WISE 2010, SPHEREx 2025 to 2026), the Lab's own time bar, tools and readings | Real data; every figure on screen is the instrument's own |
+| The whole sky (22 to 26 s) | MIRA's SPHEREx panorama, made from NASA's SPHEREx all-sky cube, in Mollweide projection (galactic coordinates), with the 17,604 confirmed movers at their real places, each drawn along its measured motion, then the 635 that neither Gaia nor SIMBAD lists | Data: NASA/JPL-Caltech, NASA/IPAC IRSA; the team's measurements on NASA SPHEREx exposures |
+| The look | A little film grain and a soft glow around the brightest lights, added over the whole film when it is encoded (ffmpeg) | The team's own |
+
+The opening is the only synthetic picture in the film and carries its mark for as long as it is on screen. The film
+does not show the Sky model's forecast (the one picture a network draws in the product, which carries its own
+"AI-generated · prediction" label in the Lab).
+
+**Music we were asked about and did not use.** Recordings from film scores (for example "Oppenheimer" or
+"Interstellar") are commercial works: using them needs a licence the team does not have.
 
 **Why no commercial music or film footage.** The Space Apps submission guide says: "If you are using any copyrighted
 materials, make sure you have permission to use them." A credit line is not permission, and platforms mute or

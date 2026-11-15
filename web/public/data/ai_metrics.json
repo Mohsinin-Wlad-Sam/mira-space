@@ -1,0 +1,76 @@
+{
+ "n_members": 3,
+ "n_holdout": 244691,
+ "M_all": {
+  "n": 156741,
+  "bias": -0.06444215774536133,
+  "robust_sigma": 0.5869341492652893,
+  "frac_within_1sigma": 0.7233844367459694,
+  "median_pred_sigma": 0.6002445816993713,
+  "dist_frac_err": 0.2702931761741638
+ },
+ "M_gaia": {
+  "n": 156577,
+  "bias": -0.06440162658691406,
+  "robust_sigma": 0.5871356129646301,
+  "frac_within_1sigma": 0.7235609316821755,
+  "median_pred_sigma": 0.6006220579147339,
+  "dist_frac_err": 0.2703859508037567
+ },
+ "M_ultracool": {
+  "n": 164,
+  "bias": -0.07453632354736328,
+  "robust_sigma": 0.4461252689361572,
+  "frac_within_1sigma": 0.5548780487804879,
+  "median_pred_sigma": 0.3524461090564728,
+  "dist_frac_err": 0.20544826984405518
+ },
+ "M_giants": {
+  "n": 17453,
+  "bias": 0.711963415145874,
+  "robust_sigma": 1.3157665729522705,
+  "frac_within_1sigma": 0.6535839110754598,
+  "median_pred_sigma": 1.2267754077911377,
+  "dist_frac_err": 0.605932891368866
+ },
+ "Teff": {
+  "n": 155038,
+  "robust_frac": 0.04038001969456673,
+  "frac_within_1sigma": 0.7509126794721294
+ },
+ "class": {
+  "accuracy": 0.8954026667979956,
+  "confusion": [
+   [
+    123741,
+    14473,
+    324,
+    848
+   ],
+   [
+    1232,
+    16217,
+    0,
+    17
+   ],
+   [
+    3,
+    0,
+    143,
+    0
+   ],
+   [
+    83,
+    10,
+    1,
+    5350
+   ]
+  ],
+  "labels": [
+   "dwarf star",
+   "giant / evolved star",
+   "brown dwarf (L/T/Y)",
+   "galaxy / quasar"
+  ]
+ }
+}

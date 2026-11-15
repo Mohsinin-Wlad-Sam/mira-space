@@ -2,145 +2,351 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<link rel="icon" type="image/png" href="/favicon.png" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>MIRA · 30-second film</title>
+<title>MIRA · the film, fifth cut (29 s)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Semi+Condensed:wght@500;600;700&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
 <!--
-  THE FILM, second cut. Thirty seconds, five shots, each one the running site (the Sky map and the Lab are loaded in
-  frames and driven from here). No 3D scene, no drawing that is not data, a handful of words.
+  THE FILM, FIFTH CUT.
 
-    1  0.0  the sky as SPHEREx sees it, filling in on the survey's real dates
-    2  6.0  one place through 27 years of NASA pictures: a star crosses the field
-    3 12.5  its spectrum: the gap at 3.3 um is methane
-    4 18.6  the whole sky, with every star MIRA caught moving
-    5 26.0  the name
+  0.0 -  6.5   an artist's rendering, named so on screen: the dark beyond Neptune. A volume of dust lit from behind by
+               the far Sun (light marched through it with shadow rays), a dark frozen world, a brown dwarf. At the end
+               the light splits into its colours and comes to a focus.
+  6.5 - 11.0   the name; the picture settles into the Lab's centre pane and becomes NASA's real picture of Epsilon
+               Indi B; the Lab's own time bar, tool rail and readings arrive around it.
+ 11.0 - 22.0   the running site, captured live and marked so down the side: the years play, the motion is read, the
+               spectrum opens, the readings and the AI estimate.
+ 22.0 - 26.0   the whole sky (SPHEREx, Mollweide) lighting up with the 17,604 movers at their real places; the 635.
+ 26.0 - 29.0   cut to black; the closing card.
 
-  Open /film/ and press Space to watch it in real time. To render it frame by frame:
-      node web/scripts/render_film.mjs --fps 144 ...   (a virtual clock is stepped; web/scripts/film_finish.py turns
-      the frames into 24 pictures a second with a half-open shutter, grades them and adds the grain)
+  Only the opening is drawn. Every figure on screen is the instrument's own.
+  Render:  node web/scripts/render_film.mjs   (see docs/17_credits.md)
 -->
 <style>
-:root { --white: rgb(240 240 250); --dim: rgb(240 240 250 / .72); --accent: #ff9d4d; --display: "Barlow Semi Condensed", "Barlow", Arial, sans-serif; --body: "Barlow", Arial, sans-serif; --mono: "JetBrains Mono", ui-monospace, Menlo, monospace; }
-* { box-sizing: border-box; } html, body { height: 100%; margin: 0; background: #000; overflow: hidden; color: var(--white); font-family: var(--body); -webkit-font-smoothing: antialiased; }
-#stage { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; overflow: hidden; background: #000; transform-origin: 0 0; }
-.sc { position: absolute; inset: 0; opacity: 0; overflow: hidden; background: #000; } .sc iframe { position: absolute; border: 0; background: #000; }
-#fSky { left: 0; top: 0; width: 1920px; height: 1080px; } #fLab, #fSpec { width: 2240px; height: 1260px; }
-.bar { position: absolute; left: 0; right: 0; height: 138px; background: #000; z-index: 20; } .bar.t { top: 0; } .bar.b { bottom: 0; }
-.shade { position: absolute; inset: 0; pointer-events: none; opacity: 0; z-index: 5; background: linear-gradient(90deg, rgb(0 0 0 / .78) 0%, rgb(0 0 0 / .5) 26%, transparent 52%); }
-.wipe { position: absolute; top: 138px; bottom: 138px; right: 0; background: #000; z-index: 6; }
-.tx { position: absolute; z-index: 10; opacity: 0; font-family: var(--display); text-transform: uppercase; text-shadow: 0 2px 30px rgb(0 0 0 / .9); will-change: opacity, transform; }
-.tx b { font-weight: inherit; color: var(--accent); }
-#yr { left: 104px; top: 440px; font-weight: 600; font-size: 140px; line-height: 1; letter-spacing: .01em; font-variant-numeric: tabular-nums; }
-#nm { left: 108px; top: 600px; font-weight: 500; font-size: 33px; letter-spacing: .15em; color: var(--dim); }
-#mv { left: 1538px; top: 492px; font-weight: 600; font-size: 76px; line-height: 1; letter-spacing: .02em; }
-#me { font-weight: 600; font-size: 92px; line-height: 1; letter-spacing: .04em; text-align: right; } #ml { position: absolute; z-index: 9; width: 2px; background: var(--accent); opacity: 0; transform-origin: 50% 0; }
-#bd { left: 104px; top: 452px; font-weight: 600; font-size: 52px; line-height: 1.14; letter-spacing: .02em; }
-#ct { left: 104px; top: 398px; font-weight: 600; font-size: 200px; line-height: 1; letter-spacing: .005em; font-variant-numeric: tabular-nums; } #cl { left: 112px; top: 612px; font-weight: 500; font-size: 46px; letter-spacing: .2em; }
-#end { position: absolute; inset: 0; z-index: 15; display: grid; place-items: center; text-align: center; background: #000; opacity: 0; }
-#end h1 { margin: 0 0 0 .34em; font-family: var(--display); font-weight: 600; font-size: 210px; letter-spacing: .34em; line-height: 1; } #end .tag { margin-top: 30px; font-family: var(--display); font-weight: 500; font-size: 40px; letter-spacing: .34em; margin-left: .34em; text-transform: uppercase; color: var(--dim); opacity: 0; }
-#cr { position: absolute; left: 0; right: 0; bottom: 52px; z-index: 25; text-align: center; font-family: var(--mono); font-size: 15px; letter-spacing: .08em; color: rgb(240 240 250 / .5); opacity: 0; }
-#hud { position: fixed; left: 16px; bottom: 12px; z-index: 99; font-family: var(--mono); font-size: 12px; color: rgb(240 240 250 / .5); } body.rec #hud { display: none; }
+:root { --w: #EEF2F8; --bg: #05070B; --sans: "Inter", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif; --mono: "JetBrains Mono", ui-monospace, Menlo, monospace; }
+* { box-sizing: border-box; } html, body { height: 100%; margin: 0; background: #000; overflow: hidden; color: var(--w); font-family: var(--sans); -webkit-font-smoothing: antialiased; }
+#stage { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; overflow: hidden; background: var(--bg); }
+#labwrap { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; overflow: hidden; background: #000; will-change: transform, opacity; }
+#fLab { display: block; width: 1920px; height: 1080px; border: 0; }
+#win { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; border: 1.2px solid rgb(238 242 248 / .2); opacity: 0; pointer-events: none; }
+#sky, #map { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; }
+#map { opacity: 0; }
+#ret { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; pointer-events: none; opacity: 0; }
+#ret path { fill: none; stroke: rgb(238 242 248 / .62); stroke-width: 1; }
+#capbg { position: absolute; left: 0; right: 0; bottom: 0; height: 210px; background: linear-gradient(to bottom, rgb(5 7 11 / 0), rgb(5 7 11 / .93) 60%); opacity: 0; pointer-events: none; }
+#livebg { position: absolute; left: 0; top: 0; bottom: 0; width: 96px; background: linear-gradient(to right, rgb(5 7 11 / .9), rgb(5 7 11 / 0)); opacity: 0; pointer-events: none; }
+#flash { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; }
+.ov { position: absolute; opacity: 0; will-change: opacity, transform; }
+#badge { left: 64px; top: 50px; font-family: var(--mono); font-size: 16px; letter-spacing: .18em; color: rgb(238 242 248 / .86); text-shadow: 0 0 14px rgb(5 7 11 / .9); }
+#art { right: 64px; top: 53px; font-family: var(--mono); font-size: 13px; letter-spacing: .2em; color: rgb(238 242 248 / .74); text-shadow: 0 0 12px rgb(5 7 11 / .9); }
+#live { left: 46px; top: 0; height: 1080px; writing-mode: vertical-rl; transform: rotate(180deg); text-align: center; font-family: var(--mono); font-size: 13px; letter-spacing: .3em; color: rgb(238 242 248 / .78); white-space: nowrap; } #live i { font-style: normal; color: #ff4d5e; }
+#cap { left: 0; right: 0; bottom: 32px; text-align: center; font-size: 34px; font-weight: 500; letter-spacing: -.005em; line-height: 1.2; text-shadow: 0 0 22px rgb(5 7 11 / .95), 0 0 4px rgb(5 7 11 / .9); }
+#ttl { left: 0; right: 0; top: 138px; text-align: center; } #ttl h1 { margin: 0 -.52em 0 0; font-weight: 600; font-size: 104px; letter-spacing: .52em; line-height: 1; text-shadow: 0 0 40px rgb(5 7 11 / .8); } #ttl p { margin: 30px 0 0; font-size: 30px; font-weight: 400; color: rgb(238 242 248 / .94); text-shadow: 0 0 18px rgb(5 7 11 / .95), 0 0 4px rgb(5 7 11 / .9); }
+#ttl::before { content: ""; position: absolute; left: 50%; top: 50%; width: 1500px; height: 460px; transform: translate(-50%, -50%); background: radial-gradient(closest-side, rgb(5 7 11 / .5), rgb(5 7 11 / 0)); z-index: -1; }
+#cta { padding: 13px 26px; border: 1px solid rgb(238 242 248 / .5); border-radius: 999px; background: rgb(14 17 25 / .7); font-size: 22px; font-weight: 500; white-space: nowrap; }
+#lead { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; pointer-events: none; opacity: 0; } #lead line { stroke: rgb(238 242 248 / .55); stroke-width: 1; } #lead circle { fill: none; stroke: rgb(238 242 248 / .85); stroke-width: 1.2; }
+#endc { inset: 0; background: #020305; } #endin { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; opacity: 0; }
+#endin h1 { margin: 0 -.52em 0 0; font-weight: 600; font-size: 96px; letter-spacing: .52em; line-height: 1; } #endin .tag { margin: 34px 0 0; font-size: 32px; font-weight: 400; }
+#endin .num { margin: 46px 0 0; font-family: var(--mono); font-size: 21px; letter-spacing: .05em; font-variant-numeric: tabular-nums; color: rgb(238 242 248 / .92); }
+#endin .foot { margin: 64px 0 0; font-size: 16px; line-height: 1.75; color: rgb(238 242 248 / .62); }
+#msg { position: fixed; left: 16px; bottom: 12px; z-index: 99; font-family: var(--mono); font-size: 12px; color: rgb(238 242 248 / .5); } body.rec #msg { display: none; }
 </style>
 </head>
 <body>
 <div id="stage">
-  <div class="sc" id="s-sky"><iframe id="fSky" title="Sky" src="/explore/?embed=1&deck=film#sky"></iframe></div>
-  <div class="sc" id="s-lab"><iframe id="fLab" title="Lab" src="/explore/?embed=1&deck=1&target=eps-indi-b"></iframe></div>
-  <div class="sc" id="s-spec"><iframe id="fSpec" title="Spectrum" src="/explore/?embed=1&deck=1&target=eps-indi-b&tool=spectrum"></iframe><div class="wipe" id="wipe"></div></div>
-  <div class="shade" id="shade"></div>
-  <div class="tx" id="yr">1999</div><div class="tx" id="nm">Epsilon Indi B</div><div class="tx" id="mv">It <b>moved</b>.</div>
-  <i id="ml"></i><div class="tx" id="me"><b>Methane</b></div><div class="tx" id="bd">A brown dwarf.<br>12 light-years<br>away.</div>
-  <div class="tx" id="ct">0</div><div class="tx" id="cl">Stars caught moving</div>
-  <div id="end"><div><h1>MIRA</h1><div class="tag" id="tag">The sky is not still</div></div></div>
-  <div class="bar t"></div><div class="bar b"></div>
-  <div id="cr">Recorded from the running site. Data: NASA SPHEREx, 2MASS, WISE (IRSA) · ESA Gaia. Music: “Time and Space” by Scott Buckley, CC BY 4.0. Team Mohsinin Wlad Dario · NASA Space Apps 2026</div>
+  <div id="labwrap"><iframe id="fLab" title="The Lab" tabindex="-1"></iframe></div>
+  <div id="win"></div>
+  <canvas id="sky" width="3840" height="2160"></canvas>
+  <svg id="ret" viewBox="0 0 1920 1080"><path id="ret-box" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1" /><path id="ret-ticks" /></svg>
+  <canvas id="map" width="3840" height="2160"></canvas>
+  <div id="capbg"></div><div id="livebg"></div>
+  <svg id="lead" viewBox="0 0 1920 1080"><line id="lead-l" /><circle id="lead-c" r="9" /></svg>
+  <div class="ov" id="badge">TEAM MOHSININ WLAD DARIO // NASA SPACE APPS CHALLENGE 2026</div>
+  <div class="ov" id="art">ARTIST’S RENDERING · COMPUTER-GENERATED WITH AI ASSISTANCE</div>
+  <div class="ov" id="live">[ <i>●</i> LIVE CAPTURE — THE RUNNING MIRA SITE // REAL NASA SPHEREx DATA ]</div>
+  <div class="ov" id="ttl"><h1>MIRA</h1><p>The public web observatory on NASA’s SPHEREx data.</p></div>
+  <div class="ov" id="cta">Help look at one →</div>
+  <div id="flash"></div>
+  <div class="ov" id="endc"><div id="endin"><h1>MIRA</h1><p class="tag">Point at the sky. See what moved. Measure it.</p><p class="num" id="end-num"></p>
+    <p class="foot">Built on open data: NASA SPHEREx · 2MASS · WISE · ESA Gaia<br>Team Mohsinin Wlad Dario · NASA Space Apps Challenge 2026 · Music: “Time and Space” by Scott Buckley (CC BY 4.0)<br>The opening is an artist’s rendering, computer-generated with AI assistance; the rest is recorded from the running site · Not affiliated with or endorsed by NASA</p></div></div>
+  <div class="ov" id="cap"><span></span></div>
 </div>
-<div id="hud">loading…</div>
+<div id="msg">loading…</div>
 <script>
-const $ = (s) => document.querySelector(s), W = (id) => $(id).contentWindow, D = (id) => W(id).document, M = (id) => W(id).__mira;
-const DUR = 30, T2 = 6.0, T3 = 12.5, T4 = 18.64, T5 = 26.0;      // the cuts; T4 is where the orchestra comes in
-const now = () => performance.now(), wait = (ms) => new Promise((r) => setTimeout(r, ms));
-const sm = (u) => { u = Math.max(0, Math.min(1, u)); return u * u * (3 - 2 * u); }, lerp = (a, b, u) => a + (b - a) * u, out3 = (u) => 1 - Math.pow(1 - Math.max(0, Math.min(1, u)), 3);
-const SC = [["#s-sky", 0, T2], ["#s-lab", T2, T3], ["#s-spec", T3, T4], ["#s-sky", T4, T5]];
-const sky = () => M("#fSky").sky(), skyCv = () => D("#fSky").querySelector("#skymap canvas");
-// the map's own zoom, about a point of the picture: the camera moves in the data, nothing is enlarged afterwards
-const zoom = (f, x = 960, y = 540) => skyCv()?.dispatchEvent(new (W("#fSky").WheelEvent)("wheel", { deltaY: -Math.log(f) / 0.0015, clientX: x, clientY: y, bubbles: true, cancelable: true }));
-const CUES = [
-  [0.25, () => sky().show("spherex")],                                 // the survey fills the sky on its real dates
-  [T2 + 0.35, () => M("#fLab").lab.act({ play: true })],               // 1999 -> 2026 in real pictures
-  [T3 + 0.2, () => { D("#fSky").querySelector("#sknow")?.click(); sky().show("all"); zoom(1.75, 760, 560); }],     // while the Lab is on screen: the map goes to today, with every mover, a little closer
-];
-let fired = 0, t0 = 0, running = false, recording = false, lastT = -1, P = null, zk = 1;
-const rate = (id, t) => (id === "#fSky" ? (t < T2 ? 3.9 : 1) : id === "#fLab" ? (t > T2 && t < T3 ? 1.72 : 1) : 1);
-const show = (el, o, y = 0) => { el.style.opacity = o; el.style.transform = `translateY(${y}px)`; };
-function render(t, dt) {
-  for (const [sel] of SC) $(sel).style.opacity = 0;
-  for (const [sel, a, b] of SC) if (t >= a && t < b) $(sel).style.opacity = sel === "#s-sky" && a === 0 ? sm(t / 1.8) : 1;
-  // 1: a slow move in, toward the centre of the Galaxy. 4: a slow move back, until the whole sky is in view
-  if (dt > 0 && t < T2) zoom(Math.exp(Math.log(1.32) * dt / T2));
-  if (dt > 0 && t >= T4 && t < T5) { const u0 = out3((t - dt - T4) / (T5 - T4)), u1 = out3((t - T4) / (T5 - T4)); zoom(Math.exp(-Math.log(1.75 * 1.32) * (u1 - u0)), 760, 560); }
-  // 2: the picture alone, the year beside it
-  $("#fLab").style.transform = `scale(${lerp(1.0, 1.05, (t - T2) / (T3 - T2))})`;
-  const in2 = t >= T2 && t < T3, h = in2 ? D("#fLab").querySelector("#bk-hud")?.textContent ?? "" : "", m = h.match(/((?:19|20)\d\d)\.\d\d/), year = m ? +m[1] : 1999;
-  if (in2) $("#yr").textContent = String(Math.max(1999, Math.min(2026, year)));
-  show($("#yr"), in2 ? sm((t - T2 - 0.15) / 0.5) : 0); show($("#nm"), in2 ? sm((t - T2 - 0.5) / 0.6) : 0);
-  show($("#mv"), in2 ? sm((t - (T3 - 2.0)) / 0.45) : 0, in2 ? (1 - sm((t - (T3 - 2.0)) / 0.7)) * 18 : 0);
-  // 3: the spectrum draws itself; the word arrives at the gap
-  const in3 = t >= T3 && t < T4, h3 = D("#fSpec").querySelector("#bk-panel .bk-plot-host"); if (h3 && !h3.hasAttribute("data-film")) h3.setAttribute("data-film", "1");
-  if (P) { $("#wipe").style.left = `${lerp(P.sx - 10, P.sx + P.sw + 20, sm((t - T3 - 0.25) / 2.5))}px`;
-    show($("#me"), in3 ? sm((t - T3 - 2.9) / 0.4) : 0, in3 ? (1 - sm((t - T3 - 2.9) / 0.6)) * 14 : 0); $("#ml").style.opacity = in3 ? sm((t - T3 - 2.7) / 0.3) : 0; $("#ml").style.transform = `scaleY(${sm((t - T3 - 2.7) / 0.6)})`; }
-  show($("#bd"), in3 ? sm((t - T3 - 3.9) / 0.5) : 0, in3 ? (1 - sm((t - T3 - 3.9) / 0.7)) * 16 : 0);
-  // 4: the count
-  const in4 = t >= T4 && t < T5, n = Math.round(17604 * out3((t - T4 - 0.5) / 2.2));
-  $("#shade").style.opacity = in4 ? sm((t - T4 - 0.2) / 0.8) : 0; $("#ct").textContent = n.toLocaleString("en-US");
-  show($("#ct"), in4 ? sm((t - T4 - 0.45) / 0.35) : 0); show($("#cl"), in4 ? sm((t - T4 - 1.5) / 0.6) : 0);
-  // 5: the name
-  $("#end").style.opacity = t >= T5 ? 1 : 0; const u = (t - T5) / (DUR - T5), fo = 1 - sm((t - (DUR - 0.55)) / 0.5);
-  $("#end h1").style.opacity = sm((t - T5 - 0.35) / 1.1) * fo; $("#end h1").style.transform = `scale(${lerp(0.97, 1.03, u)})`;
-  $("#tag").style.opacity = sm((t - T5 - 1.5) / 0.8) * fo; $("#cr").style.opacity = sm((t - T5 - 1.9) / 0.7) * fo;
+const D = Math.PI / 180, DUR = 29, TAU = 6.283185307;
+const $ = (s) => document.querySelector(s), W = () => $("#fLab").contentWindow, Dc = () => W().document, lab = () => W().__mira.lab, Lq = (s) => Dc().querySelector(s);
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v)), lerp = (a, b, u) => a + (b - a) * u, seg = (t, a, b) => clamp((t - a) / (b - a));
+const sm = (u) => { u = clamp(u); return u * u * (3 - 2 * u); }, io = (u) => { u = clamp(u); return u < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2; }, out3 = (u) => 1 - Math.pow(1 - clamp(u), 3);
+const fade = (t, a, b, f = 0.32) => Math.min(sm((t - a) / f), sm((b - t) / f));
+
+// ------------------------------------------------------------------ the cut
+const Y0 = 1999.85, YL = 2026.74;                       // 2MASS's picture; the Lab's latest stop (it lands on the visit of 2026.32)
+const LABWIN = { s: 0.9, x: 96, y: 22 };                // the Lab as a window on the canvas
+let ST = { x: 413, y: 86, w: 862 };                     // the Lab's picture inside its page (measured again when it has loaded)
+const FIELD = 396;                                      // arcseconds across that picture (6.6 arcminutes)
+const CAPS = [[0.4, 3.4, "Beyond Neptune, cold worlds drift in the dark."], [3.5, 6.4, "NASA’s SPHEREx photographs the whole sky in 102 infrared colours."],
+  [9.6, 12.6, "Point anywhere. Watch 27 years of NASA pictures play."], [12.7, 15.9, "See what moved, and how fast."], [16.0, 19.2, "Read its light. This one shows methane."],
+  [19.3, 22.3, "Measured on NASA’s raw exposures. Checked by AI models."], [22.7, 25.9, "17,604 stars caught moving. 635 in neither Gaia nor SIMBAD."]];
+const T = { a1: 6.5, pull: [6.9, 8.9], real: [9.0, 9.9], rewind: [11.2, 12.0], play1: [12.4, 13.4], play2: [13.7, 14.9], spec: [16.0, 19.2], out: 22.0, end: 26.0 };
+function labDate(t) { if (t < T.rewind[0]) return YL; if (t < T.rewind[1]) return lerp(YL, Y0, io(seg(t, ...T.rewind))); if (t < T.play1[0]) return Y0; if (t < T.play1[1]) return lerp(Y0, 2010.5, io(seg(t, ...T.play1)));
+  if (t < T.play2[0]) return 2010.5; if (t < T.play2[1]) return lerp(2010.5, YL, io(seg(t, ...T.play2))); return YL; }
+// the camera on the Lab: [time, scale, x, y]
+const CAM = [[0, 0.9, 96, 22], [15.2, 0.9, 96, 22], [17.0, 1.5, -960, -143], [19.1, 1.5, -960, -143], [20.9, 1.18, -345.6, -26], [22.0, 1.18, -345.6, -26]];
+function camAt(t) { let k = 0; while (k < CAM.length - 2 && t >= CAM[k + 1][0]) k++; const a = CAM[k], b = CAM[k + 1], u = io(seg(t, a[0], b[0])); return [lerp(a[1], b[1], u), lerp(a[2], b[2], u), lerp(a[3], b[3], u)]; }
+
+// ------------------------------------------------------------------ act one: the dark beyond Neptune, ray-marched
+// An artist's rendering, and named so on screen. Light is marched through a volume of dust (single scattering with
+// shadow rays toward the Sun, emission, absorption) at 1600 x 900; the bodies, the stars, the lens and the film curve
+// are computed at the full 3840 x 2160 on top of it.
+const sky = $("#sky"), gl = sky.getContext("webgl2", { antialias: false, alpha: false, preserveDrawingBuffer: true, powerPreference: "high-performance" });
+const VW = 1920, VH = 1080;
+const VS = `#version 300 es
+void main() { vec2 p = vec2(float((gl_VertexID << 1) & 2), float(gl_VertexID & 2)); gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0); }`;
+const COMMON = `#version 300 es
+precision highp float; precision highp sampler3D;
+uniform sampler3D uN; uniform float uT, uFov, uAsp; uniform vec3 uRo, uFw, uRt, uUp; uniform vec2 uRes;
+const vec3 L = vec3(0.4202, 0.2201, 0.8804);                 // toward the Sun, which is in the frame, far behind the dust
+const vec3 SUN = vec3(1.0, 0.93, 0.80) * 6.0;
+const vec3 PLANET = vec3(-1.75, -1.05, 3.3); const float RP = 1.42;
+const vec3 DWARF = vec3(1.05, 0.42, 7.2); const float RD = 0.105;
+vec4 nz(vec3 p) { vec3 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f); return texture(uN, (i + f + 0.5) / 64.0); }
+float fbm(vec3 p) { float a = 0.5, s = 0.0; for (int k = 0; k < 4; k++) { s += a * nz(p).r; p = p * 2.03 + vec3(11.7, 3.1, 5.9); a *= 0.5; } return s / 0.9375; }
+float sph(vec3 ro, vec3 rd, vec3 c, float r) { vec3 oc = ro - c; float b = dot(oc, rd), h = b * b - dot(oc, oc) + r * r; if (h < 0.0) return -1.0; float t = -b - sqrt(h); return t > 0.0 ? t : -1.0; }
+vec3 rayDir(vec2 uv) { vec2 q = (uv * 2.0 - 1.0) * vec2(uAsp, 1.0) * uFov; return normalize(uFw + q.x * uRt + q.y * uUp); }
+`;
+const VOL = `out vec4 o;
+float dens(vec3 p) {
+  vec3 q = p * 0.30 + vec3(0.0, 0.0, uT * 0.012);
+  vec3 w = nz(q * 0.5 + 7.3).rgb - 0.5; q += w * vec3(1.7, 1.0, 1.7);
+  float a = 0.5, s = 0.0, r = 0.0, tot = 0.0; vec3 x = q;
+  for (int k = 0; k < 6; k++) { float n = nz(x).r; s += a * n; r += a * (1.0 - abs(2.0 * n - 1.0)); tot += a; x = x * 2.03 + vec3(11.7, 3.1, 5.9); a *= 0.6; }
+  float f = mix(s, r, 0.7) / tot;                                   // billows and filaments
+  float river = exp(-pow((p.y - 0.5 * sin(p.x * 0.3 + 0.9) + 0.06 * p.z - 0.9) / 1.6, 2.0));
+  float depth = smoothstep(6.6, 7.9, p.z) * (1.0 - smoothstep(10.6, 13.2, p.z));
+  float hole = smoothstep(0.3, 1.4, distance(p, DWARF));
+  return smoothstep(0.575, 0.80, f) * river * depth * hole;
+}
+float hg(float mu, float g) { float g2 = g * g; return (1.0 - g2) / (12.566 * pow(1.0 + g2 - 2.0 * g * mu, 1.5)); }
+void main() {
+  vec2 uv = gl_FragCoord.xy / uRes; vec3 rd = rayDir(uv), ro = uRo; float tMax = 21.0;
+  float tp = sph(ro, rd, PLANET, RP), td = sph(ro, rd, DWARF, RD); if (tp > 0.0) tMax = min(tMax, tp); if (td > 0.0) tMax = min(tMax, td);
+  float jit = fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715))));      // interleaved gradient noise: no stripes
+  const float dt = 0.075; float t = 5.6 + dt * jit, Tr = 1.0; vec3 col = vec3(0.0); float mu = dot(rd, L), ph = 0.86 * hg(mu, 0.80) + 0.14 * hg(mu, -0.2);
+  for (int i = 0; i < 120; i++) { if (t > tMax || Tr < 0.01) break; vec3 p = ro + rd * t; float d = dens(p);
+    if (d > 0.003) {
+      float sh = dens(p + L * 0.25) * 0.30 + dens(p + L * 0.60) * 0.40 + dens(p + L * 1.05) * 0.50 + dens(p + L * 1.60) * 0.62 + dens(p + L * 2.30) * 0.75 + dens(p + L * 3.10) * 0.85;      // the dust between here and the Sun
+      float Tl = exp(-sh * 4.6);
+      float heat = nz(p * 0.55 + 21.0).g; vec3 em = mix(vec3(0.60, 0.055, 0.015), vec3(1.5, 0.52, 0.16), smoothstep(0.55, 0.88, heat)) * pow(d, 2.0) * 1.0;
+      col += Tr * (SUN * ph * Tl * d * 0.85 + em) * dt; Tr *= exp(-d * 4.5 * dt); }
+    t += dt; }
+  o = vec4(col, Tr);
+}`;
+const COMP = `uniform sampler2D uVol; uniform float uExp, uDisp; out vec4 o;
+float h1(vec3 p) { return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453); }
+vec3 stars(vec3 rd) { vec3 c = vec3(0.0);
+  for (int k = 0; k < 2; k++) { float sc = k == 0 ? 170.0 : 380.0; vec3 g = rd * sc, id = floor(g), f = fract(g) - 0.5; float h = h1(id + float(k) * 17.0);
+    if (h > 0.970) { vec3 off = (vec3(h1(id + 3.1), h1(id + 7.7), h1(id + 11.3)) - 0.5) * 0.6; float r = length(f - off), b = (h - 0.970) / 0.030;
+      c += mix(vec3(1.0, 0.80, 0.60), vec3(0.72, 0.84, 1.0), h1(id + 1.3)) * b * b * (k == 0 ? 3.0 : 1.1) * exp(-r * r * (k == 0 ? 300.0 : 220.0)); } }
+  return c; }
+vec3 scene(vec2 uv) {
+  vec3 rd = rayDir(uv), ro = uRo; vec4 V = texture(uVol, uv);
+  float tp = sph(ro, rd, PLANET, RP), td = sph(ro, rd, DWARF, RD); vec3 bg;
+  if (tp > 0.0 && (td < 0.0 || tp < td)) { vec3 n = normalize(ro + rd * tp - PLANET); float nl = max(dot(n, L), 0.0);
+    float ice = smoothstep(0.34, 0.74, fbm(n * 2.6 + 3.0)), cr = fbm(n * 7.0 + 9.0);
+    vec3 alb = mix(vec3(0.02, 0.03, 0.045), vec3(0.24, 0.31, 0.40), ice) * (0.6 + 0.8 * cr);
+    bg = alb * SUN * smoothstep(0.0, 0.22, nl) * nl * 0.42 + alb * vec3(0.9, 0.2, 0.06) * 0.03 * max(dot(n, normalize(vec3(0.3, 0.3, 0.9))), 0.0)
+       + SUN * pow(max(dot(reflect(-L, n), -rd), 0.0), 60.0) * ice * 0.22;
+    bg += vec3(0.3, 0.5, 0.9) * pow(1.0 - max(dot(n, -rd), 0.0), 6.0) * 0.035 * nl; }
+  else if (td > 0.0) { vec3 n = normalize(ro + rd * td - DWARF); float bands = 0.65 * fbm(vec3(n.y * 5.0, n.x * 0.9 + uT * 0.02, n.z * 0.9) + 31.0) + 0.35 * fbm(vec3(n.y * 16.0, n.x * 2.0, n.z * 2.0) + 5.0), limb = pow(max(dot(n, -rd), 0.0), 0.75);
+    bg = mix(vec3(0.05, 0.004, 0.003), vec3(0.95, 0.13, 0.03), smoothstep(0.30, 0.75, bands)) * (0.12 + 1.15 * limb); }
+  else { float sd = max(dot(rd, L), 0.0); bg = stars(rd) + SUN * (pow(sd, 90000.0) * 700.0 + pow(sd, 22000.0) * 2.0 + pow(sd, 400.0) * 0.05); }
+  vec3 c = V.rgb + V.a * bg;
+  // the Sun through the lens: a thin streak across it, as an anamorphic lens leaves, where the dust lets the Sun through
+  vec3 lv = vec3(dot(L, uRt), dot(L, uUp), dot(L, uFw)); if (lv.z > 0.05) { vec2 sp = lv.xy / lv.z / (uFov * vec2(uAsp, 1.0)), pp = uv * 2.0 - 1.0; float seen = texture(uVol, clamp(sp * 0.5 + 0.5, 0.0, 1.0)).a * step(abs(sp.x), 1.05) * step(abs(sp.y), 1.05);
+    c += vec3(0.55, 0.72, 1.0) * 0.5 * seen * exp(-abs(pp.y - sp.y) * 110.0) * exp(-abs(pp.x - sp.x) * 1.5); }
+  vec3 oc = DWARF - ro; if (dot(oc, rd) > 0.0) c += vec3(0.9, 0.12, 0.04) * 0.30 * exp(-pow(length(cross(rd, oc)) / (RD * 2.8), 1.1)) * mix(1.0, V.a, 0.4) * (td > 0.0 ? 0.35 : 1.0);     // the dwarf's own glow
+  return c;
+}
+void main() {
+  vec2 uv = gl_FragCoord.xy / uRes; vec3 c;
+  if (uDisp > 0.0004) { vec2 d = vec2(uDisp, 0.0); vec3 a = scene(uv - d), b = scene(uv), e = scene(uv + d), a2 = scene(uv - d * 0.5), e2 = scene(uv + d * 0.5);     // the light split into its colours
+    c = vec3(0.62 * a.r + 0.38 * a2.r, 0.2 * a2.g + 0.6 * b.g + 0.2 * e2.g, 0.62 * e.b + 0.38 * e2.b); }
+  else c = scene(uv);
+  vec2 q = uv - 0.5; c *= 1.0 - 0.9 * dot(q, q);                              // the lens falls off toward its corners
+  c *= uExp; c = (c * (2.51 * c + 0.03)) / (c * (2.43 * c + 0.59) + 0.14);    // the film curve (ACES fit)
+  c = pow(clamp(c, 0.0, 1.0), vec3(1.0 / 2.2));
+  c += (fract(sin(dot(gl_FragCoord.xy, vec2(41.3, 289.1))) * 43758.5453) - 0.5) / 255.0;
+  o = vec4(c, 1.0);
+}`;
+let G = null, skyState = "";
+function initSky() {
+  if (!gl) return; gl.getExtension("EXT_color_buffer_float"); gl.getExtension("EXT_color_buffer_half_float");
+  const mk = (type, src) => { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error("shader: " + gl.getShaderInfoLog(s)); return s; };
+  const prog = (fs) => { const p = gl.createProgram(); gl.attachShader(p, mk(gl.VERTEX_SHADER, VS)); gl.attachShader(p, mk(gl.FRAGMENT_SHADER, COMMON + fs)); gl.linkProgram(p); if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error("link: " + gl.getProgramInfoLog(p)); return p; };
+  const n = 64, data = new Uint8Array(n * n * n * 4); let sd = 1234567; for (let i = 0; i < data.length; i++) { sd = (Math.imul(sd, 1664525) + 1013904223) >>> 0; data[i] = sd >>> 24; }
+  const nt = gl.createTexture(); gl.bindTexture(gl.TEXTURE_3D, nt); gl.texImage3D(gl.TEXTURE_3D, 0, gl.RGBA8, n, n, n, 0, gl.RGBA, gl.UNSIGNED_BYTE, data);
+  for (const k of [gl.TEXTURE_WRAP_S, gl.TEXTURE_WRAP_T, gl.TEXTURE_WRAP_R]) gl.texParameteri(gl.TEXTURE_3D, k, gl.REPEAT); gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  const vt = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, vt); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, VW, VH, 0, gl.RGBA, gl.HALF_FLOAT, null);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  const fb = gl.createFramebuffer(); gl.bindFramebuffer(gl.FRAMEBUFFER, fb); gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, vt, 0);
+  const ok = gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE; gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  G = { nt, vt, fb, ok, pv: prog(VOL), pc: prog(COMP), vao: gl.createVertexArray() };
+}
+const v3 = { sub: (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]], norm: (a) => { const l = Math.hypot(a[0], a[1], a[2]) || 1; return [a[0] / l, a[1] / l, a[2] / l]; }, cross: (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]], mix: (a, b, u) => [lerp(a[0], b[0], u), lerp(a[1], b[1], u), lerp(a[2], b[2], u)] };
+function drawSky(t) {
+  if (!G || !G.ok) return; const u = seg(t, 0, T.a1), e = 1 - Math.pow(1 - u, 1.8);
+  const ro = v3.mix([-0.55, -0.12, 0.0], [0.10, 0.08, 1.15], e), tg = v3.mix([-0.35, 0.05, 6.0], [1.05, 0.42, 7.2], sm(seg(t, 0.5, 5.4)));          // it ends looking straight at the brown dwarf
+  const fw = v3.norm(v3.sub(tg, ro)), rt = v3.norm(v3.cross([0, 1, 0], fw)), up = v3.cross(fw, rt);
+  const uni = (p) => { const U = (nm) => gl.getUniformLocation(p, nm); gl.uniform1f(U("uT"), t); gl.uniform1f(U("uFov"), Math.tan(19 * D)); gl.uniform1f(U("uAsp"), 16 / 9); gl.uniform3fv(U("uRo"), ro); gl.uniform3fv(U("uFw"), fw); gl.uniform3fv(U("uRt"), rt); gl.uniform3fv(U("uUp"), up);
+    gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_3D, G.nt); gl.uniform1i(U("uN"), 0); return U; };
+  gl.bindVertexArray(G.vao); gl.disable(gl.BLEND); gl.disable(gl.DEPTH_TEST);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, G.fb); gl.viewport(0, 0, VW, VH); gl.useProgram(G.pv); let U = uni(G.pv); gl.uniform2f(U("uRes"), VW, VH); gl.drawArrays(gl.TRIANGLES, 0, 3);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.viewport(0, 0, sky.width, sky.height); gl.useProgram(G.pc); U = uni(G.pc); gl.uniform2f(U("uRes"), sky.width, sky.height);
+  gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, G.vt); gl.uniform1i(U("uVol"), 1); gl.uniform1f(U("uExp"), 0.95);
+  gl.uniform1f(U("uDisp"), 0.014 * Math.pow(seg(t, 5.55, 6.3), 2) * (1 - sm(seg(t, 6.3, 6.5)))); gl.drawArrays(gl.TRIANGLES, 0, 3); gl.flush();
+}
+
+// ------------------------------------------------------------------ act four: the whole sky
+const AG = [[-0.0548755604162154, -0.8734370902348850, -0.4838350155487132], [0.4941094278755837, -0.4448296299600112, 0.7469822444972189], [-0.8676661490190047, -0.1980763734312015, 0.4559837761750669]];
+const toGal = (ra, dec) => { const a = ra * D, d = dec * D, e = [Math.cos(d) * Math.cos(a), Math.cos(d) * Math.sin(a), Math.sin(d)], q = AG.map((r) => r[0] * e[0] + r[1] * e[1] + r[2] * e[2]); return [Math.atan2(q[1], q[0]), Math.asin(clamp(q[2], -1, 1))]; };
+const MW = 3360, MH = 1680, MC = [960, 492], MS = 0.5;       // the map: its own pixels, where its centre sits on screen, screen pixels per map pixel
+function moll(l, b) { let lon = -l; while (lon <= -Math.PI) lon += TAU; while (lon > Math.PI) lon -= TAU; let th = b; const s = Math.PI * Math.sin(b); for (let i = 0; i < 6; i++) { const c = 2 + 2 * Math.cos(2 * th); if (Math.abs(c) < 1e-9) break; th -= (2 * th + Math.sin(2 * th) - s) / c; }
+  return [(1 + (lon * Math.cos(th)) / Math.PI) * 0.5 * MW, (1 - Math.sin(th)) * 0.5 * MH]; }
+const M = { img: null, gold: null, glow: null, open: null, tmp: null, counts: null, obj: null, pick: null };
+const loadImg = (src) => new Promise((ok) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => ok(null); i.src = src; });
+const mkCv = () => { const c = document.createElement("canvas"); c.width = MW; c.height = MH; return c; };
+async function buildMap() {
+  const img = await loadImg("/space/mw_spherex_4096.jpg"); const cv = mkCv(), c = cv.getContext("2d");
+  if (img) { const sc = document.createElement("canvas"); sc.width = img.width; sc.height = img.height; const sx = sc.getContext("2d", { willReadFrequently: true }); sx.drawImage(img, 0, 0); const S = sx.getImageData(0, 0, img.width, img.height).data, O = c.createImageData(MW, MH), o = O.data, sw = img.width, sh = img.height;
+    // the all-sky picture has longitude 0 at its left edge, growing to the right; a sky map has it in the middle, growing to the left
+    for (let j = 0; j < MH; j++) { const Y = 1 - ((j + 0.5) / MH) * 2, th = Math.asin(Y), lat = Math.asin(clamp((2 * th + Math.sin(2 * th)) / Math.PI, -1, 1)), ct = Math.cos(th), fy = clamp((0.5 - lat / Math.PI) * sh - 0.5, 0, sh - 1.001), y0 = fy | 0, wy = fy - y0;
+      for (let i = 0; i < MW; i++) { const X = ((i + 0.5) / MW) * 2 - 1, lon = (Math.PI * X) / ct, p = (j * MW + i) * 4; if (Math.abs(lon) > Math.PI) { o[p + 3] = 0; continue; }
+        const uu = (((-lon / TAU) % 1) + 1) % 1, fx = (uu * sw - 0.5 + sw) % sw, x0 = (fx | 0) % sw, x1 = (x0 + 1) % sw, wx = fx - (fx | 0), a = (y0 * sw + x0) * 4, b = (y0 * sw + x1) * 4, cc = a + sw * 4, d = b + sw * 4, edge = clamp((1 - Math.abs(lon) / Math.PI) * 90);
+        for (let q = 0; q < 3; q++) o[p + q] = (S[a + q] * (1 - wx) + S[b + q] * wx) * (1 - wy) + (S[cc + q] * (1 - wx) + S[d + q] * wx) * wy; o[p + 3] = 255 * edge; } }
+    c.putImageData(O, 0, 0); }
+  M.img = cv;
+  const j = await fetch("/data/verified/objects.json").then((r) => (r.ok ? r.json() : null)).catch(() => null); if (!j) return;
+  const q = j.cols, n = q.id.length, gold = mkCv(), open = mkCv(), cg = gold.getContext("2d"), co = open.getContext("2d"); let nog = 0, nopen = 0; const opens = [];
+  cg.lineCap = "round"; cg.lineWidth = 1.3; cg.strokeStyle = "rgba(255,214,120,.8)";
+  for (let i = 0; i < n; i++) { const [l, b] = toGal(q.ra[i], q.dec[i]), p = moll(l, b), cd = Math.cos(q.dec[i] * D) || 1e-6, st = 0.6 / Math.max(1e-6, q.pm[i]), [l2, b2] = toGal(q.ra[i] + (q.pmra[i] * st) / cd, q.dec[i] + q.pmdec[i] * st), p2 = moll(l2, b2);
+    let dx = p2[0] - p[0], dy = p2[1] - p[1]; const dl = Math.hypot(dx, dy); if (dl > 0 && dl < 200) { dx /= dl; dy /= dl; } else { dx = 1; dy = 0; } const Ln = 3 + 5 * clamp(q.pm[i] / 2.5);
+    cg.beginPath(); cg.moveTo(p[0] - dx * Ln, p[1] - dy * Ln); cg.lineTo(p[0] + dx * Ln, p[1] + dy * Ln); cg.stroke();
+    const isNo = q.known[i] === 0, isOpen = isNo && !q.simbad[i] && Math.abs(q.glat[i]) >= 10; nog += isNo ? 1 : 0; if (isOpen) { nopen++; opens.push(p); } if (q.id[i] === "11391-389871") M.obj = p; }
+  for (const p of opens) { const gr = co.createRadialGradient(p[0], p[1], 0, p[0], p[1], 14); gr.addColorStop(0, "rgba(255,150,170,.95)"); gr.addColorStop(0.22, "rgba(255,95,140,.5)"); gr.addColorStop(1, "rgba(255,80,130,0)"); co.fillStyle = gr; co.beginPath(); co.arc(p[0], p[1], 14, 0, TAU); co.fill(); co.fillStyle = "rgba(255,236,226,.95)"; co.beginPath(); co.arc(p[0], p[1], 2.2, 0, TAU); co.fill(); }
+  const glow = mkCv(), cgl = glow.getContext("2d"); cgl.filter = "blur(5px)"; cgl.drawImage(gold, 0, 0); cgl.drawImage(gold, 0, 0);       // the same strokes, out of focus: their light
+  M.gold = gold; M.glow = glow; M.open = open; M.tmp = mkCv(); M.counts = { n, nog, open: nopen }; if (!M.obj) { const [l, b] = toGal(331.0967, -56.8007); M.obj = moll(l, b); }
+  // one of the 635, in a quiet part of the map: the one the button points at
+  let best = null, bd = 1e9; for (const p of opens) { const d = Math.hypot(p[0] - MW * 0.69, p[1] - MH * 0.3); if (d < bd) { bd = d; best = p; } } M.pick = best;
+  $("#end-num").textContent = `${n.toLocaleString("en-US")} moving stars  ·  ${nog.toLocaleString("en-US")} with no Gaia source  ·  ${nopen.toLocaleString("en-US")} in neither Gaia nor SIMBAD`;
+  CAPS[6][2] = `${n.toLocaleString("en-US")} stars caught moving. ${nopen.toLocaleString("en-US")} in neither Gaia nor SIMBAD.`;
+}
+const mapCv = $("#map"), mc = mapCv.getContext("2d");
+let mapView = { z: 1, cx: MW / 2, cy: MH / 2 };
+const mapScreen = (p) => [(p[0] - mapView.cx) * mapView.z * MS + MC[0], (p[1] - mapView.cy) * mapView.z * MS + MC[1]];
+function drawMap(t, from) {                                // from: where on screen the object was when the Lab let go
+  const a = t >= T.end ? 0 : sm(seg(t, 22.3, 23.1)); mapCv.style.opacity = String(a); mapCv.style.visibility = a <= 0 ? "hidden" : "visible"; if (a <= 0 || !M.img) return;
+  const u = io(seg(t, 22.2, 24.4)), z0 = 7, z = Math.exp(lerp(Math.log(z0), 0, u)), o = M.obj, c0 = [o[0] - (from[0] - MC[0]) / (z0 * MS), o[1] - (from[1] - MC[1]) / (z0 * MS)]; mapView = { z, cx: lerp(c0[0], MW / 2, u), cy: lerp(c0[1], MH / 2, u) };
+  mc.setTransform(1, 0, 0, 1, 0, 0); mc.globalCompositeOperation = "source-over"; mc.globalAlpha = 1; mc.fillStyle = "#05070B"; mc.fillRect(0, 0, 3840, 2160);
+  const k = 2 * MS * z, tl = mapScreen([0, 0]); mc.setTransform(k, 0, 0, k, tl[0] * 2, tl[1] * 2); mc.imageSmoothingQuality = "high";
+  mc.globalAlpha = 0.86; mc.drawImage(M.img, 0, 0);
+  if (M.gold) {
+    // the movers light up in a wave that leaves from the object the film followed and crosses the whole sky
+    const R = lerp(0, MW * 1.05, Math.pow(seg(t, 23.0, 24.7), 1.6)), dim = sm(seg(t, 24.8, 25.3)), tc = M.tmp.getContext("2d");
+    if (R > 1) { const layer = (src, inner, outer, alpha) => { tc.globalCompositeOperation = "copy"; tc.globalAlpha = 1; tc.drawImage(src, 0, 0); tc.globalCompositeOperation = "destination-in"; const gr = tc.createRadialGradient(o[0], o[1], Math.max(0, inner), o[0], o[1], Math.max(1, outer));
+          if (inner > 0) { gr.addColorStop(0, "rgba(0,0,0,0)"); gr.addColorStop(0.45, "rgba(0,0,0,1)"); gr.addColorStop(1, "rgba(0,0,0,0)"); } else { gr.addColorStop(0, "rgba(0,0,0,1)"); gr.addColorStop(0.9, "rgba(0,0,0,1)"); gr.addColorStop(1, "rgba(0,0,0,0)"); }
+          tc.fillStyle = gr; tc.fillRect(0, 0, MW, MH); mc.globalCompositeOperation = "lighter"; mc.globalAlpha = alpha; mc.drawImage(M.tmp, 0, 0); };
+      layer(M.gold, 0, R, lerp(1, 0.3, dim)); layer(M.glow, 0, R, lerp(0.85, 0.12, dim));
+      if (R < MW * 1.04) { layer(M.glow, R - 230, R, 1); layer(M.gold, R - 230, R, 1); } }                    // the front of the wave, brighter
+    mc.globalCompositeOperation = "lighter"; mc.globalAlpha = dim; mc.drawImage(M.open, 0, 0); }
+  // the object the film followed, until it is one among the others
+  const oa = 1 - sm(seg(t, 23.9, 24.6)); if (oa > 0) { mc.setTransform(2, 0, 0, 2, 0, 0); mc.globalCompositeOperation = "lighter"; mc.globalAlpha = oa; const p = mapScreen(o), gr = mc.createRadialGradient(p[0], p[1], 0, p[0], p[1], 13); gr.addColorStop(0, "rgba(255,190,150,1)"); gr.addColorStop(0.22, "rgba(255,104,66,.5)"); gr.addColorStop(1, "rgba(255,90,60,0)"); mc.fillStyle = gr; mc.beginPath(); mc.arc(p[0], p[1], 13, 0, TAU); mc.fill(); }
+  mc.globalAlpha = 1; mc.globalCompositeOperation = "source-over";
+}
+
+// ------------------------------------------------------------------ the Lab, driven from here
+const css = (s) => { const e = Dc().createElement("style"); e.textContent = s; Dc().head.appendChild(e); };
+let applied = { date: null, layers: "", tool: "" };
+function driveLab(t) {
+  const Lb = lab(), on = t >= T.rewind[0] - 0.05, lay = on ? "on" : "off";
+  if (applied.layers !== lay) { applied.layers = lay; Lb.act({ layers: { det: false, wise: false, mask: false, gaia: on, track: on } }); }
+  const tool = t >= T.spec[0] && t < T.spec[1] ? "spectrum" : "readings";
+  if (applied.tool !== tool) { applied.tool = tool; if (tool === "spectrum") Lb.act({ instrument: "spectrum" }); else Lq("#bk-back")?.click(); }
+  const d = +labDate(t).toFixed(2); if (applied.date !== d) { applied.date = d; Lb.act({ date: d }); }
+}
+const setL = (sel, o, tf = "") => { const e = Lq(sel); if (!e) return; e.style.opacity = String(o); e.style.transform = tf; };
+function styleLab(t) {
+  setL(".lx-time", sm(seg(t, 9.2, 10.0)), `translateY(${(1 - out3(seg(t, 9.2, 10.1))) * 30}px)`); setL(".lx-top", sm(seg(t, 9.6, 10.2)));
+  setL("#bk-rail", sm(seg(t, 9.8, 10.5)), `translateX(${(1 - out3(seg(t, 9.8, 10.6))) * -18}px)`); setL(".lx-status", sm(seg(t, 10.5, 11.0)));
+  const dip = Math.min(1, Math.abs(t - T.spec[0]) / 0.2, Math.abs(t - T.spec[1]) / 0.2);            // the panel changes behind a short dip
+  setL("#bk-drawer", sm(seg(t, 10.1, 10.8)) * dip, `translateX(${(1 - out3(seg(t, 10.1, 10.9))) * 18}px)`);
+  const cards = Dc().querySelectorAll("#bk-facts .lab-fact"), at = [13.6, 14.6, 19.35, 19.6, 20.0]; cards.forEach((e, k) => { e.style.opacity = String(sm((t - (at[k] ?? 20.0)) / 0.5)); });
+  const hint = Lq(".lx-hint"); if (hint) hint.style.opacity = String(sm((t - 20.4) / 0.5));
+  const svg = Lq("#bk-panel .bk-plot-host svg"); if (svg) svg.style.clipPath = `inset(0 ${(100 * (1 - io(seg(t, 16.3, 17.9)))).toFixed(2)}% 0 0)`;
+}
+
+// ------------------------------------------------------------------ one frame
+const set = (e, o, tf) => { e.style.opacity = String(o); if (tf !== undefined) e.style.transform = tf; };
+let running = false, recording = false, t0 = 0, lastT = -1, ready = false;
+function render(t) {
+  // act one, then its last picture settling into the Lab's pane
+  const skyA = 1 - sm(seg(t, ...T.real)); sky.style.opacity = String(skyA); sky.style.visibility = skyA <= 0 ? "hidden" : "visible";
+  if (skyA > 0) { if (t < T.a1 + 0.1) { drawSky(t); skyState = "live"; } else if (skyState !== "held") { drawSky(T.a1 + 0.1); skyState = "held"; }
+    const u = io(seg(t, ...T.pull)), cw = ST.w * LABWIN.s, s2 = cw / 1080, px = LABWIN.x + (ST.x + ST.w / 2) * LABWIN.s, py = LABWIN.y + (ST.y + ST.w / 2) * LABWIN.s, half = cw / 2 / s2, s = lerp(1, s2, u);
+    sky.style.transform = `translate(${lerp(0, px - 960 * s2, u)}px, ${lerp(0, py - 540 * s2, u)}px) scale(${s})`; sky.style.clipPath = `inset(${lerp(0, 540 - half, u)}px ${lerp(0, 960 - half, u)}px)`; }
+  $("#flash").style.opacity = String(t < 6.42 ? 0 : t < T.a1 ? 0.92 * seg(t, 6.42, T.a1) : 0.92 * (1 - sm(seg(t, T.a1, 7.3))));
+  // the reticle around the picture
+  $("#ret").style.opacity = String(sm(seg(t, 8.2, 8.5)) * (1 - sm(seg(t, 10.2, 10.8)))); $("#ret-box").setAttribute("stroke-dashoffset", String(1 - io(seg(t, 8.3, 9.3)))); $("#ret-ticks").style.opacity = String(sm(seg(t, 9.0, 9.5)));
+  // the Lab
+  if (ready) { try { driveLab(t); styleLab(t); } catch (e) { /* the Lab is between two states */ } }
+  let [s, x, y] = camAt(t), la = 1; const anchor = [x + (ST.x + ST.w / 2) * s, y + (ST.y + ST.w / 2) * s];       // where the object is on screen when the Lab lets go
+  if (t >= T.out) { const u = io(seg(t, T.out, T.out + 1.2)), s3 = s * lerp(1, 0.25, u); x = anchor[0] - (ST.x + ST.w / 2) * s3; y = anchor[1] - (ST.y + ST.w / 2) * s3; s = s3; la = 1 - sm(seg(t, T.out + 0.1, T.out + 0.9)); }
+  const lw = $("#labwrap"); lw.style.transform = `translate(${x}px, ${y}px) scale(${s})`; lw.style.opacity = String(la); lw.style.visibility = la <= 0 ? "hidden" : "visible"; lw.style.borderRadius = `${14 / s}px`;
+  const win = $("#win"); win.style.transform = lw.style.transform; win.style.borderRadius = `${14 / s}px`; win.style.borderWidth = `${1.2 / s}px`; win.style.opacity = String(sm(seg(t, 9.6, 10.5)) * la);
+  // the whole sky
+  drawMap(t, anchor);
+  // words
+  set($("#badge"), fade(t, 0.3, 3.4)); set($("#art"), fade(t, 0.4, 6.3)); set($("#ttl"), fade(t, 6.5, 9.4, 0.3));
+  const liveA = sm(seg(t, 10.8, 11.4)) * (1 - sm(seg(t, 21.8, 22.3))); set($("#live"), liveA); $("#livebg").style.opacity = String(liveA * sm(seg(t, 15.2, 16.2)));
+  const cp = CAPS.find((q) => t >= q[0] && t <= q[1]); if (cp) { const sp = $("#cap span"); if (sp.textContent !== cp[2]) sp.textContent = cp[2]; } set($("#cap"), cp ? fade(t, cp[0], cp[1], 0.3) : 0);
+  $("#capbg").style.opacity = String(Math.max(sm(seg(t, 15.2, 16.1)) * (1 - sm(seg(t, 22.1, 22.7))), fade(t, 0.2, 6.35, 0.4) * 0.5));
+  if (M.pick) { const p = mapScreen(M.pick), a = fade(t, 24.9, 25.95, 0.25), b = $("#cta"); b.style.left = `${p[0] + 46}px`; b.style.top = `${p[1] - 84}px`; set(b, a); $("#lead").style.opacity = String(a); const l = $("#lead-l"); l.setAttribute("x1", p[0] + 7); l.setAttribute("y1", p[1] - 7); l.setAttribute("x2", p[0] + 52); l.setAttribute("y2", p[1] - 40); const c = $("#lead-c"); c.setAttribute("cx", p[0]); c.setAttribute("cy", p[1]); }
+  set($("#endc"), t >= T.end ? 1 : 0); $("#endin").style.opacity = String(sm(seg(t, T.end + 0.35, T.end + 0.95)));           // a cut to black, then the card
 }
 function tick(tNow) {
-  if (!running) return; const t = Math.min(DUR, (tNow - t0) / 1000), dt = lastT < 0 ? 0 : t - lastT; lastT = t;
-  while (fired < CUES.length && CUES[fired][0] <= t) { try { CUES[fired][1](); } catch (e) { console.warn("cue", fired, e); } fired++; }
-  render(t, dt);
-  if (recording) for (const id of ["#fSky", "#fLab", "#fSpec"]) { try { W(id).__vt?.step(dt * 1000 * rate(id, t)); } catch (e) { /* a frame not ready */ } }
-  $("#hud").textContent = `${t.toFixed(2)} s`;
-  if (t < DUR) requestAnimationFrame(tick); else running = false;
+  if (!running) return; const t = Math.min(DUR, (tNow - t0) / 1000), dt = lastT < 0 ? 0 : t - lastT; lastT = t; render(t);
+  if (recording) { try { W().__vt?.step(dt * 1000); } catch (e) { /* the frame is not ready */ } }
+  $("#msg").textContent = `${t.toFixed(2)} s`; if (t < DUR) requestAnimationFrame(tick); else running = false;
 }
-const css = (id, text) => { const s = D(id).createElement("style"); s.textContent = text; D(id).head.appendChild(s); };
-const BLACK = "html,body,.bk,.bk-body,.labx,.lx-view,.bk-stage,.lx-insp,.lab-tool,#bk-panel{background:#000!important;background-image:none!important;box-shadow:none!important;border-color:transparent!important}.embed-out{display:none!important}";
 async function prepare() {
-  const hud = (s) => ($("#hud").textContent = s);
-  const until = async (f, ms = 60000) => { const t1 = Date.now(); while (Date.now() - t1 < ms) { try { if (f()) return true; } catch (e) { /* not there yet */ } await wait(250); } return false; };
-  hud("loading the map and the Lab…");
-  await until(() => M("#fSky")?.sky() && M("#fLab")?.lab.isOpen && M("#fSpec")?.lab.isOpen);
-  await until(() => [M("#fLab"), M("#fSpec")].every((q) => { const c = q.lab.context(); return !c.loading && c.exposures > 0 && c.field; }), 120000);
-  hud("framing…");
-  // the map without its labels: the sky alone
-  D("#fSky").querySelectorAll("#skshow button.on").forEach((b) => b.click());
-  // the Lab's picture alone
-  css("#fLab", BLACK + ".lx-rail,.lx-top,.lx-time,.lx-insp,.lx-status,.bk-hud,.lx-c,.lx-zoom,#bk-flags,#bk-load{visibility:hidden!important}");
-  M("#fLab").lab.act({ range: "1999" }); await wait(1500);
-  const r2 = D("#fLab").querySelector("#bk-stage").getBoundingClientRect(), cx = r2.left + r2.width / 2, cy = r2.top + r2.height / 2;
-  Object.assign($("#fLab").style, { left: `${960 - cx}px`, top: `${540 - cy}px`, transformOrigin: `${cx}px ${cy}px` });
-  // the Spectrograph's plot alone, drawn large by the Lab itself (the inspector is made wide; nothing is enlarged afterwards)
-  css("#fSpec", BLACK + ".labx{--insp:1304px!important}body *{visibility:hidden!important}[data-film],[data-film] *{visibility:visible!important}");
-  await wait(1200);
-  const host = () => D("#fSpec").querySelector("#bk-panel .bk-plot-host"); await until(() => host()?.querySelector("svg"));
-  host().setAttribute("data-film", "1"); await wait(400);
-  const r3 = host().querySelector("svg").getBoundingClientRect(), ox = 1160 - (r3.left + r3.width / 2), oy = 545 - (r3.top + r3.height / 2);
-  Object.assign($("#fSpec").style, { left: `${ox}px`, top: `${oy}px` });
-  const ch4 = [...host().querySelectorAll("svg text")].find((q) => q.textContent.trim() === "CH₄")?.getBoundingClientRect();
-  P = { sx: r3.left + ox, sw: r3.width, sy: r3.top + oy, sh: r3.height, mx: ch4 ? ch4.left + ch4.width / 2 + ox : r3.left + ox + r3.width * 0.6, my: ch4 ? ch4.bottom + oy : r3.top + oy + 60 };
-  Object.assign($("#ml").style, { left: `${P.mx - 1}px`, top: `${P.my + 14}px`, height: `${P.sh * 0.5}px` });
-  Object.assign($("#me").style, { left: `${P.mx - 30 - 520}px`, width: "520px", top: `${P.my + 58}px` });
-  await document.fonts.ready; render(0, 0); hud("ready · press Space to play"); window.__film.ready = true;
+  const msg = (s) => ($("#msg").textContent = s), until = async (f, ms = 60000) => { const t1 = Date.now(); while (Date.now() - t1 < ms) { try { if (f()) return true; } catch (e) { /* not yet */ } await wait(250); } return false; };
+  try { localStorage.setItem("mira.rail", "1"); localStorage.setItem("mira.pro", "1"); } catch (e) { /* private mode */ }
+  $("#fLab").src = "/explore/?embed=1&deck=1&target=eps-indi-b";
+  msg("the dark…"); try { initSky(); } catch (e) { console.error(String(e)); msg(String(e).slice(0, 300)); }
+  msg("the whole sky…"); await buildMap();
+  msg("the Lab…"); await until(() => W().__mira?.lab?.isOpen, 90000);
+  await until(() => { const c = lab().context(); return !c.loading && c.exposures > 0 && c.field; }, 180000);
+  css(".embed-out{display:none!important} #bk-rail,.lx-top,.lx-time,#bk-drawer,.lx-status,.lab-fact,.lab-fact *{transition:none!important} ::-webkit-scrollbar{display:none}");
+  // the spectrum is read once now, so that it opens at once later
+  lab().act({ instrument: "spectrum" }); await until(() => Lq("#bk-panel .bk-plot-host svg"), 90000); await wait(700); Lq("#bk-back")?.click(); await wait(600);
+  const b = Lq("#bk-stage").getBoundingClientRect(); ST = { x: b.left, y: b.top, w: b.width };
+  // the reticle: the picture's edge, a tick every 30 arcseconds, a longer one every arcminute
+  const x = LABWIN.x + ST.x * LABWIN.s, y = LABWIN.y + ST.y * LABWIN.s, w = ST.w * LABWIN.s, step = (w / FIELD) * 30; $("#ret-box").setAttribute("d", `M${x} ${y}h${w}v${w}h${-w}Z`);
+  let d = ""; for (let k = 0; k * step <= w / 2 + 0.5; k++) for (const sg of k ? [-1, 1] : [1]) { const o = w / 2 + sg * k * step, Ln = k % 2 === 0 ? 11 : 6; d += `M${x + o} ${y}v${-Ln}M${x + o} ${y + w}v${Ln}M${x} ${y + o}h${-Ln}M${x + w} ${y + o}h${Ln}`; } $("#ret-ticks").setAttribute("d", d);
+  applied = { date: null, layers: "", tool: "readings" }; ready = true; await document.fonts.ready; render(0); await wait(300); msg("ready · press Space to play"); window.__film.ready = true;
 }
-function start(rec = false) { recording = rec; if (rec) { document.body.classList.add("rec"); for (const id of ["#fSky", "#fLab", "#fSpec"]) W(id).__vt?.freeze(); window.__vt?.freeze(); } fired = 0; lastT = -1; t0 = now(); running = true; requestAnimationFrame(tick); }
-window.__film = { ready: false, start, duration: DUR, settle: () => new Promise((res) => { const raf = window.__vt?.realRaf ?? requestAnimationFrame; raf(() => raf(() => res(true))); }) };
+function start(rec = false) { recording = rec; if (rec) { document.body.classList.add("rec"); W().__vt?.freeze(); window.__vt?.freeze(); } lastT = -1; skyState = ""; t0 = performance.now(); running = true; requestAnimationFrame(tick); }
+window.__film = { ready: false, start, duration: DUR, seek: (t) => { running = false; if (t < T.a1 + 0.1) skyState = ""; render(t); }, state: () => ({ ST, applied, counts: M.counts, sky: G ? { ok: G.ok } : null }),
+  /** how long one frame of the opening takes to compute, in milliseconds (the GPU is asked to finish before the clock is read) */
+  bench: () => { const t1 = performance.now(); drawSky(3); gl.finish(); const px = new Uint8Array(4); gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px); return Math.round(performance.now() - t1); },
+  settle: () => new Promise((res) => { const raf = window.__vt?.realRaf ?? requestAnimationFrame; raf(() => raf(() => res(true))); }),
+  /** rectangles of everything written over the picture, for the check that nothing collides or leaves the frame */
+  boxes: () => { const k = $("#stage").getBoundingClientRect().width / 1920, out = [], rectOf = (e) => { const r = document.createRange(); r.selectNodeContents(e); return r.getBoundingClientRect(); };
+    const add = (id, e) => { const b = rectOf(e); if (b.width > 0) out.push({ id, x: b.left / k, y: b.top / k, w: b.width / k, h: b.height / k }); }, vis = (e) => +getComputedStyle(e).opacity > 0.25;
+    if (vis($("#badge"))) add("badge", $("#badge")); if (vis($("#art"))) add("art", $("#art")); if (vis($("#live"))) add("live", $("#live")); if (vis($("#cap"))) add("caption", $("#cap span")); if (vis($("#ttl"))) { add("title", $("#ttl h1")); add("title.line", $("#ttl p")); } if (vis($("#cta"))) add("button", $("#cta"));
+    if (vis($("#endc")) && +$("#endin").style.opacity > 0.25) $("#endin").querySelectorAll("h1, p").forEach((e, n) => add(`end.${n}`, e));
+    return out; } };
 const fit = () => { const k = Math.min(innerWidth / 1920, innerHeight / 1080); $("#stage").style.transform = `scale(${k})`; }; addEventListener("resize", fit); fit();
 addEventListener("keydown", (e) => { if (e.code === "Space" && window.__film.ready && !running) { e.preventDefault(); start(false); } });
 addEventListener("load", prepare);

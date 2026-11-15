@@ -11,11 +11,17 @@
 //   GET  /api/v1/coverage?ra&dec              when SPHEREx visited a position, and about when it comes back
 //   GET  /api/v1/scout?ra&dec&radius          places the sky model marked, with the Gaia check and V-JEPA 2's score
 //   POST /api/v1/crossmatch                   a list of positions against the catalogue, the survey and the scout
+//   GET  /api/v1/prices                       what each call costs in credits, the free allowance, the limits
+//   POST /api/v1/keys                         make a key (shown once)        GET | DELETE /api/v1/keys/me   read it, revoke it
+//   POST /api/v1/keys/rotate                  a new secret for the same key  GET /api/v1/usage              credits and calls, by day and by endpoint
+//   POST /api/v1/keys/{id}/credits            the operator grants credits (X-Admin-Key): web/server/keys.mjs
 //
 //   env: MIRA_DATA (folder of the data files; default ../public/data)   MIRA_API_PER10MIN (default 300)
-//        MIRA_API_KEYS (comma-separated; when set, every call but status and openapi.json needs the header X-API-Key)
+//        MIRA_API_KEYS (comma-separated operator keys; when set, every data call needs a key, and only the operator makes new ones)
+//        keys, credits and their limits: see web/server/keys.mjs
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
+import { costOf, createKey, creditsLeft, findKey, grant, keyLimited, KeyError, priceList, record, revokeKey, rotateKey, usage, view } from "./keys.mjs";
 
 const D2R = Math.PI / 180, S3 = "https://nasa-irsa-spherex.s3.amazonaws.com/", VERSION = "1.0";
 const BANDS = { 1: [0.75, 1.12], 2: [1.10, 1.66], 3: [1.64, 2.44], 4: [2.42, 3.86], 5: [3.82, 4.44], 6: [4.42, 5.02] };
@@ -59,10 +65,11 @@ const KNOWN = { 0: "no Gaia source", 1: "Gaia star with the same motion", 2: "Ga
 const labUrl = (o) => `/explore/?ra=${o.ra}&dec=${o.dec}&fov=6.6${o.pmra !== undefined ? `&pmra=${o.pmra}&pmdec=${o.pmdec}&epoch=${o.yr ?? 2016}` : ""}${o.id ? `&name=${encodeURIComponent(o.id)}` : ""}`;
 
 /** one row of the catalogue as an object; `full` adds every column */
-function row(c, i, full, sc) {
+function row(c, i, full, sc, ai) {
   const o = { id: c.id[i], ra: c.ra[i], dec: c.dec[i], motion_arcsec_yr: c.pm[i], pmra: c.pmra[i], pmdec: c.pmdec[i], motion_error: c.epm[i], kind: c.kind[i], gaia: KNOWN[c.known[i]] ?? null, gaia_source_id: c.gaia[i] || null, gaia_motion_arcsec_yr: c.gpm[i] ?? null,
     parallax_mas: c.plx[i] ?? null, simbad: c.simbad[i] || null, galactic_latitude: c.glat[i], spherex_exposures: c.n[i] };
   if (sc) o.sky_model = { marks_it: sc.conf[i] >= sc.thr, confidence: sc.conf[i], motion_it_reads: sc.pm[i] };
+  if (ai && ai.d[i] !== null && ai.cls[i] >= 0) o.ai_estimate = { kind: ai.classes[ai.cls[i]], kind_probability: ai.p[i], distance_pc: ai.d[i], distance_pc_low: ai.dlo[i], distance_pc_high: ai.dhi[i], temperature_K: ai.cls[i] <= 2 ? ai.teff[i] : null, temperature_error_K: ai.cls[i] <= 2 ? ai.et[i] : null };
   if (full) for (const k of Object.keys(c)) if (!(k in o) && !["pm", "epm", "known", "plx", "gpm", "glat", "n"].includes(k)) o[k] = c[k][i];
   o.lab = labUrl({ ra: c.ra[i], dec: c.dec[i], pmra: c.pmra[i], pmdec: c.pmdec[i], yr: c.yr[i], id: c.id[i] });
   return o;
@@ -84,10 +91,10 @@ async function movers(q, env) {
     out.push([d, i]);
   }
   out.sort((a, b) => (pos ? a[0] - b[0] : c.pm[b[1]] - c.pm[a[1]]));
-  const rows = out.slice(0, limit).map(([d, i]) => { const o = row(c, i, false, sc); if (d !== null) o.separation_deg = +d.toFixed(5); return o; });
+  const ai = await file(env, "verified/ai.json"), rows = out.slice(0, limit).map(([d, i]) => { const o = row(c, i, false, sc, ai); if (d !== null) o.separation_deg = +d.toFixed(5); return o; });
   return { table: rows, body: { query: Object.fromEntries(q), matched: out.length, returned: rows.length, note: pos ? undefined : "without a position, movers within 10 degrees of the Galactic plane are left out unless plane=1 (crowded, less reliable)", movers: rows } };
 }
-async function mover(id, env) { const c = await catalogue(env), i = c.id.indexOf(id); if (i < 0) throw new Bad(`no confirmed mover with id ${id}`, 404); return { body: row(c, i, true, await scoutOf(env)) }; }
+async function mover(id, env) { const c = await catalogue(env), i = c.id.indexOf(id); if (i < 0) throw new Bad(`no confirmed mover with id ${id}`, 404); return { body: row(c, i, true, await scoutOf(env), await file(env, "verified/ai.json")) }; }
 
 async function indexOf(env, ra, dec) {
   const pix = ang2pixNest(32, ra, dec), j = await file(env, `sphx2/${pix}.json`); if (!j) throw new Bad("this server does not carry the SPHEREx exposure index", 503);
@@ -112,22 +119,22 @@ async function scout(q, env) {
   const s = await scoutOf(env); if (!s) throw new Bad("this server does not carry the sky model's results", 503);
   const pos = position(q, false), radius = num(q, "radius", 2, 0, 180), limit = Math.round(num(q, "limit", 50, 1, 400)), conf = q.get("gaia") ?? "";
   let L = s.marks.map((m) => ({ ra: m.ra, dec: m.dec, confidence: m.conf, motion_it_reads_arcsec_yr: m.pm, direction_deg_east_of_north: m.pa, galactic_latitude: m.glat,
-    gaia_fast_mover: m.gaia ? { source_id: m.gaia.id, motion_arcsec_yr: m.gaia.pm, G: m.gaia.g } : null, simbad_fast_mover: m.simbad ? { name: m.simbad.name.replace(/\s+/g, " "), kind: m.simbad.kind, motion_arcsec_yr: m.simbad.pm, spectral_type: m.simbad.sp } : null, vjepa2_says_mover: m.vj ?? null, sky: `/explore/#sky=${encodeURIComponent(`${m.ra} ${m.dec >= 0 ? "+" : ""}${m.dec}`)}`, lab: labUrl({ ra: m.ra, dec: m.dec }) }));
-  if (conf === "absent") L = L.filter((m) => !m.gaia_fast_mover); else if (conf === "listed") L = L.filter((m) => m.gaia_fast_mover); else if (conf === "open") L = L.filter((m) => !m.gaia_fast_mover && !m.simbad_fast_mover);
+    gaia_fast_mover: m.gaia ? { source_id: m.gaia.id, motion_arcsec_yr: m.gaia.pm, G: m.gaia.g } : null, simbad_fast_mover: m.simbad ? { name: m.simbad.name.replace(/\s+/g, " "), kind: m.simbad.kind, motion_arcsec_yr: m.simbad.pm, spectral_type: m.simbad.sp } : null, lab_measurement: m.lab ? { verdict: m.lab.verdict, motion_arcsec_yr: m.lab.pm, motion_error: m.lab.epm, gaia_motion_arcsec_yr: m.lab.gaia_pm } : null, vjepa2_says_mover: m.vj ?? null, sky: `/explore/#sky=${encodeURIComponent(`${m.ra} ${m.dec >= 0 ? "+" : ""}${m.dec}`)}`, lab: labUrl({ ra: m.ra, dec: m.dec }) }));
+  if (conf === "absent") L = L.filter((m) => !m.gaia_fast_mover); else if (conf === "listed") L = L.filter((m) => m.gaia_fast_mover); else if (conf === "open") L = L.filter((m) => !m.gaia_fast_mover && !m.simbad_fast_mover && !(m.lab_measurement && (m.lab_measurement.gaia_motion_arcsec_yr ?? 0) >= 0.25));
   if (pos) L = L.map((m) => ({ ...m, separation_deg: +sep(pos[0], pos[1], m.ra, m.dec).toFixed(4) })).filter((m) => m.separation_deg <= radius).sort((x, y) => x.separation_deg - y.separation_deg);
   return { table: L.slice(0, limit), body: { built: s.built, whole_sky: s.sky, test: { recall: s.test.recall, false_marks_per_sq_deg: s.test.false_per_sqdeg, movers_tested: s.test.n }, gaia_check: s.gaia_check, vjepa2_finetuned: s.vjepa ? { auc_test: s.vjepa.auc_test, patches: s.vjepa.patches } : null,
-    note: "Marks where MIRA's catalogue has nothing. A mark is a place to look at, not a discovery: 'gaia_fast_mover' says whether ESA's Gaia DR3 lists a star moving at least 0.25 arcsec a year within 30 arcsec; 'simbad_fast_mover' the same for SIMBAD (at least 0.15), asked only where Gaia had none. gaia=open keeps the marks that are in neither.", matched: L.length, marks: L.slice(0, limit) } };
+    note: "Marks where MIRA's catalogue has nothing. A mark is a place to look at, not a discovery: 'gaia_fast_mover' says whether ESA's Gaia DR3 lists a star moving at least 0.25 arcsec a year within 30 arcsec; 'simbad_fast_mover' the same for SIMBAD (at least 0.15), asked only where Gaia had none. 'lab_measurement' is what MIRA's own measurement found at the marks no catalogue lookup confirmed. gaia=open keeps the marks nothing confirmed.", matched: L.length, marks: L.slice(0, limit) } };
 }
 async function crossmatch(body, env) {
   const P = body?.positions; if (!Array.isArray(P) || !P.length) throw new Bad("body must be JSON: { positions: [{ ra, dec, id? }, ...], radius_arcsec? }"); if (P.length > 5000) throw new Bad("at most 5000 positions per call");
-  const rad = Math.min(600, Math.max(1, Number(body.radius_arcsec ?? 30))) / 3600, c = await catalogue(env), s = await scoutOf(env), cov = await file(env, "sphx2/coverage.json");
+  const rad = Math.min(600, Math.max(1, Number(body.radius_arcsec ?? 30))) / 3600, c = await catalogue(env), s = await scoutOf(env), cov = await file(env, "sphx2/coverage.json"), aiC = await file(env, "verified/ai.json");
   // the catalogue in one-degree declination bands, so that each position looks at a few hundred rows at most
   const bands = new Map(); for (let i = 0; i < c.id.length; i++) { const b = Math.floor(c.dec[i]); (bands.get(b) ?? bands.set(b, []).get(b)).push(i); }
   const out = P.map((p, n) => { const ra = Number(p.ra), dec = Number(p.dec); if (!Number.isFinite(ra) || !Number.isFinite(dec) || dec < -90 || dec > 90) return { id: p.id ?? n, error: "ra and dec must be numbers in degrees" };
     let best = -1, bd = rad; for (const b of [Math.floor(dec) - 1, Math.floor(dec), Math.floor(dec) + 1]) for (const i of bands.get(b) ?? []) { if (Math.abs(c.dec[i] - dec) > rad) continue; const d = sep(ra, dec, c.ra[i], c.dec[i]); if (d <= bd) { bd = d; best = i; } }
     let mark = null, md = Math.max(rad, 30 / 3600); if (s) for (const m of s.marks) { if (Math.abs(m.dec - dec) > md) continue; const d = sep(ra, dec, m.ra, m.dec); if (d <= md) { md = d; mark = m; } }
     const days = cov ? cov.visits[ang2pixNest(cov.nside, ra, dec)] ?? [] : null;
-    return { id: p.id ?? n, ra, dec, confirmed_mover: best < 0 ? null : { ...row(c, best, false, s), separation_arcsec: +(bd * 3600).toFixed(2) },
+    return { id: p.id ?? n, ra, dec, confirmed_mover: best < 0 ? null : { ...row(c, best, false, s, aiC), separation_arcsec: +(bd * 3600).toFixed(2) },
       sky_model_mark: mark ? { confidence: mark.conf, motion_it_reads_arcsec_yr: mark.pm, in_gaia: !!mark.gaia, separation_arcsec: +(md * 3600).toFixed(1) } : null,
       spherex_visits: days ? days.length : null, last_visit: days && days.length ? mjdToDate(cov.mjd0 + days[days.length - 1]) : null, lab: labUrl({ ra, dec }) }; });
   return { body: { radius_arcsec: +(rad * 3600).toFixed(1), positions: P.length, with_a_confirmed_mover: out.filter((o) => o.confirmed_mover).length, with_a_sky_model_mark: out.filter((o) => o.sky_model_mark).length, results: out } };
@@ -137,12 +144,13 @@ async function status(env) {
   return { body: { name: "MIRA data API", version: VERSION, documentation: "/docs/#api", openapi: "/api/v1/openapi.json",
     spherex: m ? { exposures_indexed: m.exposures, first: m.first, last: m.last, index_built: m.built } : null, catalogue: o ? { confirmed_movers: o.cols.id.length } : null,
     sky_model: s ? { places_marked: s.sky.marks, built: s.built } : null,
-    endpoints: ["/api/v1/status", "/api/v1/targets", "/api/v1/movers", "/api/v1/movers/{id}", "/api/v1/exposures", "/api/v1/coverage", "/api/v1/scout", "POST /api/v1/crossmatch"] } };
+    endpoints: ["/api/v1/status", "/api/v1/targets", "/api/v1/movers", "/api/v1/movers/{id}", "/api/v1/exposures", "/api/v1/coverage", "/api/v1/scout", "POST /api/v1/crossmatch", "/api/v1/prices", "POST /api/v1/keys", "/api/v1/keys/me", "POST /api/v1/keys/rotate", "/api/v1/usage"],
+    keys: { console: "/console/", prices: "/api/v1/prices", self_service: !(env.MIRA_API_KEYS ?? "").trim(), note: "A key is optional here: with one, calls are counted in credits and may be made more often" } } };
 }
 
 const P = (name, description, extra = {}) => ({ name, in: "query", description, schema: { type: "number" }, ...extra });
 const OPENAPI = { openapi: "3.0.3", info: { title: "MIRA data API", version: VERSION, description: "Read access to what MIRA measured and indexed: the verified catalogue of stars caught moving, the index of NASA SPHEREx Level-2 exposures, the survey's visit dates, and the places the sky model marked. Positions are ICRS degrees. Motions are arcseconds a year." },
-  servers: [{ url: "/api/v1" }], components: { securitySchemes: { key: { type: "apiKey", in: "header", name: "X-API-Key", description: "Only on deployments that set MIRA_API_KEYS" } } },
+  servers: [{ url: "/api/v1" }], components: { securitySchemes: { key: { type: "apiKey", in: "header", name: "X-API-Key", description: "Optional on open deployments: with a key, calls are counted in credits and may be made ten times as often. Make one with POST /keys or at /console/. Authorization: Bearer works too" } } },
   paths: {
     "/status": { get: { summary: "What data this server carries", responses: { 200: { description: "Counts and dates" } } } },
     "/targets": { get: { summary: "NASA's five test targets", responses: { 200: { description: "Names, positions, links" } } } },
@@ -152,6 +160,12 @@ const OPENAPI = { openapi: "3.0.3", info: { title: "MIRA data API", version: VER
     "/exposures": { get: { summary: "SPHEREx Level-2 exposures that hold a position", parameters: [P("ra", "Right ascension, degrees", { required: true }), P("dec", "Declination, degrees", { required: true }), P("detector", "1 to 6"), P("mjd_min", "Earliest date, MJD"), P("mjd_max", "Latest date, MJD"), P("limit", "Rows returned (default 500)"), P("format", "'json' or 'csv'", { schema: { type: "string", enum: ["json", "csv"] } })], responses: { 200: { description: "Exposures with their file addresses on NASA's public bucket" } } } },
     "/coverage": { get: { summary: "When SPHEREx visited a position", parameters: [P("ra", "Right ascension, degrees", { required: true }), P("dec", "Declination, degrees", { required: true })], responses: { 200: { description: "Visit dates and an estimate of the next one" } } } },
     "/scout": { get: { summary: "Places the sky model marked where the catalogue has nothing", parameters: [P("ra", "Right ascension, degrees (optional)"), P("dec", "Declination, degrees"), P("radius", "Degrees (default 2)"), P("gaia", "'absent', 'listed', or 'open' (in neither Gaia nor SIMBAD)", { schema: { type: "string", enum: ["absent", "listed", "open"] } }), P("limit", "Rows returned (default 50, at most 400)")], responses: { 200: { description: "Marks, each with the Gaia check and V-JEPA 2's score" } } } },
+    "/prices": { get: { summary: "What each call costs in credits, the free allowance, the limits", responses: { 200: { description: "The price list" } } } },
+    "/keys": { post: { summary: "Make a key. It is shown once", requestBody: { content: { "application/json": { schema: { type: "object", properties: { label: { type: "string", maxLength: 60 } } } } } }, responses: { 201: { description: "The key and its starting credits" }, 429: { description: "This address made too many keys today" } } } },
+    "/keys/me": { get: { summary: "The key you sent: credits and calls", security: [{ key: [] }], responses: { 200: { description: "The key, without its secret" }, 401: { description: "No key, or not known here" } } }, delete: { summary: "Revoke the key you sent", security: [{ key: [] }], responses: { 200: { description: "Revoked" } } } },
+    "/keys/rotate": { post: { summary: "A new secret for the same key; the earlier one stops working", security: [{ key: [] }], responses: { 200: { description: "The new key, shown once" } } } },
+    "/usage": { get: { summary: "Credits and calls of the key you sent, by day and by endpoint, and its last 40 calls", security: [{ key: [] }], responses: { 200: { description: "Usage" } } } },
+    "/keys/{id}/credits": { post: { summary: "The operator grants credits to a key (header X-Admin-Key)", parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }], requestBody: { required: true, content: { "application/json": { schema: { type: "object", required: ["credits"], properties: { credits: { type: "integer", minimum: 1 } } } } } }, responses: { 200: { description: "The key with its new balance" }, 403: { description: "Grants are off, or the admin key is wrong" } } } },
     "/crossmatch": { post: { summary: "A list of positions against the catalogue, the survey and the sky model", requestBody: { required: true, content: { "application/json": { schema: { type: "object", required: ["positions"], properties: { positions: { type: "array", maxItems: 5000, items: { type: "object", required: ["ra", "dec"], properties: { id: { type: "string" }, ra: { type: "number" }, dec: { type: "number" } } } }, radius_arcsec: { type: "number", default: 30 } } } } } }, responses: { 200: { description: "One result per position" } } } },
   } };
 
@@ -161,17 +175,45 @@ const readBody = (req, max = 2e6) => new Promise((ok, no) => { let n = 0; const 
 
 export async function handleApi(req, res, env = process.env) {
   const u = new URL(req.url ?? "/", "http://x"), path = u.pathname.replace(/^\/api\/v1/, "").replace(/\/+$/, "") || "/status", q = u.searchParams;
-  const send = (code, body, type = "application/json; charset=utf-8") => { res.statusCode = code; res.setHeader("Content-Type", type); res.setHeader("Access-Control-Allow-Origin", "*"); res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-API-Key"); res.setHeader("Cache-Control", "no-store"); res.end(typeof body === "string" ? body : JSON.stringify(body)); };
+  let meter = null;      // the key this call is written against, and what an answer costs
+  const send = (code, body, type = "application/json; charset=utf-8") => { res.statusCode = code; res.setHeader("Content-Type", type); res.setHeader("Access-Control-Allow-Origin", "*"); res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-API-Key, Authorization, X-Admin-Key");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS"); res.setHeader("Access-Control-Expose-Headers", "X-Credits-Cost, X-Credits-Left"); res.setHeader("Cache-Control", "no-store");
+    if (meter) { const cost = code >= 200 && code < 300 ? meter.cost : 0; record(env, meter.key, path, cost, code); res.setHeader("X-Credits-Cost", String(cost)); res.setHeader("X-Credits-Left", String(creditsLeft(meter.key))); meter = null; }     // only an answered call costs
+    res.end(typeof body === "string" ? body : JSON.stringify(body)); };
   try {
     if (req.method === "OPTIONS") return send(204, "");
     if (path === "/openapi.json") return send(200, OPENAPI);
     if (path === "/status") return send(200, (await status(env)).body);
-    const keys = (env.MIRA_API_KEYS ?? "").split(",").map((s) => s.trim()).filter(Boolean);
-    if (keys.length && !keys.includes(String(req.headers["x-api-key"] ?? ""))) throw new Bad("this deployment asks for a key: send it in the header X-API-Key", 401);
-    if (limited(String(req.headers["x-forwarded-for"] ?? req.socket?.remoteAddress ?? "?").split(",")[0], env)) throw new Bad("too many calls in ten minutes", 429);
-    let r;
-    if (path === "/crossmatch") { if (req.method !== "POST") throw new Bad("POST a JSON body: { positions: [{ ra, dec }] }", 405); r = await crossmatch(await readBody(req), env); }
+    if (path === "/prices") return send(200, priceList(env));
+    const address = String(req.headers["x-forwarded-for"] ?? req.socket?.remoteAddress ?? "?").split(",")[0].trim();
+    const sent = String(req.headers["x-api-key"] ?? "") || (/^Bearer\s+(\S+)$/i.exec(String(req.headers.authorization ?? ""))?.[1] ?? "");
+    const fixed = (env.MIRA_API_KEYS ?? "").split(",").map((s) => s.trim()).filter(Boolean), operator = !!sent && fixed.includes(sent), key = sent && !operator ? findKey(env, sent) : null;
+    // ---- keys, credits, usage
+    if (path === "/keys") { if (req.method !== "POST") throw new Bad("POST { label } to make a key", 405);
+      if (fixed.length && !operator) throw new Bad("this deployment does not hand out keys by itself: ask its operator", 403);
+      if (limited(address, env)) throw new Bad("too many calls in ten minutes", 429);
+      const b = await readBody(req, 4000); return send(201, { ...createKey(env, address, b.label), note: "Keep this key: it is shown once. Send it in the header X-API-Key." }); }
+    if (/^\/keys\/[0-9a-f]{10}\/credits$/.test(path)) { if (req.method !== "POST") throw new Bad("POST { credits }", 405); const b = await readBody(req, 4000); return send(200, grant(env, path.split("/")[2], b.credits, req.headers["x-admin-key"])); }
+    if (path === "/keys/me" || path === "/keys/rotate" || path === "/usage") {
+      if (!key) throw new Bad(sent ? "this key is not known here" : "send your key in the header X-API-Key", 401);
+      if (key.revoked) throw new Bad("this key was revoked", 401);
+      if (path === "/usage") { if (req.method !== "GET") throw new Bad("GET only", 405); return send(200, usage(key)); }
+      if (path === "/keys/rotate") { if (req.method !== "POST") throw new Bad("POST only", 405); return send(200, { ...rotateKey(env, key), note: "The earlier secret no longer works. Keep this one: it is shown once." }); }
+      if (req.method === "DELETE") return send(200, { ...revokeKey(env, key), note: "This key no longer works." });
+      if (req.method !== "GET") throw new Bad("GET to read the key, DELETE to revoke it", 405);
+      return send(200, view(key)); }
+    // ---- the data
+    if (sent && !operator && !key) throw new Bad("this key is not known here", 401);
+    if (key?.revoked) throw new Bad("this key was revoked", 401);
+    if (fixed.length && !operator && !key) throw new Bad("this deployment asks for a key: send it in the header X-API-Key", 401);
+    if (key ? keyLimited(env, key) : !operator && limited(address, env)) throw new Bad("too many calls in ten minutes", 429);
+    let r, body = null;
+    if (path === "/crossmatch") { if (req.method !== "POST") throw new Bad("POST a JSON body: { positions: [{ ra, dec }] }", 405); body = await readBody(req); }
     else if (req.method !== "GET") throw new Bad("GET only", 405);
+    if (key) { const cost = costOf(path, Array.isArray(body?.positions) ? body.positions.length : 0); meter = { key, cost: 0 };
+      if (creditsLeft(key) < cost) throw new Bad(`this key has ${creditsLeft(key)} credits left and this call costs ${cost}. No payment is connected in this build: the operator grants credits`, 402);
+      meter.cost = cost; }
+    if (path === "/crossmatch") r = await crossmatch(body, env);
     else if (path === "/targets") r = { body: { targets: TARGETS.map((t) => ({ ...t, lab: `/explore/?target=${t.key}` })) } };
     else if (path === "/movers") r = await movers(q, env);
     else if (path.startsWith("/movers/")) r = await mover(decodeURIComponent(path.slice(8)), env);
@@ -181,5 +223,6 @@ export async function handleApi(req, res, env = process.env) {
     else throw new Bad(`no such endpoint: ${path}. See /api/v1/openapi.json`, 404);
     if (q.get("format") === "csv" && r.table) return send(200, csv(r.table), "text/csv; charset=utf-8");
     send(200, r.body);
-  } catch (e) { send(e instanceof Bad ? e.code : 500, { error: e instanceof Bad ? e.message : "the server could not answer" }); if (!(e instanceof Bad)) console.error("api", e); }
+  } catch (e) { const known = e instanceof Bad || e instanceof KeyError; send(known ? e.code : 500, { error: known ? e.message : "the server could not answer" }); if (!known) console.error("api", e); }
 }
+

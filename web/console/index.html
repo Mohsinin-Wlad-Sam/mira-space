@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<link rel="icon" type="image/png" href="/favicon.png" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#000000" />
+<title>MIRA API console: keys, usage and credits</title>
+<meta name="description" content="Make a key for MIRA's data API, watch its usage and its credits, and try a call." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Semi+Condensed:wght@600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+:root { --white: rgb(240 240 250); --dim: rgb(240 240 250 / .72); --faint: rgb(240 240 250 / .42); --hair: rgb(240 240 250 / .18); --display: "Barlow Semi Condensed", "Barlow", Arial, sans-serif; --body: "Barlow", Arial, sans-serif; --mono: "JetBrains Mono", ui-monospace, Menlo, monospace; --accent: #ff9d4d; --ok: #7df0a6; --bad: #ff5d6c; }
+* { box-sizing: border-box; } body { margin: 0; background: #000; color: var(--white); font-family: var(--body); font-size: 15.5px; line-height: 1.55; -webkit-font-smoothing: antialiased; }
+a { color: var(--white); text-underline-offset: 3px; }
+header { position: sticky; top: 0; z-index: 10; display: flex; align-items: center; gap: 28px; height: 56px; padding: 0 24px; background: rgb(0 0 0 / .86); backdrop-filter: blur(12px); border-bottom: .8px solid var(--hair); }
+.logo { font-family: var(--display); font-weight: 700; font-size: 20px; letter-spacing: .42em; text-decoration: none; } header nav { display: flex; gap: 22px; margin-left: auto; } header nav a { font-weight: 700; font-size: 12px; letter-spacing: .12em; text-transform: uppercase; text-decoration: none; color: var(--dim); } header nav a:hover, header nav a.on { color: #fff; }
+main { max-width: 1180px; margin: 0 auto; padding: 36px 24px 110px; }
+h1 { margin: 0 0 8px; font-family: var(--display); font-weight: 700; font-size: clamp(38px, 5vw, 60px); line-height: .98; text-transform: uppercase; } .lead { max-width: 720px; margin: 0 0 26px; font-size: 18px; color: var(--dim); }
+h2 { margin: 0 0 12px; font-family: var(--display); font-weight: 700; font-size: 20px; letter-spacing: .04em; text-transform: uppercase; }
+.grid { display: grid; grid-template-columns: 380px minmax(0, 1fr); gap: 14px; align-items: start; } .col { display: grid; gap: 14px; }
+.card { padding: 18px; border: .8px solid var(--hair); border-radius: 12px; background: #07070a; min-width: 0; }
+.k { font-family: var(--mono); font-size: 9.5px; letter-spacing: .16em; text-transform: uppercase; color: var(--faint); }
+input, select, button { height: 38px; padding: 0 12px; background: #000; color: var(--white); border: .8px solid rgb(240 240 250 / .3); border-radius: 6px; font-family: var(--mono); font-size: 12.5px; min-width: 0; }
+button { font-family: var(--body); font-weight: 700; font-size: 11.5px; letter-spacing: .12em; text-transform: uppercase; cursor: pointer; } button.solid { background: var(--white); color: #000; border-color: var(--white); } button:hover { border-color: #fff; } button.sm { height: 28px; padding: 0 9px; font-size: 10px; } button.warn:hover { border-color: var(--bad); color: var(--bad); } button:disabled { opacity: .4; cursor: default; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; } .row input { flex: 1 1 160px; }
+.keys { display: grid; gap: 8px; margin-top: 14px; } .key { padding: 12px; border: .8px solid var(--hair); border-radius: 9px; cursor: pointer; } .key.on { border-color: var(--accent); background: rgb(255 157 77 / .05); } .key b { font-weight: 600; } .key code { display: block; margin: 3px 0 9px; font-family: var(--mono); font-size: 11.5px; color: var(--dim); word-break: break-all; }
+.once { margin-top: 12px; padding: 12px; border: .8px solid var(--ok); border-radius: 9px; background: rgb(125 240 166 / .06); } .once code { display: block; margin: 6px 0 10px; font-family: var(--mono); font-size: 12px; word-break: break-all; }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; border: .8px solid var(--hair); border-radius: 12px; overflow: hidden; background: #07070a; } .stat { padding: 16px 18px; border-right: .8px solid var(--hair); min-width: 0; } .stat:last-child { border-right: 0; } .stat b { display: block; margin-top: 4px; font-family: var(--display); font-weight: 700; font-size: 36px; line-height: 1; font-variant-numeric: tabular-nums; } .stat small { color: var(--dim); font-size: 12.5px; }
+.bar { height: 5px; margin-top: 10px; border-radius: 3px; background: rgb(240 240 250 / .12); overflow: hidden; } .bar i { display: block; height: 100%; background: var(--accent); width: 0; transition: width .4s; }
+svg.chart { display: block; width: 100%; height: 150px; margin-top: 6px; } svg.chart rect { fill: var(--accent); } svg.chart rect.z { fill: rgb(240 240 250 / .1); } svg.chart text { fill: var(--faint); font-family: var(--mono); font-size: 9px; }
+table { width: 100%; border-collapse: collapse; font-size: 13.5px; } th { padding: 7px 10px 7px 0; text-align: left; font-family: var(--mono); font-weight: 400; font-size: 9.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); border-bottom: .8px solid var(--hair); } td { padding: 8px 10px 8px 0; border-bottom: .8px solid rgb(240 240 250 / .09); font-variant-numeric: tabular-nums; } td.n, th.n { text-align: right; padding-right: 0; } td code, .mono { font-family: var(--mono); font-size: 12px; }
+pre { margin: 10px 0 0; padding: 12px 14px; max-height: 300px; overflow: auto; border: .8px solid var(--hair); border-radius: 9px; background: #000; font-family: var(--mono); font-size: 12px; line-height: 1.55; white-space: pre-wrap; word-break: break-word; }
+.note { margin: 12px 0 0; padding: 11px 13px; border-left: 2px solid var(--accent); background: rgb(255 157 77 / .07); font-size: 14px; } .muted { color: var(--dim); font-size: 13.5px; } .s2 { color: var(--ok); } .s4 { color: var(--bad); }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; } #off { display: none; }
+@media (max-width: 940px) { .grid, .two { grid-template-columns: minmax(0, 1fr); } .stats { grid-template-columns: 1fr; } .stat { border-right: 0; border-bottom: .8px solid var(--hair); } header nav a:nth-child(n+4) { display: none; } }
+@view-transition { navigation: auto; }
+</style>
+</head>
+<body>
+<header><a class="logo" href="/">MIRA</a><nav><a href="/explore/#sky">Sky</a><a href="/explore/#lab">Lab</a><a href="/docs/#api">API reference</a><a class="on" href="/console/">Console</a><a href="/docs/">Docs</a></nav></header>
+<main>
+<h1>API console</h1>
+<p class="lead">Make a key, try a call, and watch what it costs. A key is optional: without one the API answers 300 calls in ten minutes; with one, ten times as many, counted in credits.</p>
+<div class="card" id="off"><b>This copy of the site is static.</b> It has no server process, so there is no API and no keys here. Run it with <code class="mono">cd web &amp;&amp; npm run dev</code>, or see <a href="/docs/#deploy">Deploy</a>.</div>
+<div class="grid" id="app">
+  <div class="col">
+    <div class="card">
+      <h2>Your keys</h2>
+      <form class="row" id="mk"><input id="label" maxlength="60" placeholder="A name for the key" aria-label="A name for the key" /><button class="solid" id="mkgo">Make a key</button></form>
+      <div id="once"></div>
+      <div class="keys" id="keys"></div>
+      <p class="muted" id="nokeys">No key in this browser yet.</p>
+      <p class="muted">The server keeps only a fingerprint of a key, so it cannot show it again. This page keeps your keys in this browser so that it can show their usage; <b>Forget</b> removes one from here, <b>Revoke</b> stops it everywhere.</p>
+    </div>
+    <div class="card">
+      <h2>Prices</h2>
+      <table id="prices"><tr><th>Call</th><th class="n">Credits</th></tr></table>
+      <p class="muted" id="free"></p>
+      <p class="note"><b>Pay as you go, not connected.</b> <span id="rate"></span> No payment provider is wired in this build, so nobody is charged: a key that runs out gets HTTP 402 until the operator grants credits (<code class="mono">POST /api/v1/keys/{id}/credits</code>).</p>
+    </div>
+  </div>
+  <div class="col">
+    <div class="stats"><div class="stat"><span class="k">Credits left</span><b id="s-left">–</b><small id="s-of">choose or make a key</small><div class="bar"><i id="s-bar"></i></div></div><div class="stat"><span class="k">Calls with this key</span><b id="s-calls">–</b><small id="s-last">&nbsp;</small></div><div class="stat"><span class="k">Calls in ten minutes</span><b id="s-lim">–</b><small id="s-lim2">&nbsp;</small></div></div>
+    <div class="card">
+      <h2>Try a call</h2>
+      <div class="row"><select id="ep" aria-label="Endpoint"><option value="movers">GET /movers</option><option value="exposures">GET /exposures</option><option value="coverage">GET /coverage</option><option value="scout">GET /scout</option><option value="targets">GET /targets</option><option value="crossmatch">POST /crossmatch</option></select><input id="q" aria-label="Query or body" spellcheck="false" /><button class="solid" id="go">Run</button></div>
+      <p class="muted" id="callsay" style="margin:10px 0 0">&nbsp;</p>
+      <pre id="out">The answer appears here.</pre>
+    </div>
+    <div class="two">
+      <div class="card"><h2>Credits used, day by day</h2><svg class="chart" id="chart" viewBox="0 0 420 150" preserveAspectRatio="none"></svg></div>
+      <div class="card"><h2>By endpoint</h2><table id="byep"><tr><th>Endpoint</th><th class="n">Calls</th><th class="n">Credits</th></tr></table></div>
+    </div>
+    <div class="card"><h2>Last calls</h2><table id="recent"><tr><th>When</th><th>Endpoint</th><th class="n">Status</th><th class="n">Credits</th></tr></table><p class="muted" id="norecent">Nothing yet.</p></div>
+    <div class="card"><h2>In your code</h2><pre id="code"></pre></div>
+  </div>
+</div>
+</main>
+<script>
+const $ = (s) => document.querySelector(s), API = "/api/v1", n = (v) => Number(v).toLocaleString("en-US"), esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const load = () => { try { return JSON.parse(localStorage.getItem("mira.api.keys") || "[]"); } catch (e) { return []; } }, save = (L) => { try { localStorage.setItem("mira.api.keys", JSON.stringify(L)); } catch (e) { /* storage off: the keys last as long as the page */ } };
+let KEYS = load(), cur = KEYS[0]?.id ?? null, PR = null;
+const key = () => KEYS.find((k) => k.id === cur) ?? null;
+const call = async (path, o = {}) => { const r = await fetch(API + path, { method: o.method ?? "GET", headers: { ...(o.key ? { "X-API-Key": o.key } : {}), ...(o.body !== undefined ? { "Content-Type": "application/json" } : {}) }, body: o.body !== undefined ? (typeof o.body === "string" ? o.body : JSON.stringify(o.body)) : undefined });
+  const text = await r.text(); let j = null; try { j = JSON.parse(text); } catch (e) { /* CSV or a page */ } return { s: r.status, j, text, html: (r.headers.get("content-type") || "").includes("html"), cost: r.headers.get("x-credits-cost"), left: r.headers.get("x-credits-left") }; };
+
+function drawKeys() {
+  $("#nokeys").hidden = KEYS.length > 0;
+  $("#keys").innerHTML = KEYS.map((k) => `<div class="key${k.id === cur ? " on" : ""}" data-id="${k.id}"><b>${esc(k.label)}</b>${k.revoked ? ' <span class="s4">revoked</span>' : ""}<code>mira_sk_${k.id}_…${esc(k.key.slice(-4))}</code><div class="row"><button class="sm" data-a="copy">Copy</button><button class="sm" data-a="rotate"${k.revoked ? " disabled" : ""}>Rotate</button><button class="sm warn" data-a="revoke"${k.revoked ? " disabled" : ""}>Revoke</button><button class="sm" data-a="forget">Forget</button></div></div>`).join("");
+  document.querySelectorAll("#keys .key").forEach((el) => { const id = el.dataset.id; el.onclick = (e) => { const a = e.target.dataset?.a; if (!a) { cur = id; drawKeys(); refresh(); return; } e.stopPropagation(); act(a, id, e.target); }; });
+  drawCode();
+}
+async function act(a, id, btn) {
+  const k = KEYS.find((q) => q.id === id); if (!k) return;
+  if (a === "copy") { try { await navigator.clipboard.writeText(k.key); btn.textContent = "Copied"; setTimeout(() => (btn.textContent = "Copy"), 1200); } catch (e) { $("#once").innerHTML = `<div class="once"><span class="k">Your key</span><code>${esc(k.key)}</code></div>`; } return; }
+  if (a === "forget") { KEYS = KEYS.filter((q) => q.id !== id); save(KEYS); if (cur === id) cur = KEYS[0]?.id ?? null; drawKeys(); refresh(); return; }
+  if (a === "rotate") { const r = await call("/keys/rotate", { method: "POST", key: k.key }); if (r.s === 200) { k.key = r.j.key; save(KEYS); once(r.j.key, "A new secret for this key. The earlier one no longer works."); } else say(r); }
+  if (a === "revoke") { const r = await call("/keys/me", { method: "DELETE", key: k.key }); if (r.s === 200) { k.revoked = true; save(KEYS); } else say(r); }
+  drawKeys(); refresh();
+}
+const once = (v, what) => { $("#once").innerHTML = `<div class="once"><span class="k">${esc(what)}</span><code>${esc(v)}</code><button class="sm" id="oncecopy">Copy</button></div>`; $("#oncecopy").onclick = async () => { try { await navigator.clipboard.writeText(v); $("#oncecopy").textContent = "Copied"; } catch (e) { /* select it by hand */ } }; };
+const say = (r) => { $("#callsay").innerHTML = `<span class="s4">HTTP ${r.s}</span> ${esc(r.j?.error ?? "")}`; };
+$("#mk").onsubmit = async (e) => { e.preventDefault(); $("#mkgo").disabled = true; const r = await call("/keys", { method: "POST", body: { label: $("#label").value } }); $("#mkgo").disabled = false;
+  if (r.s !== 201) { $("#once").innerHTML = `<p class="note">${esc(r.j?.error ?? "The key could not be made.")}</p>`; return; }
+  KEYS.unshift({ id: r.j.id, label: r.j.label, key: r.j.key, made: r.j.made }); save(KEYS); cur = r.j.id; $("#label").value = ""; once(r.j.key, "Your new key. It is shown once: this browser keeps it for you."); drawKeys(); refresh(); };
+
+async function refresh() {
+  const k = key(); if (!k) { $("#s-left").textContent = "–"; $("#s-of").textContent = "choose or make a key"; $("#s-bar").style.width = "0"; $("#s-calls").textContent = "–"; $("#s-last").innerHTML = "&nbsp;"; drawUsage(null); return; }
+  const r = await call("/usage", { key: k.key }); if (r.s !== 200) { $("#s-left").textContent = "–"; $("#s-of").innerHTML = `<span class="s4">${esc(r.j?.error ?? "not readable")}</span>`; if (r.s === 401 && !k.revoked && /revoked/.test(r.j?.error ?? "")) { k.revoked = true; save(KEYS); drawKeys(); } drawUsage(null); return; }
+  const c = r.j.key.credits; $("#s-left").textContent = n(c.left); $("#s-of").textContent = `of ${n(c.granted)} granted · ${n(c.used)} used`; $("#s-bar").style.width = `${c.granted ? Math.round((100 * c.left) / c.granted) : 0}%`;
+  $("#s-calls").textContent = n(r.j.key.calls); $("#s-last").textContent = r.j.key.last_used ? `last ${new Date(r.j.key.last_used).toLocaleTimeString()}` : "none yet"; drawUsage(r.j);
+}
+function drawUsage(U) {
+  // fourteen days, the newest on the right
+  const days = []; for (let i = 13; i >= 0; i--) { const d = new Date(Date.now() - i * 86400000).toISOString().slice(0, 10); days.push([d, U?.by_day.find((q) => q.date === d)?.credits ?? 0]); }
+  const max = Math.max(1, ...days.map((d) => d[1])), W = 420, H = 150, bw = W / 14;
+  $("#chart").innerHTML = days.map(([d, v], i) => { const h = Math.round((v / max) * 108); return `<rect class="${v ? "" : "z"}" x="${(i * bw + 3).toFixed(1)}" y="${v ? 120 - h : 118}" width="${(bw - 6).toFixed(1)}" height="${v ? h : 2}" rx="2"><title>${d}: ${v} credits</title></rect>${i % 3 === 1 || i === 13 ? `<text x="${(i * bw + bw / 2).toFixed(1)}" y="138" text-anchor="middle">${d.slice(5)}</text>` : ""}${v ? `<text x="${(i * bw + bw / 2).toFixed(1)}" y="${114 - h}" text-anchor="middle">${v}</text>` : ""}`; }).join("");
+  const E = Object.entries(U?.by_endpoint ?? {}).sort((a, b) => b[1].credits - a[1].credits || b[1].calls - a[1].calls);
+  $("#byep").innerHTML = `<tr><th>Endpoint</th><th class="n">Calls</th><th class="n">Credits</th></tr>` + (E.length ? E.map(([ep, v]) => `<tr><td><code>${esc(ep)}</code></td><td class="n">${n(v.calls)}</td><td class="n">${n(v.credits)}</td></tr>`).join("") : `<tr><td colspan="3" class="muted">No calls yet.</td></tr>`);
+  const R = U?.recent ?? []; $("#norecent").hidden = R.length > 0;
+  $("#recent").innerHTML = `<tr><th>When</th><th>Endpoint</th><th class="n">Status</th><th class="n">Credits</th></tr>` + R.slice(0, 12).map((q) => `<tr><td class="mono">${new Date(q.at).toLocaleTimeString()}</td><td><code>${esc(q.endpoint)}</code></td><td class="n ${q.status < 300 ? "s2" : "s4"}">${q.status}</td><td class="n">${q.credits}</td></tr>`).join("");
+}
+function drawCode() { const k = key(), shown = k ? `mira_sk_${k.id}_…` : "YOUR_KEY", o = location.origin;
+  $("#code").textContent = `# curl\ncurl -H "X-API-Key: ${shown}" "${o}/api/v1/movers?ra=331.0966&dec=-56.8007&radius=0.5"\n\n# Python\nimport requests\nr = requests.get("${o}/api/v1/movers", params={"ra": 331.0966, "dec": -56.8007, "radius": 0.5},\n                 headers={"X-API-Key": "${shown}"})\nprint(r.headers["X-Credits-Left"], r.json()["movers"][0]["ai_estimate"])`; }
+
+const EX = { movers: "ra=331.0966&dec=-56.8007&radius=0.5", exposures: "ra=269.452&dec=4.693&detector=5&limit=5", coverage: "ra=133.8189&dec=-7.247", scout: "gaia=open&limit=5", targets: "", crossmatch: '{"positions":[{"id":"a","ra":331.0966,"dec":-56.8007},{"id":"b","ra":10,"dec":10}],"radius_arcsec":30}' };
+$("#ep").onchange = () => { $("#q").value = EX[$("#ep").value]; }; $("#q").value = EX.movers;
+const run = async () => { const ep = $("#ep").value, k = key(), post = ep === "crossmatch"; $("#go").disabled = true; $("#out").textContent = "…";
+  const r = await call(`/${ep}${!post && $("#q").value.trim() ? "?" + $("#q").value.trim() : ""}`, { key: k && !k.revoked ? k.key : undefined, ...(post ? { method: "POST", body: $("#q").value } : {}) }).catch(() => null); $("#go").disabled = false;
+  if (!r) { $("#out").textContent = "The API could not be reached."; return; }
+  $("#callsay").innerHTML = `<span class="${r.s < 300 ? "s2" : "s4"}">HTTP ${r.s}</span> · ` + (r.cost !== null ? `cost <b>${r.cost}</b> credit${r.cost === "1" ? "" : "s"} · <b>${n(r.left)}</b> left` : "no key sent: not counted in credits");
+  const t = r.j ? JSON.stringify(r.j, null, 2) : r.text; $("#out").textContent = t.length > 5000 ? t.slice(0, 5000) + "\n… (cut here)" : t; refresh(); };
+$("#go").onclick = run; $("#q").onkeydown = (e) => { if (e.key === "Enter") run(); };
+
+(async () => { const r = await call("/prices").catch(() => null); if (!r || r.html || r.s !== 200) { $("#off").style.display = "block"; $("#app").style.display = "none"; return; } PR = r.j;
+  $("#prices").innerHTML = `<tr><th>Call</th><th class="n">Credits</th></tr>` + Object.entries(PR.per_call).filter(([p]) => !["/status", "/openapi.json", "/prices"].includes(p)).map(([p, c]) => `<tr><td><code>${esc(p)}</code>${p === "/crossmatch" ? ' <span class="muted">per started 100 positions</span>' : ""}</td><td class="n">${c || "free"}</td></tr>`).join("");
+  $("#free").textContent = `A new key starts with ${n(PR.free_credits_per_key)} free credits. Only answered calls cost; a refused call costs nothing.`;
+  $("#rate").textContent = `Proposed rate beyond the free credits: ${PR.pay_as_you_go.currency} ${PR.pay_as_you_go.per_10000_credits} for 10,000 credits.`;
+  $("#s-lim").textContent = n(PR.calls_per_10_minutes.with_a_key); $("#s-lim2").textContent = `with a key · ${n(PR.calls_per_10_minutes.without_a_key)} without`;
+  if (!PR.self_service_keys) { $("#mkgo").disabled = true; $("#once").innerHTML = `<p class="note">This deployment does not hand out keys by itself: ask its operator.</p>`; }
+  drawKeys(); refresh(); })();
+</script>
+</body>
+</html>

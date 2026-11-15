@@ -25,7 +25,8 @@ export type BlinkTarget = Target & { plx?: number; otype?: string; sptype?: stri
 /** what "Save to logbook" hands over */
 export type Snapshot = { target: BlinkTarget; center: [number, number]; size: number; frames: number; covered: number; lastMjd: number; thumb: string; url: string;
   answers: Record<"move" | "change" | "made", { chip: string; text: string }> | null };
-export type BlinkOpts = { /** ask the assistant to explain what an instrument shows */ onExplain?: (question: string) => void; embed?: boolean; toast?: (m: string) => void; onState?: (p: URLSearchParams) => void; onAtlas?: (ra: number, dec: number) => void; onSave?: (s: Snapshot) => void };
+export type BlinkOpts = { /** ask the assistant to explain what an instrument shows */ onExplain?: (question: string) => void; embed?: boolean; toast?: (m: string) => void; onState?: (p: URLSearchParams) => void; onAtlas?: (ra: number, dec: number) => void; onSave?: (s: Snapshot) => void;
+  /** what a neural network estimates for this target, when it is one of the catalogue's movers (kind, temperature, distance) */ aiFor?: (t: BlinkTarget) => Promise<{ big: string; sub: string } | null> };
 type Mode = "evolve" | "time" | "lambda" | "stack" | "rgb" | "diff";
 type Tab = "changes" | "motion" | "spectrum" | "light" | "limits" | "frames" | "export";
 const TABS: [Tab, string, string][] = [["changes", "Motion detector", "Which sources in this field moved or changed"], ["motion", "Astrometer", "Position against time: proper motion, parallax, distance"],
@@ -218,6 +219,7 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
   let past: Partial<Record<PastKey, PastImg | null>> = {}, pastState: "idle" | "loading" | "done" = "idle";
   let probe: Probe = { dx: 0, dy: 0, follow: true }, logSpec = false;
   // the drawer: closed until a tool is asked for; `tool` null = the list of tools
+  let aiFact: { big: string; sub: string } | null = null;
   let drawerOpen = innerWidth >= 1100, tool: ToolKey | null = null, pro = (() => { try { return localStorage.getItem("mira.pro") === "1"; } catch { return false; } })();
   /** the rail shows icons alone, or icons with their names: the visitor's choice, kept */
   let railWide = (() => { try { return localStorage.getItem("mira.rail") === "1"; } catch { return false; } })();
@@ -242,6 +244,7 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
     dets = new Set([1, 2, 3, 4, 5, 6]); view.track = false; mode = o.mode ?? "evolve"; order = "time";
     // a tool that is open (or asked for in the address) stays open on the new field
     tab = o.tab ?? "changes"; if (isTab(tool)) tab = tool; excluded.clear(); evo.range = "1999"; evo.rate = 5;
+    aiFact = null; const asked = t; opts.aiFor?.(t).then((r) => { if (target === asked || (target.ra === asked.ra && target.dec === asked.dec)) { aiFact = r; renderFacts(); } }, () => { /* no estimate */ });
     if (t.key === "wise-0855") dets = new Set([5, 6]);   // only visible at 4–5 µm
     start();
   }
@@ -772,6 +775,7 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
     rows.push(["spectrum", "Its light", a ? (/^[—…]$/.test(a.made.big) ? a.made.chip : a.made.chip) : "…", a ? `${/^[—…]$/.test(a.made.big) ? "" : `${a.made.big}${a.made.unit ? ` ${a.made.unit}` : ""} `}${a.made.label}` : ""]);
     rows.push(["light", "Brightness", a ? a.change.chip : "…", a ? `${/^[—…]$/.test(a.change.big) ? "" : `${a.change.big} `}${a.change.label}` : ""]);
     el.innerHTML = rows.map(([key, label, big, sub]) => `<button class="lab-fact${drawerOpen && tool === key ? " on" : ""}" data-tool="${key}"><span class="k">${label}</span><b>${esc(big)}</b><small>${esc(sub)}</small></button>`).join("")
+      + (aiFact ? `<a class="lab-fact ai" href="/docs/#ai" target="_blank" rel="noopener" title="An estimate by a neural network from the SPHEREx spectrum: how it was checked"><span class="k">AI estimate · not a measurement</span><b>${esc(aiFact.big)}</b><small>${esc(aiFact.sub)}</small></a>` : "")
       + `<p class="lx-hint">Each reading opens the tool that produced it. Every tool is in the rail on the left.</p>`;
   }
   const tbl = (head: string[], rows: string[][], cls = "") => `<div class="bk-tw"><table class="bk-table ${cls}"><thead><tr>${head.map((h) => `<th>${h}</th>`).join("")}</tr></thead><tbody>${rows.map((r) => `<tr>${r.map((v) => `<td>${v}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
@@ -805,7 +809,7 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
     if (tab === "spectrum") {
       const per = [1, 2, 3, 4, 5, 6].map((d) => { const v = A.P.filter((p) => p.det === d), c2 = v.filter((p) => !p.flagged), q = DETECTORS[d - 1];
         return [`<i class="sw" style="background:${detColor(d)}"></i>D${d}`, `${q.lo.toFixed(2)}–${q.hi.toFixed(2)}`, String(v.length), c2.length ? median(c2.map((p) => p.flux)).toPrecision(3) : "–", c2.length ? median(c2.map((p) => p.snr)).toFixed(0) : "–", String(v.length - c2.length)]; });
-      el.innerHTML = `<h3 class="bk-h">Spectrum of the selected source, 0.75–5 µm</h3>${reading(say(answers?.made))}<div class="bk-plot-host"></div>
+      el.innerHTML = `<h3 class="bk-h">Spectrum of the selected source, 0.75–5 <span style="text-transform:none">µm</span></h3>${reading(say(answers?.made))}<div class="bk-plot-host"></div>
         <div class="bk-bar2"><span class="mono">${A.P.length} exposures, one point each · ${A.nFlagged} flagged by NASA</span><span><button class="link" id="bk-log">${logSpec ? "linear scale" : "logarithmic scale"}</button><button class="link" id="bk-csv">CSV</button></span></div>
         ${tbl(["detector", "range (µm)", "exposures", "median flux (mJy)", "median S/N", "flagged"], per, "num")}
         <p class="bk-cap">Each point is one 2-minute exposure: SPHEREx's filter changes wavelength across each detector, so every exposure samples the source at a different wavelength. PSF-weighted photometry (Gaussian of the exposure's FWHM), local sky from a 5–8 px annulus. Shaded bands: molecular absorptions. Diamonds: catalogue fluxes of the same source. Click a point to open that exposure.</p>`;
@@ -1072,7 +1076,7 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
     $("#bk-rail").innerHTML = `<button id="bk-wide" class="lx-wide" aria-pressed="${railWide}" aria-label="${railWide ? "Show icons only" : "Show the names of the tools"}"><svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="14" height="12" rx="1.5"/><path d="M8 4v12"/><path d="${railWide ? "M14 8l-2 2 2 2" : "M11.5 8l2 2-2 2"}"/></svg><span class="lx-lab">Tools</span><span class="lx-tip"><b>${railWide ? "Icons only" : "Show names"}</b>${railWide ? "Make room for the picture" : "Each tool with its name"}</span></button>`
       + `<div class="lx-g">${btn("read", "Readings", "The answers for this field, in a few words", 'data-tool=""')}</div>`
       + groups.map((g) => { const L = TOOLS.filter((q) => q.g === g && (!q.pro || pro)); return L.length ? `<div class="lx-g${g === "Researcher" ? " pro" : ""}"><span class="lx-gh">${g}</span>${L.map((q) => btn(q.k, q.t, q.d, `data-tool="${q.k}"`)).join("")}</div>` : ""; }).join("")
-      + `<span class="lx-grow"></span><div class="lx-g foot"><button id="bk-pro" class="lx-pro${pro ? " on" : ""}" aria-pressed="${pro}" aria-label="Researcher tools"><span class="lx-pi">PRO</span><span class="lx-lab">Researcher tools ${pro ? "on" : "off"}</span><span class="lx-tip"><b>Researcher tools</b>${pro ? "On: the fit, the limits, every exposure, exports, watchlists, the sky model" : "The fit, the limits, every exposure, exports, watchlists, the sky model. Free while MIRA is a prototype"}</span></button>`
+      + `<span class="lx-grow"></span><div class="lx-g foot"><button id="bk-pro" class="lx-pro${pro ? " on" : ""}" aria-pressed="${pro}" aria-label="Researcher tools"><span class="lx-pi">PRO</span><span class="lx-lab">Researcher ${pro ? "on" : "off"}</span><span class="lx-tip"><b>Researcher tools</b>${pro ? "On: the fit, the limits, every exposure, exports, watchlists, the sky model" : "The fit, the limits, every exposure, exports, watchlists, the sky model. Free while MIRA is a prototype"}</span></button>`
       + (opts.onAtlas ? btn("sky", "On the Sky map", "This field on the Sky map: where it is, and its pictures since 1999", 'id="bk-onsky"') : "") + (opts.onSave ? btn("save", "Save as a case", "Keep this reading in your cases", 'id="bk-save"') : "")
       + `<a class="lx-a" href="/docs/#lab" target="_blank" rel="noopener" aria-label="How the Lab works">${icon("docs")}<span class="lx-lab">Documentation</span><span class="lx-tip"><b>Documentation</b>How every tool works</span></a></div>`;
     const wd = host.querySelector<HTMLElement>("#bk-wide"); if (wd) wd.onclick = () => { railWide = !railWide; try { localStorage.setItem("mira.rail", railWide ? "1" : "0"); } catch { /* private mode */ } renderToolList(); syncControls(); requestAnimationFrame(() => { fit(); paint(); }); };

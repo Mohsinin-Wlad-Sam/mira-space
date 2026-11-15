@@ -45,12 +45,16 @@ for (;;) { if (await page.evaluate(() => !!window.__film?.ready)) break; if (Dat
 console.log(` ready in ${Math.round((Date.now() - t0) / 1000)} s`);
 for (const f of page.frames()) await f.addStyleTag({ content: ".embed-out{display:none!important}" }).catch(() => {});
 await page.evaluate(() => window.__film.start(true));
-const N = Math.round(fps * to), dt = 1000 / fps, t1 = Date.now();
+const N = Math.round(fps * to), dt = 1000 / fps, t1 = Date.now(), check = process.argv.includes("--check"); let checked = 0;
 for (let k = 0; k <= N; k++) {
   await page.evaluate((d) => window.__vt.step(d), k ? dt : 0);
   if (k < Math.round(fps * from)) continue;
   await page.evaluate(() => window.__film.settle());
-  await page.screenshot({ path: `${out}/f${String(k).padStart(5, "0")}.jpg`, type: "jpeg", quality: 96 });
+  await page.screenshot({ path: `${out}/f${String(k).padStart(5, "0")}.jpg`, type: "jpeg", quality: +arg("quality", "96") });
+  if (check && k % Math.round(fps / 2) === 0) { const B = await page.evaluate(() => window.__film.boxes?.() ?? []), bad = [];
+    for (const b of B) if (b.w > 0 && (b.x < 38 || b.y < 22 || b.x + b.w > 1882 || b.y + b.h > 1068)) bad.push(`${b.id} leaves the safe area`);
+    for (let i = 0; i < B.length; i++) for (let j = i + 1; j < B.length; j++) { const p = B[i], q = B[j]; if (p.x < q.x + q.w && q.x < p.x + p.w && p.y < q.y + q.h && q.y < p.y + p.h) bad.push(`${p.id} over ${q.id}`); }
+    if (bad.length) console.log(`  check at ${(k / fps).toFixed(1)} s: ${bad.join("; ")}`); checked++; }
   if (k % fps === 0) console.log(`${(k / fps).toFixed(0)} s of ${to} · ${Math.round((Date.now() - t1) / 1000)} s elapsed`);
 }
-await browser.close(); console.log("frames in", out);
+await browser.close(); console.log("frames in", out, check ? `· ${checked} layout checks` : "");

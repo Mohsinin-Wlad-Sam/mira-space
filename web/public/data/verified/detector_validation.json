@@ -1,0 +1,134 @@
+{
+ "built": "2026-11-15",
+ "fields": 459,
+ "summary": {
+  "attempted": 460,
+  "run": 459,
+  "failed": 1,
+  "movers": 240,
+  "empty_fields": 219,
+  "judged": 216,
+  "known": {
+   "flagged_all": 213,
+   "flagged": 213,
+   "right": 213,
+   "med": 0.009767297476784448,
+   "p90": 0.02049634113689562
+  },
+  "blind": {
+   "tested": 216,
+   "flagged": 199,
+   "right": 199,
+   "not_judged": 6,
+   "med": 0.010865063276391992,
+   "p90": 0.022461887721204554,
+   "linked": 46,
+   "by_motion": [
+    [
+     0.15,
+     0.25,
+     61,
+     53,
+     53
+    ],
+    [
+     0.25,
+     0.4,
+     64,
+     61,
+     61
+    ],
+    [
+     0.4,
+     0.7,
+     53,
+     52,
+     52
+    ],
+    [
+     0.7,
+     2.6,
+     38,
+     33,
+     33
+    ]
+   ]
+  },
+  "still": {
+   "known_n": 5964,
+   "known_flagged": 0,
+   "blind_n": 5951,
+   "blind_flagged": 0,
+   "blind_lost": 0,
+   "blind_not_judged": 62,
+   "blind_other_gaia": 194,
+   "blind_flagged_list": [],
+   "blind_med": 0.0167,
+   "blind_p90": 0.052,
+   "blind_p99": 0.1524
+  },
+  "no_gaia": {
+   "n": 8865,
+   "flagged": 35
+  },
+  "blank": {
+   "sources": 6908,
+   "bright": 1,
+   "fresh": 0,
+   "variable": 42,
+   "gone": 16
+  },
+  "typical": {
+   "pmRms": 0.0119,
+   "lim": 0.102,
+   "sec": 12
+  }
+ },
+ "note": "240 known Gaia DR3 movers (0.15–2.5 arcsec/yr, G 12.5–17.5) placed at the field centre and 219 empty fields above 30° Galactic latitude; 6.6′ fields, 60 exposures. Two passes: as the Lab runs, and blind (the stars under test are removed from the Gaia list first, so the detector knows nothing about them from Gaia, as for an object Gaia does not list). web/scripts/validate_detector.mts, census/validate_summary.py.",
+ "rows": [
+  [
+   "Fields attempted · run",
+   "460 · 459"
+  ],
+  [
+   "Known moving stars at the field centre · measured cleanly (not blended, saturated or at the edge): only these are judged",
+   "240 · 216"
+  ],
+  [
+   "With Gaia known: flagged “moved” · with Gaia's motion (within 3σ or 0.03″/yr)",
+   "213 of 216 (99%) · 213, median difference 0.010″/yr"
+  ],
+  [
+   "Blind (the star removed from Gaia before the detector runs): flagged “moved” · with Gaia's motion",
+   "199 of 216 (92%) · 199, median difference 0.011″/yr"
+  ],
+  [
+   "… blind, by motion: 0.15–0.25″/yr · 0.25–0.4″/yr · 0.4–0.7″/yr · 0.7–2.5″/yr",
+   "53 of 61 · 61 of 64 · 52 of 53 · 33 of 38"
+  ],
+  [
+   "Stars Gaia says are still (< 0.04″/yr), measured cleanly, tested blind (removed from Gaia a third at a time; those that then matched a neighbour's Gaia entry are left out)",
+   "5,757"
+  ],
+  [
+   "… flagged “moved”: false alarms",
+   "0 (below 0.05% at 95% confidence)"
+  ],
+  [
+   "… blind motion error of those still stars: median · 90% · 99% within",
+   "0.017 · 0.052 · 0.152 ″/yr"
+  ],
+  [
+   "Sources without a Gaia motion flagged “moved” in these fields (real or false: not checked one by one)",
+   "35 of 8,865 (0.4%)"
+  ],
+  [
+   "Empty fields, 6,908 sources: flagged brighter or fainter · new · varying between visits · 2010 sources not seen today (none checked one by one)",
+   "1 · 0 · 42 · 16"
+  ],
+  [
+   "Typical field: Gaia motions recovered to · smallest motion detectable at 5σ",
+   "0.012″/yr · 0.10″/yr"
+  ]
+ ]
+}

@@ -18,13 +18,13 @@ function assistant(env: Record<string, string>): Plugin {
   return { name: 'mira-assistant', configureServer: use, configurePreviewServer: use }
 }
 
-// Four pages: the React landing at /, the observatory at /explore/, the documentation at /docs/ and the slide deck at /deck/.
+// Four pages: the React landing at /, the observatory at /explore/, the documentation at /docs/ and the film's director page at /film/.
 // They are separate entries so their styles and scroll handling never mix.
 export default defineConfig(({ mode }) => ({
   plugins: [react(), assistant(loadEnv(mode, proc.cwd(), 'MIRA_'))],
   build: {
     rollupOptions: {
-      input: { main: 'index.html', explore: 'explore/index.html', docs: 'docs/index.html', deck: 'deck/index.html', film: 'film/index.html' },
+      input: { main: 'index.html', explore: 'explore/index.html', docs: 'docs/index.html', console: 'console/index.html', film: 'film/index.html' },
     },
   },
 }))

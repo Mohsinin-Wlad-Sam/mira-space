@@ -14,7 +14,7 @@
 | Universe (3D) | The Sun's neighbourhood with live planets and real stars (not in the film) |
 | For builders | API `/api/v1`, documentation, links and embeds, search that forgives typos |
 
-**Proof.** Epsilon Indi B 4.70″/yr (Gaia 4.68); Barnard's Star 10.46 (10.39); WISE 0855 8.21 (published 8.15). Blind test: 92% of known movers found, no false alarm. 39.9 billion detections, 1.56 million claims, 202,528 re-measured, 17,604 confirmed. 1,628,230 exposures indexed. AI scout: of its 400 strongest new marks, 362 are known fast movers (Gaia or SIMBAD), 38 are open.
+**Proof.** Epsilon Indi B 4.70″/yr (Gaia 4.68); Barnard's Star 10.46 (10.39); WISE 0855 8.21 (published 8.15). Blind test: 92% of known movers found, no false alarm. 39.9 billion detections, 1.56 million claims, 202,528 re-measured, 17,604 confirmed. 1,628,230 exposures indexed. AI scout: of its 400 strongest new marks, 393 are known fast movers (Gaia or SIMBAD), 7 are not confirmed.
 
 **Shots** (add `&embed=1` to hide the header, `&deck=1` to skip first-visit prompts)
 

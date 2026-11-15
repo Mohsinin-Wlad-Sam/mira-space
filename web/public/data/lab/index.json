@@ -1,0 +1,11 @@
+{
+ "about": "Prepared copies of the Lab's test fields (web/src/blink/fieldpack.ts). Each is used only while the exposure index it was read with is current.",
+ "built": "2026-11-15 13:31 UTC",
+ "fields": {
+  "331.04415|-56.78284|3.982|-2.467|2000|64|72": "fe9600c70.bin",
+  "269.45208|4.69336|-0.802|10.362|2000|64|72": "f4d268d7a.bin",
+  "133.81891|-7.24705|-8.124|0.673|2000|64|72": "fb0636526.bin",
+  "248.16761|66.75498|-0.021|0.006|2000|64|144": "fb285d5c2.bin",
+  "76.95653|30.40144|0.007|-0.020|2000|64|144": "f65bd75d7.bin"
+ }
+}

@@ -70,6 +70,15 @@ the SPHEREx exposures that hold a position, visit dates, the sky model's marks, 
 same files the site serves: start it with `MIRA_DATA=/srv/mira/data`. `MIRA_API_KEYS` (comma-separated) makes it ask
 for a key; `MIRA_API_PER10MIN` sets the limit per address (300). Reference and a console: `/docs/#api`.
 
+**Keys, credits and usage.** The same process hands out API keys and counts what each one uses
+(`web/server/keys.mjs`; console at `/console/`). Set `MIRA_API_STORE` to a file the process can write (for example
+`/srv/mira/api-keys.json`: it holds fingerprints of the keys, never the keys), and `MIRA_API_ADMIN` to a long secret
+if you want to grant credits (`POST /api/v1/keys/{id}/credits` with the header `X-Admin-Key`). `MIRA_API_FREE_CREDITS`
+(2,000), `MIRA_API_KEY_PER10MIN` (3,000) and `MIRA_API_NEW_KEYS_PER_DAY` (5 per address) set the allowances. With
+`MIRA_API_KEYS` set, the API is closed to callers without a key and only the operator makes new ones. No payment
+provider is connected: a key that runs out is refused (HTTP 402) until credits are granted. Check an installation
+with `node web/scripts/test_api_keys.mjs`.
+
 ### The assistant (optional)
 
 ```bash

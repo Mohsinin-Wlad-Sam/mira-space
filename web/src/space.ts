@@ -167,12 +167,16 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<Spa
           <button class="mx-hl" data-f="all" title="Show only the objects whose motion was confirmed, coloured by what they are"><i style="--c:#ff9d4d"></i><span><b>Stars caught moving</b><small><b id="spfn1">…</b> confirmed on SPHEREx images</small></span></button>
           <button class="mx-hl" data-f="nogaia" title="Confirmed movers that Gaia, Europe's optical star catalogue, does not list with this motion. Missing from Gaia can mean very cold, very faint, or simply missed"><i style="--c:#ff5d6c"></i><span><b>Not in Gaia</b><small><b id="spfn2">…</b> missing from Europe's star catalogue</small></span></button>
           <button class="mx-hl" data-f="help" title="Confirmed movers that are in the WISE catalogues but have no entry in SIMBAD (the database of objects in the astronomical literature) and no Gaia source. Fly to one, compare its pictures and say what you see"><i style="--c:#7df0a6"></i><span><b>Help look at one</b><small><b id="spfn3">…</b> are in no reference database</small></span></button>
+          <button class="mx-hl" id="sphlscout" title="A neural network looked at pictures of the whole sky and marked where something moved. Meta's V-JEPA 2, fine-tuned, gives a second opinion on each mark"><i style="--c:#b48cff"></i><span><b>Marked by the sky model</b><small>Where a neural network says something moved, on the sky around you</small></span></button>
+          <button class="mx-hl" id="sphlai" title="What each star is, how hot and how far: measured where Gaia measured it, estimated by a neural network where it did not"><i style="--c:#35d0ff"></i><span><b>What the AI estimates</b><small id="sphlais">Kind, temperature and distance of each star</small></span></button>
+          <button class="mx-hl" id="sphleyes" title="The same stars as an infrared telescope sees them, or as your eyes would"><i style="--c:#ffd27a"></i><span><b>Infrared eyes, human eyes</b><small id="sphleyess">Switch, and watch the cold ones vanish</small></span></button>
+          <button class="mx-hl" id="sphlbg" title="The sky around the map, as four surveys photographed it"><i style="--c:#5be3ff"></i><span><b>The sky in four lights</b><small id="sphlbgs">SPHEREx now · click for 2MASS</small></span></button>
           <button class="mx-hl" id="sptour" title="A narrated flight from the planets to the edge of sight"><i style="--c:#f0f0fa"></i><span><b id="sptourt">Guided tour</b><small>From home to the edge of sight in two minutes</small></span></button>
         </div>
         <form id="spsearch" class="sp-search"><input id="spq" list="spnames" placeholder="Fly to: Saturn, Sirius, Voyager 1…" autocomplete="off"><datalist id="spnames"></datalist></form>
       <details class="sp-fold" id="splive"><summary><span class="dotlive"></span>Live from NASA</summary><div id="splivebody" class="mono">loading…</div></details>
       <details class="sp-fold"><summary>More places</summary><div class="sp-dest" id="spdest2"></div></details>
-      <details class="sp-fold"><summary>Display</summary>
+      <details class="sp-fold" id="spdisp"><summary>Display</summary>
         <div class="eyebrow">See with</div>
         <div class="seg" id="speyes"><button data-v="ir" class="on">Infrared eyes</button><button data-v="vis">Human eyes</button></div>
         <div class="eyebrow">Colour by</div>
@@ -501,6 +505,16 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<Spa
   ($("#spfig") as HTMLInputElement).onchange = (e) => { figures.visible = (e.target as HTMLInputElement).checked; };
   ($("#spunc") as HTMLInputElement).onchange = () => buildUnc();
   ($("#spbg") as HTMLSelectElement).onchange = (e) => setBackdrop((e.target as HTMLSelectElement).value);
+  // highlights for what the Display panel holds, so that nobody has to find it
+  $("#sphlscout").onclick = async () => { scoutL.on = !scoutL.on; $("#sphlscout").classList.toggle("on", scoutL.on); if (scoutL.on) await loadScout(); scoutL.group.visible = scoutL.on && scoutL.state === "ok"; const c = scoutL.check;
+    $("#sphint").textContent = !scoutL.on ? "The sky model's marks are hidden" : scoutL.state !== "ok" ? "This copy of the site does not carry the sky model's marks" : `On the sky around you: the model's ${scoutL.marks.length} strongest marks where the catalogue had nothing. ${c?.known_fast_movers ?? "Most"} are fast stars that Gaia or SIMBAD list (dots); ${c?.open ?? "a few"} are not confirmed (rings). Click one.`; };
+  const AIV: [string, string][] = [["cls", "Coloured by kind: dwarf, giant, brown dwarf"], ["temp", "Coloured by temperature"], ["sig", "Coloured by how sure the distance is"], ["lens", "Coloured by what was found"]]; let aiK = -1;
+  $("#sphlai").onclick = () => { aiK = (aiK + 1) % AIV.length; setSeg("#spcol", AIV[aiK][0]); const unc = $("#spunc") as HTMLInputElement; unc.checked = AIV[aiK][0] === "sig"; buildUnc(); $("#sphlais").textContent = `${AIV[aiK][1]} · click for the next`;
+    $("#sphlai").classList.toggle("on", AIV[aiK][0] !== "lens"); (host.querySelector("#spdisp") as HTMLDetailsElement | null)?.setAttribute("open", "");
+    $("#sphint").textContent = AIV[aiK][0] === "sig" ? "Shells show how far each estimated distance could be off (one sigma)" : "Where Gaia measured no distance, a neural network estimated it from the star's SPHEREx spectrum, with its kind and temperature"; };
+  $("#sphleyes").onclick = () => { setSeg("#speyes", S.eyes === "ir" ? "vis" : "ir"); $("#sphleyess").textContent = S.eyes === "vis" ? "Human eyes now: the cold ones are gone" : "Infrared eyes now: cold worlds glow"; $("#sphleyes").classList.toggle("on", S.eyes === "vis"); };
+  const BGS: [string, string][] = [["spherex", "SPHEREx"], ["2mass", "2MASS, near-infrared, 1999"], ["wise", "WISE, mid-infrared, 2010"], ["dss", "Visible light"]];
+  $("#sphlbg").onclick = () => { const sel = $("#spbg") as HTMLSelectElement, k = (Math.max(0, BGS.findIndex((b) => b[0] === sel.value)) + 1) % BGS.length; sel.value = BGS[k][0]; setBackdrop(BGS[k][0]); $("#sphlbgs").textContent = `${BGS[k][1]} now · click for ${BGS[(k + 1) % BGS.length][1].split(",")[0]}`; };
 
   // time: among the planets it runs in days, among the stars in millennia
   const slider = $("#spslider") as HTMLInputElement, speedSel = $("#spspeed") as HTMLSelectElement;
@@ -644,6 +658,47 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<Spa
     const cx = r.left - h.left, cy = Math.min(Math.max(y, r.top - h.top + 30), r.bottom - h.top - 30);
     sv.querySelectorAll("circle").forEach((q) => { q.setAttribute("cx", String(x)); q.setAttribute("cy", String(y)); });
     (sv.querySelector("polyline") as SVGPolylineElement).setAttribute("points", `${x + 16},${y} ${Math.max(x + 40, cx - 40)},${cy} ${cx},${cy}`);
+  }
+  // ---------------------------------------------------------------- the sky model's marks, on the sky around the map
+  // The scout network looked at pictures of the whole sky and marked places where something moved; V-JEPA 2, fine-tuned,
+  // scored each. A mark has a direction and no distance, so it is drawn on the sky itself, not among the stars.
+  type Mark = { ra: number; dec: number; conf: number; pm: number; vj?: number; gaia?: { pm: number; g?: number } | null; simbad?: { name: string; pm?: number; sp?: string } | null; lab?: { verdict?: string; pm?: number | null; gaia_pm?: number | null } | null };
+  const scoutL = { marks: [] as Mark[], dirs: [] as THREE.Vector3[], group: new THREE.Group(), on: false, state: "" as "" | "loading" | "ok" | "none", check: null as { known_fast_movers?: number; open?: number } | null };
+  scoutL.group.visible = false; scene.add(scoutL.group);
+  const markKnown = (m: Mark) => !!m.gaia || !!m.simbad || (m.lab?.gaia_pm ?? 0) >= 0.25;
+  const eqDir = (ra: number, dec: number) => { const a = (ra * Math.PI) / 180, d = (dec * Math.PI) / 180, e = [Math.cos(d) * Math.cos(a), Math.cos(d) * Math.sin(a), Math.sin(d)];
+    return new THREE.Vector3(RG[0][0] * e[0] + RG[0][1] * e[1] + RG[0][2] * e[2], RG[1][0] * e[0] + RG[1][1] * e[1] + RG[1][2] * e[2], RG[2][0] * e[0] + RG[2][1] * e[1] + RG[2][2] * e[2]); };
+  const markTex = (ring: boolean) => { const c = document.createElement("canvas"); c.width = c.height = 64; const x = c.getContext("2d")!;
+    if (ring) { x.strokeStyle = "#fff"; x.lineWidth = 5; x.beginPath(); x.arc(32, 32, 23, 0, 6.2832); x.stroke(); x.fillStyle = "#fff"; x.beginPath(); x.arc(32, 32, 4, 0, 6.2832); x.fill(); }
+    else { const g2 = x.createRadialGradient(32, 32, 0, 32, 32, 28); g2.addColorStop(0, "rgba(255,255,255,1)"); g2.addColorStop(0.4, "rgba(255,255,255,.8)"); g2.addColorStop(1, "rgba(255,255,255,0)"); x.fillStyle = g2; x.beginPath(); x.arc(32, 32, 28, 0, 6.2832); x.fill(); }
+    return new THREE.CanvasTexture(c); };
+  async function loadScout() {
+    if (scoutL.state) return; scoutL.state = "loading";
+    const j = await fetch(`${BASE}data/wm/scout.json`).then((r) => (r.ok && !(r.headers.get("content-type") ?? "").includes("html") ? r.json() : null)).catch(() => null);
+    if (!j || !Array.isArray(j.marks)) { scoutL.state = "none"; return; }
+    scoutL.marks = j.marks; scoutL.check = j.gaia_check ?? null; scoutL.dirs = scoutL.marks.map((m) => eqDir(m.ra, m.dec));
+    for (const known of [true, false]) { const idx = scoutL.marks.map((m, k) => (markKnown(m) === known ? k : -1)).filter((k) => k >= 0), pos = new Float32Array(idx.length * 3); idx.forEach((k, q) => { const d = scoutL.dirs[k]; pos.set([d.x, d.y, d.z], q * 3); });
+      const g3 = new THREE.BufferGeometry(); g3.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+      const P = new THREE.Points(g3, new THREE.PointsMaterial({ map: markTex(!known), size: known ? 10 : 22, sizeAttenuation: false, transparent: true, depthTest: false, depthWrite: false, color: known ? 0xb48cff : 0xffffff, opacity: known ? 0.92 : 1 })); P.frustumCulled = false; P.renderOrder = -9; scoutL.group.add(P); }
+    scoutL.state = "ok";
+  }
+  function pickMark(px: number, py: number, radius: number) {
+    if (!scoutL.group.visible) return -1; let best = -1, bd = radius * radius; const q = new THREE.Vector3(), R = camera.far * 0.45;
+    for (let k = 0; k < scoutL.dirs.length; k++) { q.copy(scoutL.dirs[k]).multiplyScalar(R).add(camera.position); const [x, y, ok] = project(q); if (!ok) continue; const d = (x - px) ** 2 + (y - py) ** 2; if (d < bd) { bd = d; best = k; } }
+    return best;
+  }
+  function markCard(k: number) {
+    const m = scoutL.marks[k], el = $("#spinfo"), known = markKnown(m); S.sel = -1; S.body = null; pastView?.destroy(); pastView = null; cardOff?.(); cardOff = null; el.classList.remove("ver", "hud"); setLeader(false);
+    const who = m.gaia ? `Gaia DR3 lists a star here moving ${m.gaia.pm.toFixed(2)}″ a year${m.gaia.g ? ` (magnitude ${m.gaia.g.toFixed(1)})` : ""}. MIRA's catalogue did not have it: the model found it on the pictures.`
+      : m.simbad ? `SIMBAD lists ${m.simbad.name.replace(/\s+/g, " ")} here${m.simbad.pm ? `, moving ${m.simbad.pm.toFixed(2)}″ a year` : ""}${m.simbad.sp ? ` (${m.simbad.sp})` : ""}.`
+      : (m.lab?.gaia_pm ?? 0) >= 0.25 ? `The Lab read this place${m.lab!.pm != null ? ` and measured ${m.lab!.pm!.toFixed(2)}″ a year` : ""}; Gaia lists a star moving ${m.lab!.gaia_pm!.toFixed(2)}″ a year.`
+      : `Neither Gaia nor SIMBAD lists a fast mover here${m.lab?.verdict ? `, and the Lab's own reading is “${m.lab.verdict}”` : ""}. It is a place to look at, not a discovery.`;
+    el.innerHTML = `<button class="icon-btn" id="spiclose">✕</button><div class="eyebrow">Marked by the sky model · AI</div><h3 class="display">${known ? "A fast star the model found" : "Not confirmed"}</h3>
+      <div class="facts"><div class="fact"><b>${m.pm.toFixed(2)}″/yr</b><span>motion the model reads</span></div><div class="fact"><b>${m.vj != null ? Math.round(m.vj * 100) + "%" : "–"}</b><span>V-JEPA 2 says mover</span></div></div>
+      <p>${who}</p><p class="mx-note">A mark has a direction and no distance, so it is drawn on the sky, not among the stars. RA ${m.ra.toFixed(4)}°, Dec ${m.dec.toFixed(4)}°.</p>
+      ${opts.onObserve ? `<button class="btn sm solid" id="spmarklab" title="Read NASA's exposures of this place and measure what moved">Measure it in the Lab</button>` : ""} <a class="btn sm ghost" href="${BASE}docs/#ai" target="_blank" rel="noopener">How the models were checked</a>`;
+    el.classList.add("open"); $("#spiclose").onclick = () => info(-1);
+    const b = host.querySelector<HTMLButtonElement>("#spmarklab"); if (b) b.onclick = () => opts.onObserve!({ ra: m.ra, dec: m.dec, name: m.simbad ? m.simbad.name.replace(/\s+/g, " ") : known ? "Sky model mark" : "Sky model mark, not confirmed" });
   }
   let cardOff: (() => void) | null = null;
   /** A confirmed mover with no distance cannot be placed in space, but it can be looked at: its card, without a flight */
@@ -879,6 +934,7 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<Spa
     if (moved > 6 || dt > 600) return;
     const r = canvas.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top, rad = e.pointerType === "touch" ? 30 : 16;
     const b = pickBody(x, y, rad); if (b) { S.sel = -1; S.body = b; bodyInfo(b); return; }
+    const mk = pickMark(x, y, rad); if (mk >= 0) { markCard(mk); return; }
     const i = pick(x, y, rad);
     if (i >= 0) { S.sel = i; S.body = null; info(i); return; }
     const k = pickExo(x, y, rad); if (k >= 0) { S.sel = -1; S.body = null; exoCard(k); }
@@ -1097,6 +1153,7 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<Spa
     const hl = geom.getAttribute("hl") as THREE.BufferAttribute;
     if ((frame & 7) === 0) { (hl.array as Float32Array).fill(0); if (S.sel >= 0) (hl.array as Float32Array)[S.sel] = 1; if (S.hover >= 0) (hl.array as Float32Array)[S.hover] = 0.6; hl.needsUpdate = true; }
     skyMesh.position.copy(camera.position); skyMesh.scale.setScalar(camera.far * 0.5);
+    if (scoutL.group.visible) { scoutL.group.position.copy(camera.position); scoutL.group.scale.setScalar(camera.far * 0.45); }
     skyMat.uniforms.uA.value = Math.max(0, Math.min(0.85, 0.85 * (1 - (camera.position.length() - 150) / 1500)));
     const rf = (R: number) => { const x = Math.log10(R / dist); return Math.max(0, Math.min(0.32, 0.32 - 0.16 * Math.abs(x + 0.3))); };
     ringRadii.forEach((R, k) => { ringMats[k].opacity = rf(R); });
