@@ -34,7 +34,7 @@ n = int(DUR * SR); t = np.arange(n) / SR; i0 = int(round((hit - T_HIT) * SR)); d
 g = np.interp(t, [0, 1.6, T_HIT - 0.9, T_HIT - 0.05, DUR], [0, 2.0, 2.0, 1.0, 1.0])
 if CUT == 3: g *= np.interp(t, [0, 10.6, 11.4, 21.2, 21.9, DUR], [1, 1, 0.6, 0.6, 1, 1])      # under the demonstrations the music steps back
 dry *= g[:, None]
-dry[m - int(0.03 * SR):m] *= np.linspace(1, 0, int(0.03 * SR))[:, None]
+fl = int((0.6 if CUT == 5 else 0.03) * SR); dry[m - fl:m] *= (np.linspace(1, 0, fl) ** (1.5 if CUT == 5 else 1.0))[:, None]      # the fifth cut lets the orchestra fall away over half a second, with the picture
 
 def lowpass(v, fc):
     al = 1 - np.exp(-2 * np.pi * fc / SR); o = np.empty_like(v); acc = 0.0
@@ -106,7 +106,7 @@ else:
     
 
 mix = dry + wet + fx[:, None]
-if CUT == 5: mix *= np.interp(t, [0, T_END, T_END + 0.05, DUR], [1, 1, 0.4, 0.4])[:, None]      # the cut to black: what rings on is far quieter than what stopped
+if CUT == 5: mix *= np.interp(t, [0, T_END - 0.3, T_END + 0.4, DUR], [1, 1, 0.5, 0.5])[:, None]      # the cut to black: what rings on is far quieter than what stopped
 mix *= np.interp(t, [0, 0.05, DUR - (1.1 if CUT >= 3 else 0.9), DUR - (0.2 if CUT >= 3 else 0.03), DUR], [0, 1, 1, 0, 0])[:, None]
 # loudness: the orchestra's part at about -15 dBFS RMS, peaks held under -1 dBFS by a soft knee
 loud = np.sqrt(np.mean(mix[int(T_HIT * SR):m] ** 2)); mix *= 10 ** (-15 / 20) / loud

@@ -137,11 +137,11 @@ ESA's Gaia catalogue and shown as what they are. The idea, the scientific choice
 
 | t | Picture | Words on screen |
 |---|---|---|
-| 0–6.5 s | An artist's rendering, marked as such: a dark frozen world and a brown dwarf beyond Neptune, in dust lit from behind by the far Sun (ray-marched). The light splits into its colours and comes to a focus | Team and challenge · "Beyond Neptune, cold worlds drift in the dark." · "NASA's SPHEREx photographs the whole sky in 102 infrared colours." |
-| 6.5–11 s | The name; the picture settles into the Lab's centre pane and becomes NASA's real picture; a reticle, then the Lab's own time bar, tools and readings arrive around it | "MIRA. The public web observatory on NASA's SPHEREx data." · "Point anywhere. Watch 27 years of NASA pictures play." |
+| 0–6.5 s | An artist's rendering, marked as such: a dark, cratered frozen world and a brown dwarf beyond Neptune, the far Sun behind dust, the Milky Way (NASA's SPHEREx all-sky picture) far behind; computed ray by ray. The light splits into its colours as the picture dissolves | Team and challenge · "Beyond Neptune, cold worlds drift in the dark." · "NASA's SPHEREx photographs the whole sky in 102 infrared colours." |
+| 6.5–11 s | The name on black; a reticle draws itself, NASA's real picture comes up inside it, then the Lab's own time bar, tools and readings arrive around it | "MIRA. The public web observatory on NASA's SPHEREx data." · "Point anywhere. Watch 27 years of NASA pictures play." |
 | 11–22 s | The running Lab, marked "live capture" down the side: the years play from 1999 to 2026 while Gaia's stars stay in place; 4.70″ a year; the spectrum with methane; the readings and the AI estimate | "See what moved, and how fast." · "Read its light. This one shows methane." · "Measured on NASA's raw exposures. Checked by AI models." |
 | 22–26 s | The whole sky in SPHEREx (Mollweide): the 17,604 movers light up in a wave that leaves from the object the film followed; the 635; "Help look at one" | "17,604 stars caught moving. 635 in neither Gaia nor SIMBAD." |
-| 26–29 s | A cut to black and silence; the closing card | "Point at the sky. See what moved. Measure it." · the counts, the data, the credits |
+| 26–29 s | A fade to black as the music falls away; the closing card | "Point at the sky. See what moved. Measure it." · the counts, the data, the credits |
 
 Photographed at 3840x2160 from the site by a virtual clock (`web/scripts/render_film.mjs --fps 60 --to 29 --scale 2`),
 with a check every half second that no words collide or leave the frame. Music: "Time and Space" by Scott Buckley,

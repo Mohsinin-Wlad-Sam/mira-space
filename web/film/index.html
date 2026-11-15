@@ -42,7 +42,7 @@
 #art { right: 64px; top: 53px; font-family: var(--mono); font-size: 13px; letter-spacing: .2em; color: rgb(238 242 248 / .74); text-shadow: 0 0 12px rgb(5 7 11 / .9); }
 #live { left: 46px; top: 0; height: 1080px; writing-mode: vertical-rl; transform: rotate(180deg); text-align: center; font-family: var(--mono); font-size: 13px; letter-spacing: .3em; color: rgb(238 242 248 / .78); white-space: nowrap; } #live i { font-style: normal; color: #ff4d5e; }
 #cap { left: 0; right: 0; bottom: 32px; text-align: center; font-size: 34px; font-weight: 500; letter-spacing: -.005em; line-height: 1.2; text-shadow: 0 0 22px rgb(5 7 11 / .95), 0 0 4px rgb(5 7 11 / .9); }
-#ttl { left: 0; right: 0; top: 138px; text-align: center; } #ttl h1 { margin: 0 -.52em 0 0; font-weight: 600; font-size: 104px; letter-spacing: .52em; line-height: 1; text-shadow: 0 0 40px rgb(5 7 11 / .8); } #ttl p { margin: 30px 0 0; font-size: 30px; font-weight: 400; color: rgb(238 242 248 / .94); text-shadow: 0 0 18px rgb(5 7 11 / .95), 0 0 4px rgb(5 7 11 / .9); }
+#ttl { left: 0; right: 0; top: 392px; text-align: center; } #ttl h1 { margin: 0 -.52em 0 0; font-weight: 600; font-size: 104px; letter-spacing: .52em; line-height: 1; text-shadow: 0 0 40px rgb(5 7 11 / .8); } #ttl p { margin: 30px 0 0; font-size: 30px; font-weight: 400; color: rgb(238 242 248 / .94); text-shadow: 0 0 18px rgb(5 7 11 / .95), 0 0 4px rgb(5 7 11 / .9); }
 #ttl::before { content: ""; position: absolute; left: 50%; top: 50%; width: 1500px; height: 460px; transform: translate(-50%, -50%); background: radial-gradient(closest-side, rgb(5 7 11 / .5), rgb(5 7 11 / 0)); z-index: -1; }
 #cta { padding: 13px 26px; border: 1px solid rgb(238 242 248 / .5); border-radius: 999px; background: rgb(14 17 25 / .7); font-size: 22px; font-weight: 500; white-space: nowrap; }
 #lead { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; pointer-events: none; opacity: 0; } #lead line { stroke: rgb(238 242 248 / .55); stroke-width: 1; } #lead circle { fill: none; stroke: rgb(238 242 248 / .85); stroke-width: 1.2; }
@@ -96,10 +96,12 @@ function labDate(t) { if (t < T.rewind[0]) return YL; if (t < T.rewind[1]) retur
 const CAM = [[0, 0.9, 96, 22], [15.2, 0.9, 96, 22], [17.0, 1.5, -960, -143], [19.1, 1.5, -960, -143], [20.9, 1.18, -345.6, -26], [22.0, 1.18, -345.6, -26]];
 function camAt(t) { let k = 0; while (k < CAM.length - 2 && t >= CAM[k + 1][0]) k++; const a = CAM[k], b = CAM[k + 1], u = io(seg(t, a[0], b[0])); return [lerp(a[1], b[1], u), lerp(a[2], b[2], u), lerp(a[3], b[3], u)]; }
 
-// ------------------------------------------------------------------ act one: the dark beyond Neptune, ray-marched
-// An artist's rendering, and named so on screen. Light is marched through a volume of dust (single scattering with
-// shadow rays toward the Sun, emission, absorption) at 1600 x 900; the bodies, the stars, the lens and the film curve
-// are computed at the full 3840 x 2160 on top of it.
+// ------------------------------------------------------------------ act one: the dark beyond Neptune, ray-traced
+// An artist's rendering, and named so on screen. Every pixel is a ray. Rays that meet the frozen world are shaded
+// from its surface relief (traced normals, sunlight, a glint on the ice); rays that meet the brown dwarf show its
+// own glow; rays through the dust are marched (single scattering with shadow rays toward the Sun, emission,
+// absorption); rays that leave see NASA's SPHEREx all-sky picture, dim, and the stars. The Sun is a point with
+// the spikes and the streak a lens gives it. Four rays a pixel on the bodies; a film curve at the end.
 const sky = $("#sky"), gl = sky.getContext("webgl2", { antialias: false, alpha: false, preserveDrawingBuffer: true, powerPreference: "high-performance" });
 const VW = 1920, VH = 1080;
 const VS = `#version 300 es
@@ -108,10 +110,10 @@ const COMMON = `#version 300 es
 precision highp float; precision highp sampler3D;
 uniform sampler3D uN; uniform float uT, uFov, uAsp; uniform vec3 uRo, uFw, uRt, uUp; uniform vec2 uRes;
 const vec3 L = vec3(0.4202, 0.2201, 0.8804);                 // toward the Sun, which is in the frame, far behind the dust
-const vec3 SUN = vec3(1.0, 0.93, 0.80) * 6.0;
+const vec3 SUN = vec3(1.0, 0.95, 0.86) * 6.0;
 const vec3 PLANET = vec3(-1.75, -1.05, 3.3); const float RP = 1.42;
 const vec3 DWARF = vec3(1.05, 0.42, 7.2); const float RD = 0.105;
-vec4 nz(vec3 p) { vec3 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f); return texture(uN, (i + f + 0.5) / 64.0); }
+vec4 nz(vec3 p) { vec3 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f); return texture(uN, (i + f + 0.5) / 128.0); }
 float fbm(vec3 p) { float a = 0.5, s = 0.0; for (int k = 0; k < 4; k++) { s += a * nz(p).r; p = p * 2.03 + vec3(11.7, 3.1, 5.9); a *= 0.5; } return s / 0.9375; }
 float sph(vec3 ro, vec3 rd, vec3 c, float r) { vec3 oc = ro - c; float b = dot(oc, rd), h = b * b - dot(oc, oc) + r * r; if (h < 0.0) return -1.0; float t = -b - sqrt(h); return t > 0.0 ? t : -1.0; }
 vec3 rayDir(vec2 uv) { vec2 q = (uv * 2.0 - 1.0) * vec2(uAsp, 1.0) * uFov; return normalize(uFw + q.x * uRt + q.y * uUp); }
@@ -122,77 +124,97 @@ float dens(vec3 p) {
   vec3 w = nz(q * 0.5 + 7.3).rgb - 0.5; q += w * vec3(1.7, 1.0, 1.7);
   float a = 0.5, s = 0.0, r = 0.0, tot = 0.0; vec3 x = q;
   for (int k = 0; k < 6; k++) { float n = nz(x).r; s += a * n; r += a * (1.0 - abs(2.0 * n - 1.0)); tot += a; x = x * 2.03 + vec3(11.7, 3.1, 5.9); a *= 0.6; }
-  float f = mix(s, r, 0.7) / tot;                                   // billows and filaments
-  float river = exp(-pow((p.y - 0.5 * sin(p.x * 0.3 + 0.9) + 0.06 * p.z - 0.9) / 1.6, 2.0));
-  float depth = smoothstep(6.6, 7.9, p.z) * (1.0 - smoothstep(10.6, 13.2, p.z));
+  float f = mix(s, r, 0.72) / tot;                                       // billows and filaments
+  float river = exp(-pow((p.y - 0.5 * sin(p.x * 0.3 + 0.9) + 0.06 * p.z - 0.9) / 1.35, 2.0));
+  float depth = smoothstep(6.6, 7.9, p.z) * (1.0 - smoothstep(10.2, 12.6, p.z));
   float hole = smoothstep(0.3, 1.4, distance(p, DWARF));
-  return smoothstep(0.575, 0.80, f) * river * depth * hole;
+  return smoothstep(0.60, 0.82, f) * river * depth * hole;
 }
 float hg(float mu, float g) { float g2 = g * g; return (1.0 - g2) / (12.566 * pow(1.0 + g2 - 2.0 * g * mu, 1.5)); }
 void main() {
   vec2 uv = gl_FragCoord.xy / uRes; vec3 rd = rayDir(uv), ro = uRo; float tMax = 21.0;
   float tp = sph(ro, rd, PLANET, RP), td = sph(ro, rd, DWARF, RD); if (tp > 0.0) tMax = min(tMax, tp); if (td > 0.0) tMax = min(tMax, td);
   float jit = fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715))));      // interleaved gradient noise: no stripes
-  const float dt = 0.075; float t = 5.6 + dt * jit, Tr = 1.0; vec3 col = vec3(0.0); float mu = dot(rd, L), ph = 0.86 * hg(mu, 0.80) + 0.14 * hg(mu, -0.2);
-  for (int i = 0; i < 120; i++) { if (t > tMax || Tr < 0.01) break; vec3 p = ro + rd * t; float d = dens(p);
+  const float dt = 0.06; float t = 5.6 + dt * jit, Tr = 1.0; vec3 col = vec3(0.0); float mu = dot(rd, L), ph = 0.93 * hg(mu, 0.90) + 0.07 * hg(mu, -0.2);
+  for (int i = 0; i < 132; i++) { if (t > tMax || Tr < 0.008) break; vec3 p = ro + rd * t; float d = dens(p);
     if (d > 0.003) {
       float sh = dens(p + L * 0.25) * 0.30 + dens(p + L * 0.60) * 0.40 + dens(p + L * 1.05) * 0.50 + dens(p + L * 1.60) * 0.62 + dens(p + L * 2.30) * 0.75 + dens(p + L * 3.10) * 0.85;      // the dust between here and the Sun
-      float Tl = exp(-sh * 4.6);
-      float heat = nz(p * 0.55 + 21.0).g; vec3 em = mix(vec3(0.60, 0.055, 0.015), vec3(1.5, 0.52, 0.16), smoothstep(0.55, 0.88, heat)) * pow(d, 2.0) * 1.0;
-      col += Tr * (SUN * ph * Tl * d * 0.85 + em) * dt; Tr *= exp(-d * 4.5 * dt); }
+      float Tl = exp(-sh * 5.5);
+      float heat = nz(p * 0.55 + 21.0).g; vec3 em = mix(vec3(0.42, 0.030, 0.010), vec3(1.2, 0.34, 0.09), smoothstep(0.58, 0.9, heat)) * pow(d, 2.4) * 0.62;
+      col += Tr * (SUN * ph * Tl * d * 0.13 + em) * dt; Tr *= exp(-d * 5.0 * dt); }
     t += dt; }
   o = vec4(col, Tr);
 }`;
-const COMP = `uniform sampler2D uVol; uniform float uExp, uDisp; out vec4 o;
+const COMP = `uniform sampler2D uVol, uSky; uniform mat3 uGal; uniform float uExp, uDisp; out vec4 o;
+const vec2 OFF[4] = vec2[4](vec2(-0.375, -0.125), vec2(0.125, -0.375), vec2(0.375, 0.125), vec2(-0.125, 0.375));
 float h1(vec3 p) { return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453); }
 vec3 stars(vec3 rd) { vec3 c = vec3(0.0);
-  for (int k = 0; k < 2; k++) { float sc = k == 0 ? 170.0 : 380.0; vec3 g = rd * sc, id = floor(g), f = fract(g) - 0.5; float h = h1(id + float(k) * 17.0);
-    if (h > 0.970) { vec3 off = (vec3(h1(id + 3.1), h1(id + 7.7), h1(id + 11.3)) - 0.5) * 0.6; float r = length(f - off), b = (h - 0.970) / 0.030;
-      c += mix(vec3(1.0, 0.80, 0.60), vec3(0.72, 0.84, 1.0), h1(id + 1.3)) * b * b * (k == 0 ? 3.0 : 1.1) * exp(-r * r * (k == 0 ? 300.0 : 220.0)); } }
+  for (int k = 0; k < 3; k++) { float sc = k == 0 ? 110.0 : k == 1 ? 250.0 : 520.0, thr = k == 0 ? 0.962 : k == 1 ? 0.93 : 0.88; vec3 g = rd * sc, id = floor(g), f = fract(g) - 0.5; float h = h1(id + float(k) * 17.0);
+    if (h > thr) { vec3 off = (vec3(h1(id + 3.1), h1(id + 7.7), h1(id + 11.3)) - 0.5) * 0.7; float r = length(f - off), b = (h - thr) / (1.0 - thr);
+      float mag = pow(b, 5.0) * (k == 0 ? 16.0 : k == 1 ? 3.6 : 1.0) + (k == 2 ? 0.045 : 0.02);
+      c += mix(vec3(1.0, 0.78, 0.56), vec3(0.70, 0.83, 1.0), h1(id + 1.3)) * mag * exp(-r * r * (k == 0 ? 330.0 : k == 1 ? 130.0 : 48.0)); } }
   return c; }
+vec3 galaxy(vec3 rd) { vec3 g = uGal * rd; vec2 q = vec2(atan(g.y, g.x) / 6.2831853, 0.5 - asin(clamp(g.z, -1.0, 1.0)) / 3.14159265);       // NASA's SPHEREx all-sky picture, far away and dim
+  vec2 px = vec2(2.6 / 2048.0, 2.6 / 1024.0); vec3 m = (texture(uSky, q).rgb * 2.0 + texture(uSky, q + vec2(px.x, 0.0)).rgb + texture(uSky, q - vec2(px.x, 0.0)).rgb + texture(uSky, q + vec2(0.0, px.y)).rgb + texture(uSky, q - vec2(0.0, px.y)).rgb + texture(uSky, q + px * 0.7).rgb + texture(uSky, q - px * 0.7).rgb + texture(uSky, q + vec2(px.x, -px.y) * 0.7).rgb + texture(uSky, q + vec2(-px.x, px.y) * 0.7).rgb) / 10.0;
+  m = pow(m, vec3(2.2)); m = mix(vec3(dot(m, vec3(0.3, 0.5, 0.2))), m, 0.38); return max(m - 0.02, 0.0) * 0.17; }
+float hgt(vec3 n) { return 0.50 * fbm(n * 5.0 + 3.0) + 0.30 * (1.0 - abs(2.0 * nz(n * 14.0 + 1.7).r - 1.0)) + 0.20 * nz(n * 34.0 + 8.3).g; }
 vec3 scene(vec2 uv) {
   vec3 rd = rayDir(uv), ro = uRo; vec4 V = texture(uVol, uv);
   float tp = sph(ro, rd, PLANET, RP), td = sph(ro, rd, DWARF, RD); vec3 bg;
-  if (tp > 0.0 && (td < 0.0 || tp < td)) { vec3 n = normalize(ro + rd * tp - PLANET); float nl = max(dot(n, L), 0.0);
-    float ice = smoothstep(0.34, 0.74, fbm(n * 2.6 + 3.0)), cr = fbm(n * 7.0 + 9.0);
-    vec3 alb = mix(vec3(0.02, 0.03, 0.045), vec3(0.24, 0.31, 0.40), ice) * (0.6 + 0.8 * cr);
-    bg = alb * SUN * smoothstep(0.0, 0.22, nl) * nl * 0.42 + alb * vec3(0.9, 0.2, 0.06) * 0.03 * max(dot(n, normalize(vec3(0.3, 0.3, 0.9))), 0.0)
-       + SUN * pow(max(dot(reflect(-L, n), -rd), 0.0), 60.0) * ice * 0.22;
-    bg += vec3(0.3, 0.5, 0.9) * pow(1.0 - max(dot(n, -rd), 0.0), 6.0) * 0.035 * nl; }
-  else if (td > 0.0) { vec3 n = normalize(ro + rd * td - DWARF); float bands = 0.65 * fbm(vec3(n.y * 5.0, n.x * 0.9 + uT * 0.02, n.z * 0.9) + 31.0) + 0.35 * fbm(vec3(n.y * 16.0, n.x * 2.0, n.z * 2.0) + 5.0), limb = pow(max(dot(n, -rd), 0.0), 0.75);
-    bg = mix(vec3(0.05, 0.004, 0.003), vec3(0.95, 0.13, 0.03), smoothstep(0.30, 0.75, bands)) * (0.12 + 1.15 * limb); }
-  else { float sd = max(dot(rd, L), 0.0); bg = stars(rd) + SUN * (pow(sd, 90000.0) * 700.0 + pow(sd, 22000.0) * 2.0 + pow(sd, 400.0) * 0.05); }
+  if (tp > 0.0 && (td < 0.0 || tp < td)) { vec3 n = normalize(ro + rd * tp - PLANET);
+    // the frozen world: its relief is traced into the normal, so the low Sun picks out every ridge along the crescent
+    vec3 t1 = normalize(cross(n, vec3(0.0, 1.0, 0.0))), t2 = cross(n, t1); const float e = 0.006; float h0 = hgt(n), hx = hgt(normalize(n + t1 * e)), hy = hgt(normalize(n + t2 * e));
+    vec3 nb = normalize(n - (t1 * (hx - h0) + t2 * (hy - h0)) / e * 0.10);
+    float geo = smoothstep(0.0, 0.16, dot(n, L)), nl = max(dot(nb, L), 0.0), ice = smoothstep(0.36, 0.66, h0);
+    vec3 alb = mix(vec3(0.028, 0.034, 0.045), vec3(0.20, 0.25, 0.32), ice);
+    bg = alb * SUN * nl * geo * 0.30 + SUN * pow(max(dot(reflect(-L, nb), -rd), 0.0), 26.0) * geo * ice * 0.022 + alb * 0.006; }
+  else if (td > 0.0) { vec3 n = normalize(ro + rd * td - DWARF); float bands = 0.65 * fbm(vec3(n.y * 5.0, n.x * 0.9 + uT * 0.02, n.z * 0.9) + 31.0) + 0.35 * fbm(vec3(n.y * 16.0, n.x * 2.0, n.z * 2.0) + 5.0), limb = pow(max(dot(n, -rd), 0.0), 0.8);
+    bg = mix(vec3(0.035, 0.003, 0.002), vec3(0.80, 0.10, 0.025), smoothstep(0.30, 0.75, bands)) * (0.10 + 1.1 * limb); }
+  else { float sd = max(dot(rd, L), 0.0); bg = galaxy(rd) + stars(rd) + SUN * (pow(sd, 400000.0) * 3000.0 + pow(sd, 14000.0) * 0.8 + pow(sd, 500.0) * 0.02); }
   vec3 c = V.rgb + V.a * bg;
-  // the Sun through the lens: a thin streak across it, as an anamorphic lens leaves, where the dust lets the Sun through
-  vec3 lv = vec3(dot(L, uRt), dot(L, uUp), dot(L, uFw)); if (lv.z > 0.05) { vec2 sp = lv.xy / lv.z / (uFov * vec2(uAsp, 1.0)), pp = uv * 2.0 - 1.0; float seen = texture(uVol, clamp(sp * 0.5 + 0.5, 0.0, 1.0)).a * step(abs(sp.x), 1.05) * step(abs(sp.y), 1.05);
-    c += vec3(0.55, 0.72, 1.0) * 0.5 * seen * exp(-abs(pp.y - sp.y) * 110.0) * exp(-abs(pp.x - sp.x) * 1.5); }
-  vec3 oc = DWARF - ro; if (dot(oc, rd) > 0.0) c += vec3(0.9, 0.12, 0.04) * 0.30 * exp(-pow(length(cross(rd, oc)) / (RD * 2.8), 1.1)) * mix(1.0, V.a, 0.4) * (td > 0.0 ? 0.35 : 1.0);     // the dwarf's own glow
+  vec3 oc = DWARF - ro; if (dot(oc, rd) > 0.0) c += vec3(0.9, 0.11, 0.035) * 0.16 * exp(-pow(length(cross(rd, oc)) / (RD * 2.6), 1.1)) * mix(1.0, V.a, 0.4) * (td > 0.0 ? 0.35 : 1.0);     // the dwarf's own glow
   return c;
 }
+vec3 lens(vec2 uv) {      // what a lens does with a point as bright as the Sun: spikes from its blades, a long streak, a halo; only where the dust lets the Sun through
+  vec3 lv = vec3(dot(L, uRt), dot(L, uUp), dot(L, uFw)); if (lv.z < 0.05) return vec3(0.0);
+  vec2 sp = lv.xy / lv.z / (uFov * vec2(uAsp, 1.0)); if (abs(sp.x) > 1.2 || abs(sp.y) > 1.2) return vec3(0.0);
+  float seen = texture(uVol, clamp(sp * 0.5 + 0.5, 0.0, 1.0)).a; vec2 d = (uv * 2.0 - 1.0 - sp) * vec2(uAsp, 1.0);
+  float streak = exp(-abs(d.y) * 170.0) / (1.0 + pow(abs(d.x) * 2.0, 1.6)) * 0.50, up = exp(-abs(d.x) * 230.0) / (1.0 + pow(abs(d.y) * 5.0, 1.8)) * 0.22;
+  vec2 dr = vec2(d.x + d.y, d.x - d.y) * 0.7071; float diag = (exp(-abs(dr.x) * 270.0) / (1.0 + pow(abs(dr.y) * 7.0, 1.8)) + exp(-abs(dr.y) * 270.0) / (1.0 + pow(abs(dr.x) * 7.0, 1.8))) * 0.09;
+  float halo = 0.006 / (dot(d, d) + 0.004);
+  return (vec3(0.60, 0.77, 1.0) * streak + vec3(1.0, 0.95, 0.88) * (up + diag + halo)) * seen; }
+vec3 shot(vec2 uv) { vec3 c = vec3(0.0); for (int k = 0; k < 4; k++) c += scene(uv + OFF[k] / uRes); return c * 0.25 + lens(uv); }      // four rays a pixel
 void main() {
   vec2 uv = gl_FragCoord.xy / uRes; vec3 c;
-  if (uDisp > 0.0004) { vec2 d = vec2(uDisp, 0.0); vec3 a = scene(uv - d), b = scene(uv), e = scene(uv + d), a2 = scene(uv - d * 0.5), e2 = scene(uv + d * 0.5);     // the light split into its colours
-    c = vec3(0.62 * a.r + 0.38 * a2.r, 0.2 * a2.g + 0.6 * b.g + 0.2 * e2.g, 0.62 * e.b + 0.38 * e2.b); }
-  else c = scene(uv);
-  vec2 q = uv - 0.5; c *= 1.0 - 0.9 * dot(q, q);                              // the lens falls off toward its corners
+  if (uDisp > 0.0004) { vec2 d = vec2(uDisp, 0.0); vec3 a = shot(uv - d), b = shot(uv), e = shot(uv + d);      // the light split into its colours
+    c = vec3(a.r, 0.25 * a.g + 0.5 * b.g + 0.25 * e.g, e.b); }
+  else c = shot(uv);
+  vec2 q = uv - 0.5; c *= 1.0 - 1.25 * dot(q, q);                             // the lens falls off toward its corners
   c *= uExp; c = (c * (2.51 * c + 0.03)) / (c * (2.43 * c + 0.59) + 0.14);    // the film curve (ACES fit)
   c = pow(clamp(c, 0.0, 1.0), vec3(1.0 / 2.2));
   c += (fract(sin(dot(gl_FragCoord.xy, vec2(41.3, 289.1))) * 43758.5453) - 0.5) / 255.0;
   o = vec4(c, 1.0);
 }`;
-let G = null, skyState = "";
-function initSky() {
+let G = null;
+async function initSky() {
   if (!gl) return; gl.getExtension("EXT_color_buffer_float"); gl.getExtension("EXT_color_buffer_half_float");
   const mk = (type, src) => { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error("shader: " + gl.getShaderInfoLog(s)); return s; };
   const prog = (fs) => { const p = gl.createProgram(); gl.attachShader(p, mk(gl.VERTEX_SHADER, VS)); gl.attachShader(p, mk(gl.FRAGMENT_SHADER, COMMON + fs)); gl.linkProgram(p); if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error("link: " + gl.getProgramInfoLog(p)); return p; };
-  const n = 64, data = new Uint8Array(n * n * n * 4); let sd = 1234567; for (let i = 0; i < data.length; i++) { sd = (Math.imul(sd, 1664525) + 1013904223) >>> 0; data[i] = sd >>> 24; }
+  const n = 128, data = new Uint8Array(n * n * n * 4); let sd = 1234567; for (let i = 0; i < data.length; i++) { sd = (Math.imul(sd, 1664525) + 1013904223) >>> 0; data[i] = sd >>> 24; }
   const nt = gl.createTexture(); gl.bindTexture(gl.TEXTURE_3D, nt); gl.texImage3D(gl.TEXTURE_3D, 0, gl.RGBA8, n, n, n, 0, gl.RGBA, gl.UNSIGNED_BYTE, data);
   for (const k of [gl.TEXTURE_WRAP_S, gl.TEXTURE_WRAP_T, gl.TEXTURE_WRAP_R]) gl.texParameteri(gl.TEXTURE_3D, k, gl.REPEAT); gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_3D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
   const vt = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, vt); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, VW, VH, 0, gl.RGBA, gl.HALF_FLOAT, null);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
   const fb = gl.createFramebuffer(); gl.bindFramebuffer(gl.FRAMEBUFFER, fb); gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, vt, 0);
   const ok = gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE; gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-  G = { nt, vt, fb, ok, pv: prog(VOL), pc: prog(COMP), vao: gl.createVertexArray() };
+  // the far background: NASA's SPHEREx all-sky picture (galactic longitude 0 at its left edge, growing to the right)
+  const st = gl.createTexture(), img = await loadImg("/space/mw_spherex_2048.jpg"); gl.bindTexture(gl.TEXTURE_2D, st);
+  if (img) gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, img); else gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([0, 0, 0, 255]));
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  // where the camera looks in the Galaxy: along the plane toward Centaurus, the plane crossing the frame at a slant
+  const l0 = 312 * D, b0 = -3 * D, roll = 30 * D, F = [Math.cos(b0) * Math.cos(l0), Math.cos(b0) * Math.sin(l0), Math.sin(b0)], R0 = v3.norm(v3.cross([0, 0, 1], F)), U0 = v3.cross(F, R0);
+  const Rr = [0, 1, 2].map((k) => Math.cos(roll) * R0[k] + Math.sin(roll) * U0[k]), Ur = [0, 1, 2].map((k) => -Math.sin(roll) * R0[k] + Math.cos(roll) * U0[k]);
+  G = { nt, vt, st, fb, ok, gal: new Float32Array([...Rr, ...Ur, ...F]), pv: prog(VOL), pc: prog(COMP), vao: gl.createVertexArray() };
 }
 const v3 = { sub: (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]], norm: (a) => { const l = Math.hypot(a[0], a[1], a[2]) || 1; return [a[0] / l, a[1] / l, a[2] / l]; }, cross: (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]], mix: (a, b, u) => [lerp(a[0], b[0], u), lerp(a[1], b[1], u), lerp(a[2], b[2], u)] };
 function drawSky(t) {
@@ -204,8 +226,8 @@ function drawSky(t) {
   gl.bindVertexArray(G.vao); gl.disable(gl.BLEND); gl.disable(gl.DEPTH_TEST);
   gl.bindFramebuffer(gl.FRAMEBUFFER, G.fb); gl.viewport(0, 0, VW, VH); gl.useProgram(G.pv); let U = uni(G.pv); gl.uniform2f(U("uRes"), VW, VH); gl.drawArrays(gl.TRIANGLES, 0, 3);
   gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.viewport(0, 0, sky.width, sky.height); gl.useProgram(G.pc); U = uni(G.pc); gl.uniform2f(U("uRes"), sky.width, sky.height);
-  gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, G.vt); gl.uniform1i(U("uVol"), 1); gl.uniform1f(U("uExp"), 0.95);
-  gl.uniform1f(U("uDisp"), 0.014 * Math.pow(seg(t, 5.55, 6.3), 2) * (1 - sm(seg(t, 6.3, 6.5)))); gl.drawArrays(gl.TRIANGLES, 0, 3); gl.flush();
+  gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, G.vt); gl.uniform1i(U("uVol"), 1); gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, G.st); gl.uniform1i(U("uSky"), 2); gl.uniformMatrix3fv(U("uGal"), false, G.gal);
+  gl.uniform1f(U("uExp"), 0.86); gl.uniform1f(U("uDisp"), 0.017 * Math.pow(seg(t, 5.4, 6.95), 2.0)); gl.drawArrays(gl.TRIANGLES, 0, 3); gl.flush();
 }
 
 // ------------------------------------------------------------------ act four: the whole sky
@@ -246,7 +268,7 @@ const mapCv = $("#map"), mc = mapCv.getContext("2d");
 let mapView = { z: 1, cx: MW / 2, cy: MH / 2 };
 const mapScreen = (p) => [(p[0] - mapView.cx) * mapView.z * MS + MC[0], (p[1] - mapView.cy) * mapView.z * MS + MC[1]];
 function drawMap(t, from) {                                // from: where on screen the object was when the Lab let go
-  const a = t >= T.end ? 0 : sm(seg(t, 22.3, 23.1)); mapCv.style.opacity = String(a); mapCv.style.visibility = a <= 0 ? "hidden" : "visible"; if (a <= 0 || !M.img) return;
+  const a = t >= T.end + 0.6 ? 0 : sm(seg(t, 22.3, 23.1)); mapCv.style.opacity = String(a); mapCv.style.visibility = a <= 0 ? "hidden" : "visible"; if (a <= 0 || !M.img) return;
   const u = io(seg(t, 22.2, 24.4)), z0 = 7, z = Math.exp(lerp(Math.log(z0), 0, u)), o = M.obj, c0 = [o[0] - (from[0] - MC[0]) / (z0 * MS), o[1] - (from[1] - MC[1]) / (z0 * MS)]; mapView = { z, cx: lerp(c0[0], MW / 2, u), cy: lerp(c0[1], MH / 2, u) };
   mc.setTransform(1, 0, 0, 1, 0, 0); mc.globalCompositeOperation = "source-over"; mc.globalAlpha = 1; mc.fillStyle = "#05070B"; mc.fillRect(0, 0, 3840, 2160);
   const k = 2 * MS * z, tl = mapScreen([0, 0]); mc.setTransform(k, 0, 0, k, tl[0] * 2, tl[1] * 2); mc.imageSmoothingQuality = "high";
@@ -269,7 +291,7 @@ function drawMap(t, from) {                                // from: where on scr
 const css = (s) => { const e = Dc().createElement("style"); e.textContent = s; Dc().head.appendChild(e); };
 let applied = { date: null, layers: "", tool: "" };
 function driveLab(t) {
-  const Lb = lab(), on = t >= T.rewind[0] - 0.05, lay = on ? "on" : "off";
+  const Lb = lab(), on = true, lay = "on";                // Gaia's rings and the track are part of the picture from the start: nothing pops in
   if (applied.layers !== lay) { applied.layers = lay; Lb.act({ layers: { det: false, wise: false, mask: false, gaia: on, track: on } }); }
   const tool = t >= T.spec[0] && t < T.spec[1] ? "spectrum" : "readings";
   if (applied.tool !== tool) { applied.tool = tool; if (tool === "spectrum") Lb.act({ instrument: "spectrum" }); else Lq("#bk-back")?.click(); }
@@ -288,31 +310,27 @@ function styleLab(t) {
 
 // ------------------------------------------------------------------ one frame
 const set = (e, o, tf) => { e.style.opacity = String(o); if (tf !== undefined) e.style.transform = tf; };
-let running = false, recording = false, t0 = 0, lastT = -1, ready = false;
+let running = false, recording = false, t0 = 0, lastT = -1, ready = false, skyState = "";
 function render(t) {
   // act one, then its last picture settling into the Lab's pane
-  const skyA = 1 - sm(seg(t, ...T.real)); sky.style.opacity = String(skyA); sky.style.visibility = skyA <= 0 ? "hidden" : "visible";
-  if (skyA > 0) { if (t < T.a1 + 0.1) { drawSky(t); skyState = "live"; } else if (skyState !== "held") { drawSky(T.a1 + 0.1); skyState = "held"; }
-    const u = io(seg(t, ...T.pull)), cw = ST.w * LABWIN.s, s2 = cw / 1080, px = LABWIN.x + (ST.x + ST.w / 2) * LABWIN.s, py = LABWIN.y + (ST.y + ST.w / 2) * LABWIN.s, half = cw / 2 / s2, s = lerp(1, s2, u);
-    sky.style.transform = `translate(${lerp(0, px - 960 * s2, u)}px, ${lerp(0, py - 540 * s2, u)}px) scale(${s})`; sky.style.clipPath = `inset(${lerp(0, 540 - half, u)}px ${lerp(0, 960 - half, u)}px)`; }
-  $("#flash").style.opacity = String(t < 6.42 ? 0 : t < T.a1 ? 0.92 * seg(t, 6.42, T.a1) : 0.92 * (1 - sm(seg(t, T.a1, 7.3))));
+  const skyA = 1 - sm(seg(t, 6.15, 6.95)); sky.style.opacity = String(skyA); sky.style.visibility = skyA <= 0 ? "hidden" : "visible"; if (skyA > 0) drawSky(t);          // the opening dissolves to black as the name comes up
   // the reticle around the picture
-  $("#ret").style.opacity = String(sm(seg(t, 8.2, 8.5)) * (1 - sm(seg(t, 10.2, 10.8)))); $("#ret-box").setAttribute("stroke-dashoffset", String(1 - io(seg(t, 8.3, 9.3)))); $("#ret-ticks").style.opacity = String(sm(seg(t, 9.0, 9.5)));
+  $("#ret").style.opacity = String(sm(seg(t, 8.0, 8.3)) * (1 - sm(seg(t, 10.2, 10.8)))); $("#ret-box").setAttribute("stroke-dashoffset", String(1 - io(seg(t, 8.1, 9.1)))); $("#ret-ticks").style.opacity = String(sm(seg(t, 8.8, 9.3)));
   // the Lab
   if (ready) { try { driveLab(t); styleLab(t); } catch (e) { /* the Lab is between two states */ } }
-  let [s, x, y] = camAt(t), la = 1; const anchor = [x + (ST.x + ST.w / 2) * s, y + (ST.y + ST.w / 2) * s];       // where the object is on screen when the Lab lets go
-  if (t >= T.out) { const u = io(seg(t, T.out, T.out + 1.2)), s3 = s * lerp(1, 0.25, u); x = anchor[0] - (ST.x + ST.w / 2) * s3; y = anchor[1] - (ST.y + ST.w / 2) * s3; s = s3; la = 1 - sm(seg(t, T.out + 0.1, T.out + 0.9)); }
+  let [s, x, y] = camAt(t), la = sm(seg(t, 8.6, 9.6)); const anchor = [x + (ST.x + ST.w / 2) * s, y + (ST.y + ST.w / 2) * s];       // where the object is on screen when the Lab lets go
+  if (t >= T.out) { const u = io(seg(t, T.out, T.out + 1.2)), s3 = s * lerp(1, 0.25, u); x = anchor[0] - (ST.x + ST.w / 2) * s3; y = anchor[1] - (ST.y + ST.w / 2) * s3; s = s3; la *= 1 - sm(seg(t, T.out + 0.1, T.out + 0.9)); }
   const lw = $("#labwrap"); lw.style.transform = `translate(${x}px, ${y}px) scale(${s})`; lw.style.opacity = String(la); lw.style.visibility = la <= 0 ? "hidden" : "visible"; lw.style.borderRadius = `${14 / s}px`;
   const win = $("#win"); win.style.transform = lw.style.transform; win.style.borderRadius = `${14 / s}px`; win.style.borderWidth = `${1.2 / s}px`; win.style.opacity = String(sm(seg(t, 9.6, 10.5)) * la);
   // the whole sky
   drawMap(t, anchor);
   // words
-  set($("#badge"), fade(t, 0.3, 3.4)); set($("#art"), fade(t, 0.4, 6.3)); set($("#ttl"), fade(t, 6.5, 9.4, 0.3));
+  set($("#badge"), fade(t, 0.3, 3.4)); set($("#art"), fade(t, 0.4, 6.3)); set($("#ttl"), sm(seg(t, 6.45, 7.05)) * (1 - sm(seg(t, 7.9, 8.4))));
   const liveA = sm(seg(t, 10.8, 11.4)) * (1 - sm(seg(t, 21.8, 22.3))); set($("#live"), liveA); $("#livebg").style.opacity = String(liveA * sm(seg(t, 15.2, 16.2)));
   const cp = CAPS.find((q) => t >= q[0] && t <= q[1]); if (cp) { const sp = $("#cap span"); if (sp.textContent !== cp[2]) sp.textContent = cp[2]; } set($("#cap"), cp ? fade(t, cp[0], cp[1], 0.3) : 0);
   $("#capbg").style.opacity = String(Math.max(sm(seg(t, 15.2, 16.1)) * (1 - sm(seg(t, 22.1, 22.7))), fade(t, 0.2, 6.35, 0.4) * 0.5));
   if (M.pick) { const p = mapScreen(M.pick), a = fade(t, 24.9, 25.95, 0.25), b = $("#cta"); b.style.left = `${p[0] + 46}px`; b.style.top = `${p[1] - 84}px`; set(b, a); $("#lead").style.opacity = String(a); const l = $("#lead-l"); l.setAttribute("x1", p[0] + 7); l.setAttribute("y1", p[1] - 7); l.setAttribute("x2", p[0] + 52); l.setAttribute("y2", p[1] - 40); const c = $("#lead-c"); c.setAttribute("cx", p[0]); c.setAttribute("cy", p[1]); }
-  set($("#endc"), t >= T.end ? 1 : 0); $("#endin").style.opacity = String(sm(seg(t, T.end + 0.35, T.end + 0.95)));           // a cut to black, then the card
+  set($("#endc"), sm(seg(t, T.end - 0.1, T.end + 0.5))); $("#endin").style.opacity = String(sm(seg(t, T.end + 0.45, T.end + 1.05)));           // a fade to black, then the card
 }
 function tick(tNow) {
   if (!running) return; const t = Math.min(DUR, (tNow - t0) / 1000), dt = lastT < 0 ? 0 : t - lastT; lastT = t; render(t);
@@ -323,7 +341,7 @@ async function prepare() {
   const msg = (s) => ($("#msg").textContent = s), until = async (f, ms = 60000) => { const t1 = Date.now(); while (Date.now() - t1 < ms) { try { if (f()) return true; } catch (e) { /* not yet */ } await wait(250); } return false; };
   try { localStorage.setItem("mira.rail", "1"); localStorage.setItem("mira.pro", "1"); } catch (e) { /* private mode */ }
   $("#fLab").src = "/explore/?embed=1&deck=1&target=eps-indi-b";
-  msg("the dark…"); try { initSky(); } catch (e) { console.error(String(e)); msg(String(e).slice(0, 300)); }
+  msg("the dark…"); try { await initSky(); } catch (e) { console.error(String(e)); msg(String(e).slice(0, 300)); }
   msg("the whole sky…"); await buildMap();
   msg("the Lab…"); await until(() => W().__mira?.lab?.isOpen, 90000);
   await until(() => { const c = lab().context(); return !c.loading && c.exposures > 0 && c.field; }, 180000);
