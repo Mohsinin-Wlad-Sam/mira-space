@@ -65,7 +65,7 @@ ui.innerHTML = `
 <section class="catpage" id="catpage"></section>
 <aside class="asst" id="asst" hidden></aside>
 
-<div class="unimode seg" id="unimode" role="tablist" aria-label="Two ways to look at the universe"><button data-m="3d" title="Fly through space: every object at its measured distance">In 3D</button><button data-m="map" title="The whole sky as seen from Earth, 2010 against 2025">Sky map</button></div>
+<div class="unimode seg" id="unimode" role="tablist" aria-label="Two maps"><button data-m="3d" title="Around the Sun in 3D: every object at its distance">Around the Sun · 3D</button><button data-m="map" title="The whole sky as a flat map: three NASA surveys by year, SPHEREx's 102 colours, every confirmed mover">The whole sky</button></div>
 <section class="blinkpage" id="blinkpage"></section>
 <section class="logpage" id="logpage"></section>
 
@@ -111,6 +111,8 @@ ui.innerHTML = `
 <section class="about" id="about"></section>
 <section class="hood" id="hood"></section>
 <section class="space" id="space"></section>
+<section class="skymap" id="skymap"></section>
+<div class="closer" id="closer" hidden></div>
 <section class="labpage" id="labpage"></section>
 
 <div class="tip" id="tip"></div>
@@ -618,30 +620,47 @@ function observe(t: BlinkTarget | string, fallback?: BlinkTarget) { setView("bli
 
 async function setView(v: View, arg?: string) {
   closeAbout();
-  if (v !== "universe" || uniMode !== "map") { setBlink(false); play(false); endTour(); closePanel(); $("#drawer").classList.remove("open"); }
+  setBlink(false); play(false); endTour(); closePanel(); $("#drawer").classList.remove("open");
   if (v !== "universe") space?.pause(true);
   if (v !== "blink") blink.pause();
   view = v;
   for (const k of ["universe", "blink", "cat", "log"]) document.body.classList.toggle(`v-${k}`, k === v);
-  document.body.classList.toggle("m-3d", v === "universe" && uniMode === "3d"); document.body.classList.toggle("m-map", v === "universe" && uniMode === "map");
+  document.body.classList.toggle("m-3d", v === "universe" && uniMode === "3d"); document.body.classList.toggle("m-sky", v === "universe" && uniMode === "map");      // (the class m-map belonged to the retired atlas and is never set)
+  if (!(v === "universe" && uniMode === "map")) { sky?.pause(true); ($("#closer") as HTMLElement).hidden = true; }
   document.body.classList.toggle("space-on", v === "universe" && uniMode === "3d");
   $("#blinkpage").classList.toggle("open", v === "blink"); $("#catpage").classList.toggle("open", v === "cat"); $("#logpage").classList.toggle("open", v === "log");
   document.querySelectorAll<HTMLElement>("#unimode button").forEach((b) => b.classList.toggle("on", b.dataset.m === uniMode));
   markNav();
   if (v === "universe") {
     if (uniMode === "3d") { const sp = await ensureSpace(); if (sp && view === "universe" && uniMode === "3d") { sp.pause(false); if (arg && !sp.focus(arg)) toast("Not on the map: its distance is not known yet. Open it in the Lab instead."); } }
-    else { space?.pause(true); await ensureAtlas(); nudge([100, 700, 1800]); }
+    else { space?.pause(true); const first = !sky; const sk = await ensureSky(arg); if (sk && view === "universe" && uniMode === "map") { sk.pause(false); if (arg && !first) sk.focus(arg); } }
   } else if (v === "blink") blink.resume();
   else if (v === "cat") { await ensureCatalogue(); }
   else { const m = await import("./logbook"); if (view === "log") m.mountLogbook($("#logpage"), { onObserve: observe, toast }); }
 }
 /** the Universe section: `mode` "3d" (fly through space) or "map" (the whole sky from Earth); `focus` = an object to fly to in 3D */
-async function showUniverse(_mode: UniMode = uniMode, focus?: string) { uniMode = "3d"; await setView("universe", focus); }      // the old all-sky atlas, with its unverified lists, is retired: the map is always the 3D one
+async function showUniverse(mode: UniMode = uniMode, focus?: string) { uniMode = mode; await setView("universe", focus); }
+/** the whole-sky map (web/src/skymap.ts), started once */
+let sky: import("./skymap").SkyHandle | null = null, skyP: Promise<import("./skymap").SkyHandle | null> | null = null, skyLam: number[] = [];
+function ensureSky(focus?: string) {
+  return (skyP ??= (async () => {
+    try {
+      const m = await import("./skymap");
+      fetch("https://irsa.ipac.caltech.edu/data/hips/SPHEREx/spherex_allsky_cube/properties").then((r) => r.text()).then((t) => { const q = t.match(/data_cube_crval3_arr\s*=\s*([^\n]+)/); if (q) skyLam = q[1].trim().split(/\s+/).map(Number); }).catch(() => {});
+      sky = await m.openSky($("#skymap"), { base: import.meta.env.BASE_URL, lowPower: set.saver || LOW_POWER, focus, onExplain: explain, toast,
+        onObserve: (t) => (t.pmra !== undefined ? observe({ ...t, name: t.name ?? "Confirmed mover" } as BlinkTarget) : observe({ ra: t.ra, dec: t.dec } as BlinkTarget)),
+        on3D: (id) => showUniverse("3d", id),
+        onCloser: async (ra, dec) => { const c = await import("./closer"); c.openCloser($("#closer"), ra, dec, { lam: () => skyLam, onObserve: (t) => observe({ ra: t.ra, dec: t.dec } as BlinkTarget) }); } });
+    } catch (e) { console.warn("sky map unavailable", e); sky = null; }
+    return sky;
+  })());
+}
 async function loadBasics() {
   if (S.summary) return;
   S.summary = await load<Summary>("summary", true); S.lam = S.summary?.lam_um ?? []; S.targets = (await load<Target[]>("targets", true)) ?? [];
 }
 function ensureAtlas() { return (atlasP ??= bootAtlas()); }
+void ensureAtlas;       // the first sky atlas is retired (nothing calls it any more); the whole-sky map is web/src/skymap.ts
 /** the verified catalogue is mounted once and keeps its filters and selection */
 async function ensureCatalogue() { if (!catalogue) { const m = await import("./catalogue"); catalogue ??= m.mountCatalogue($("#catpage"), { onObserve: (t) => observe(t as BlinkTarget), onMap: (id) => showUniverse("3d", id), toast }); } return catalogue; }
 /** the 3D universe starts once and is then only paused and resumed, so the camera and the selection survive a visit to another section */
@@ -861,11 +880,12 @@ async function bootAtlas() {
 async function route(initial: boolean) {
   const g = hashParams();
   if (g.has("about") || g.has("method")) { if (initial) await setView("blink"); renderAbout(); }
-  else if (g.has("catalogue") || g.has("catalog") || g.has("tour") || g.has("atlas") || g.has("sky")) await setView("cat");
+  else if (g.has("catalogue") || g.has("catalog") || g.has("tour") || g.has("atlas")) await setView("cat");
   else if (g.has("cases") || g.has("log") || g.has("logbook")) await setView("log");
   else if (g.has("take-part")) { await showUniverse("3d");       // straight to an object nobody has named, once the map knows them
     const t0 = Date.now(), iv = setInterval(() => { const btn = document.querySelector<HTMLElement>('#spfind [data-f="help"]'), n = document.querySelector("#spfn3")?.textContent ?? "";
       if (btn && /\d/.test(n)) { clearInterval(iv); btn.click(); } else if (Date.now() - t0 > 20000) clearInterval(iv); }, 400); }
+  else if (g.has("sky")) await showUniverse("map", g.get("sky") || undefined);
   else if (g.has("space") || g.has("hood") || g.has("universe") || g.has("map")) await showUniverse("3d", g.get("universe") || g.get("map") || undefined);
   else if (g.has("lab") || g.has("observe") || g.has("blink")) await setView("blink");
   else if (initial) { await showUniverse("3d"); if (!space) await setView("blink"); }       // the map is the front door; without WebGL, the Lab is
@@ -878,7 +898,7 @@ function preload() {
 }
 /** what the assistant can read and operate */
 const asstCtx = () => ({ view: () => view, lab: () => blink.context(), labAct: (a: any) => blink.act(a), catalogue: async () => (await ensureCatalogue()).context(), catalogueAct: async (a: any) => (await ensureCatalogue()).act(a),
-  observe: (q: string) => observe(q), go: (v: string) => (v === "universe" ? showUniverse("3d") : setView(v as View)), method: renderAbout, map: () => space?.context() ?? null, mapAct: (a: any) => space?.act(a) });
+  observe: (q: string) => observe(q), go: (v: string) => (v === "universe" ? showUniverse("3d") : setView(v as View)), method: renderAbout, map: () => (uniMode === "map" ? sky?.context() ?? null : space?.context() ?? null), mapAct: (a: any) => { if (uniMode === "map" && sky && a?.fly_to) { sky.focus(String(a.fly_to)); return `showing ${a.fly_to} on the sky map`; } return space?.act(a); } });
 /** "Explain it to me": the assistant opens with the question already asked */
 async function explain(q: string) { const m = await import("./assistant"); m.askAssistant($("#asst"), asstCtx(), q); $("#asstbtn").classList.add("on"); }
 async function boot() {
@@ -897,7 +917,9 @@ async function boot() {
   $("#search").onsubmit = async (e) => {
     e.preventDefault(); const inp = $("#q") as HTMLInputElement, q = inp.value.trim(); if (!q) return; endTour(); inp.blur();
     // on the map a name flies there; anything the map does not hold (and any coordinates) goes to the Lab to be measured
-    if (inp) { inp.value = ""; if (view === "universe" && uniMode === "3d" && space && !parseCoords(q) && space.focus(q)) return; observe(q); return; }
+    if (inp) { inp.value = ""; if (view === "universe" && uniMode === "3d" && space && !parseCoords(q) && space.focus(q)) return;
+      if (view === "universe" && uniMode === "map" && sky) { if (!(await sky.focus(q))) toast(`Could not find "${q}"`); return; }
+      observe(q); return; }
   };
   const h = hashParams();
   if (EMBED || query.has("ra") || query.has("target") || query.has("name")) { await setView("blink"); blink.openFromParams(query); }

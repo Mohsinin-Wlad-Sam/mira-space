@@ -836,3 +836,37 @@ body.asst-on .blinkpage, body.asst-on .catpage, body.asst-on .logpage { right: m
 .sp-leader circle:nth-child(2) { fill: #ff9d4d; } .sp-leader polyline { fill: none; stroke: rgb(255 157 77 / .75); stroke-width: 1; }
 @keyframes hud-lock { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .hud { animation: none; } .sp-leader circle:first-child { animation: none; } }
+/* ---- the whole-sky map (skymap.ts), the two-map switch, and the closer look (closer.ts) */
+.skymap { position: absolute; inset: var(--header-h) 0 0 0; z-index: 7; display: none; background: #000; overflow: hidden; }
+body.m-sky .skymap { display: block; }
+.sk-cv { display: block; touch-action: none; cursor: grab; }
+body.v-universe .unimode { display: inline-flex !important; left: 50%; transform: translateX(-50%); top: calc(var(--header-h) + 10px); z-index: 12; }
+body.v-universe.embed .unimode { display: none !important; }
+.unimode button { font-size: 11.5px; padding: 6px 12px; }
+.sk-panel { position: absolute; z-index: 3; left: var(--gutter); top: 54px; width: 292px; max-height: calc(100% - 80px); overflow-y: auto; padding: 14px; background: rgb(0 0 0 / .68); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); border: .8px solid var(--hair); border-radius: var(--radius); display: flex; flex-direction: column; gap: 9px; }
+.sk-panel .eyebrow { margin: 0; font-size: 9.5px; color: var(--faint); }
+.sk-stops { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.sk-stops button { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; padding: 6px 8px; background: none; color: var(--dim); border: .8px solid var(--line); border-radius: var(--radius); font-size: 10.5px; cursor: pointer; text-align: left; }
+.sk-stops button b { font-family: var(--display, inherit); font-size: 16px; color: var(--white); } .sk-stops button.on { background: var(--white); color: #000; border-color: var(--white); } .sk-stops button.on b { color: #000; }
+.sk-row { display: flex; align-items: center; gap: 8px; } .sk-row input[type=range] { flex: 1; min-width: 0; } .sk-row .icon-btn { position: static; width: 30px; height: 30px; flex: none; }
+.sk-what { margin: 0; font-size: 12px; line-height: 1.45; color: var(--dim); min-height: 34px; }
+.sk-wave { display: none; flex-direction: column; gap: 6px; padding: 8px; border: .8px solid rgb(255 157 77 / .4); border-radius: var(--radius); } .sk-wave.on { display: flex; }
+.sk-wave .link, .sk-menu .link { background: none; border: 0; padding: 0; color: var(--dim); text-decoration: underline; cursor: pointer; font-size: 11.5px; } .sk-busy { font-size: 11px; color: #ff9d4d; }
+.sk-chips { display: grid; gap: 5px; } .sk-chips button { display: flex; align-items: center; gap: 8px; padding: 6px 8px; background: none; color: var(--dim); border: .8px solid var(--line); border-radius: var(--radius); font-size: 12px; cursor: pointer; text-align: left; }
+.sk-chips button i { width: 8px; height: 8px; border-radius: 50%; flex: none; } .sk-chips button b { color: var(--white); } .sk-chips button.on { border-color: var(--white); color: var(--white); }
+.sk-hint { margin: 0; font-size: 11px; line-height: 1.45; color: var(--faint); }
+.sk-coords { position: absolute; z-index: 3; right: var(--gutter); bottom: 14px; font-size: 11px; color: var(--dim); text-shadow: 0 0 6px #000; pointer-events: none; }
+.sk-menu { position: absolute; z-index: 6; width: 236px; padding: 12px; border-radius: var(--radius); display: flex; flex-direction: column; gap: 8px; } .sk-menu[hidden] { display: none; } .sk-menu .eyebrow { margin: 0; }
+.skymap .sp-info { top: 54px; right: var(--gutter); }
+.closer { position: fixed; inset: 0; z-index: 60; background: rgb(0 0 0 / .72); display: flex; align-items: center; justify-content: center; padding: 16px; } .closer[hidden] { display: none; }
+.cl-box { position: relative; width: min(760px, 100%); max-height: 100%; overflow-y: auto; padding: 16px; border-radius: var(--radius); display: flex; flex-direction: column; gap: 10px; }
+.cl-box .icon-btn { position: absolute; top: 10px; right: 10px; width: 30px; height: 30px; } .cl-box .eyebrow { margin: 0; padding-right: 40px; }
+.cl-sky { position: relative; width: 100%; height: min(52vh, 460px); background: #000; border: .8px solid rgb(255 157 77 / .4); } .cl-wait { margin: 0; padding: 24px; color: var(--dim); font-size: 13px; }
+.cl-ctl { display: flex; flex-direction: column; gap: 8px; } .cl-chk { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--dim); margin-right: auto; }
+@media (max-width: 760px) {
+  .sk-panel { left: 8px; right: 8px; top: 46px; width: auto; max-height: 42vh; padding: 10px; gap: 7px; } .sk-hint { display: none; } .sk-chips { grid-template-columns: repeat(3, 1fr); } .sk-chips button { flex-direction: column; align-items: flex-start; gap: 2px; font-size: 10.5px; }
+  .skymap .sp-info { top: auto; right: 0; } .skymap:has(.sp-info.open) .sk-panel { display: none; } .sk-coords { display: none; }
+  body.v-universe .unimode { top: calc(var(--header-h) + 4px); } .unimode button { padding: 5px 8px; font-size: 10.5px; }
+  .sp-ctl { top: 96px; } .sp-intro { top: 100px; }
+}
+.skymap, .closer { pointer-events: auto; }
