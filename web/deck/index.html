@@ -128,9 +128,9 @@ svg.curve { width: 100%; height: auto; display: block; } svg.curve path { fill: 
       <div class="fun"><div><i style="--w:100%;--k:0"></i><b>39.9 billion</b><span>WISE detections searched</span></div><div><i style="--w:62%;--k:1"></i><b>1.56 million</b><span>candidate claims</span></div><div><i style="--w:38%;--k:2"></i><b>202,528</b><span>re-measured on raw SPHEREx exposures</span></div><div><i style="--w:22%;--k:3"></i><b>17,604</b><span>motions confirmed · 1,348 with no Gaia source</span></div></div></div>
     <div class="card a" style="--d:3"><h3>Checked against references</h3>
       <div class="kv"><div><b>92%</b><span>of known movers found in a blind test, with <b>0</b> false alarms among 5,951 still stars</span></div><div><b>0.011″</b><span>per year: median error of a measured motion (a SPHEREx pixel is 6.15″)</span></div><div><b>0.25″</b><span>median distance between where a star is seen and where its motion predicts</span></div><div><b>8′</b><span>worst planet position against NASA JPL Horizons, 1999–2027</span></div></div></div>
-    <div class="card a" style="--d:4"><h3>A sky world model · research preview</h3>
+    <div class="card a" style="--d:4"><h3>World models · tested on real stars</h3>
       <svg class="curve" viewBox="0 0 300 70" preserveAspectRatio="none" id="curve"><path pathLength="1" d="M0 6 L300 60"/></svg>
-      <p class="cap" id="wmcap">A network shown two real pictures taken 11 years apart draws the next one. Trained in 24 minutes on one GPU.</p>
+      <p class="cap" id="wmcap">Networks shown real pictures of the sky taken years apart learn to say what moved and to draw what comes next.</p>
       <div class="wm"><figure><img src="/deck/wm_heat.jpg" alt=""><figcaption>What it says moved · model output</figcaption></figure><figure><img src="/deck/wm_pred.jpg" alt=""><figcaption>Its 2026 forecast · AI-generated</figcaption></figure></div></div>
   </div>
 </section>
@@ -180,12 +180,17 @@ addEventListener('message', (e) => { if (e.data && e.data.mira === 'key') go(k +
 const fit = () => document.querySelectorAll('.live').forEach((b) => b.style.setProperty('--s', String(b.clientWidth / 1360))); addEventListener('resize', fit); fit();
 go(Math.max(0, (parseInt(location.hash.slice(1)) || 1) - 1));
 // the training curve and test figures of the world model, from the file the cluster run wrote
-Promise.all([fetch('/data/wm/train_log.json').then((r) => r.json()), fetch('/data/wm/model.json').then((r) => r.json())]).then(([log, m]) => {
-  const h = log.hist, lo = Math.min(...h.map((q) => q.loss)), hi = h[2] ? h[2].loss : h[0].loss, X = (i) => (i / (h.length - 1)) * 300, Y = (v) => 64 - ((Math.min(hi, v) - lo) / (hi - lo)) * 58;
-  document.querySelector('#curve path').setAttribute('d', h.map((q, i) => `${i ? 'L' : 'M'}${X(i).toFixed(1)} ${Y(q.loss).toFixed(1)}`).join(' '));
-  const t = m.test, fast = (t.by_pm || []).find((b) => b.lo === 1);
-  document.getElementById('wmcap').innerHTML = `Training error falling over ${m.trained.minutes} minutes on one GPU: ${m.trained.pairs.toLocaleString('en-US')} real picture pairs, ${(m.trained.samples / 1e6).toFixed(1)} million examples. On ${t.n} real fast movers it never saw, it finds <b style="color:#fff">${Math.round(100 * t.recall)}%</b>${fast ? ` (<b style="color:#fff">${Math.round(100 * fast.recall)}%</b> of those moving 1–2″ a year)` : ''}, with ${t.fp_per_field.toFixed(1)} false marks per field. It runs in the browser.`;
-}).catch(() => {});
+const J = (u) => fetch(u).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+Promise.all([J('/data/wm/train_log.json'), J('/data/wm/model.json'), J('/data/wm/scout.json')]).then(([log, m, sc]) => {
+  if (log && log.hist && log.hist.length > 3) { const h = log.hist, lo = Math.min(...h.map((q) => q.loss)), hi = h[2].loss, X = (i) => (i / (h.length - 1)) * 300, Y = (v) => 64 - ((Math.min(hi, v) - lo) / (hi - lo)) * 58;
+    document.querySelector('#curve path').setAttribute('d', h.map((q, i) => `${i ? 'L' : 'M'}${X(i).toFixed(1)} ${Y(q.loss).toFixed(1)}`).join(' ')); }
+  const W = (t) => `<b style="color:#fff">${t}</b>`, parts = [];
+  if (sc) { const t = sc.test, fast = (t.by_pm || []).find((b) => b.lo === 1), w = sc.copies.reduce((q, c) => q + c.weights_millions, 0), ft = sc.vjepa_finetuned, cmp = sc.comparison && ((ft && sc.comparison.vjz) || sc.comparison.vjepa || sc.comparison.vjz);
+    parts.push(`Our scout (${sc.copies.length} networks, ${w.toFixed(0)} M weights, trained on the whole sky at three dates on 6 GPUs): on a fifth of the sky kept aside it finds ${W(Math.round(100 * t.recall) + '%')} of ${t.n.toLocaleString('en-US')} real movers${fast ? `, ${W(Math.round(100 * fast.recall) + '%')} of those above 1″ a year` : ''}.`);
+    if (cmp) parts.push(`Meta's V-JEPA 2 on the same ${cmp.patches.toLocaleString('en-US')} test stars (0.5 = chance): as published ${W(cmp.vjepa2_probe_auc.toFixed(2))}, our scout ${W(cmp.mira_auc.toFixed(2))}${ft ? `, V-JEPA 2 fine-tuned on our movers ${W(ft.auc_test.toFixed(2))}` : ''}.${ft && ft.marks_scored ? ` It now checks every mark the scout makes: both agree on ${W(ft.marks_agree + ' of ' + ft.marks_scored)}.` : ''}`); }
+  if (m && m.test) parts.push(`A 0.7 M-weight model runs in the browser and forecasts any field (curve: its training error).`);
+  if (parts.length) document.getElementById('wmcap').innerHTML = parts.join(' ');
+});
 </script>
 </body>
 </html>

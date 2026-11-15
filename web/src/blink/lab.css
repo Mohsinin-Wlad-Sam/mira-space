@@ -8,7 +8,7 @@
    The rail holds every tool as one icon; the inspector shows the readings, or the tool that was asked for; the canvas
    and its timeline never move. Black, hairlines, uppercase labels, numbers in mono. Loaded after blink.css. */
 .bk:has(> .labx:not([hidden])) { max-width: none; padding: 0; }
-.labx { --hl: rgb(240 240 250 / .13); --insp: 408px; display: grid; grid-template-columns: 56px minmax(0, 1fr) var(--insp); grid-template-rows: 60px minmax(0, 1fr) 76px 30px;
+.labx { --hl: rgb(240 240 250 / .13); --insp: 440px; display: grid; grid-template-columns: 56px minmax(0, 1fr) var(--insp); grid-template-rows: 60px minmax(0, 1fr) 76px 30px;
   grid-template-areas: "rail top insp" "rail view insp" "rail time insp" "status status status"; height: calc(100vh - var(--header-h)); height: calc(100dvh - var(--header-h)); min-height: 540px; padding: 0; gap: 0; align-items: stretch; justify-items: stretch; background: #000; }
 .labx.noinsp { --insp: 0px; }
 .labx[hidden] { display: none; }
@@ -62,8 +62,11 @@
 .labx.noinsp .lx-insp { display: none; }
 .lab-dh { flex: none; display: flex; align-items: center; gap: 12px; height: 60px; padding: 0 14px 0 22px; border-bottom: .8px solid var(--hl); }
 .lab-dh b { font-family: var(--body); font-weight: 700; font-size: 12px; letter-spacing: .14em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.lab-dh-r { margin-left: auto; display: flex; align-items: center; gap: 8px; }
-.lab-back { padding: 5px 10px 5px 7px; background: none; border: .8px solid var(--hl); border-radius: 4px; color: var(--dim); font-family: var(--mono); font-size: 10px; letter-spacing: .06em; cursor: pointer; } .lab-back:hover { color: #fff; border-color: #fff; }
+.lab-dh-r { flex: none; margin-left: auto; display: flex; align-items: center; gap: 8px; } .lab-dh b { flex: 0 1 auto; min-width: 0; }
+/* the motion table is read in a narrow column here: the numbers keep fixed widths, the words get the rest */
+.labx #bk-ctab th:nth-child(1) { width: 34px; } .labx #bk-ctab th:nth-child(3) { width: 88px; } .labx #bk-ctab th:nth-child(4) { width: 58px; } .labx #bk-ctab th:nth-child(5) { width: 62px; }
+.labx #bk-ctab th, .labx #bk-ctab td { padding-right: 8px; } .labx #bk-ctab td.res small { white-space: normal; }
+.lab-back { flex: none; display: grid; place-items: center; width: 28px; height: 28px; margin-left: -6px; padding: 0 0 2px; background: none; border: .8px solid var(--hl); border-radius: 50%; color: var(--dim); font-family: var(--body); font-size: 17px; line-height: 1; cursor: pointer; } .lab-back[hidden] { display: none; } .lab-back:hover { color: #fff; border-color: #fff; }
 .lab-x { width: 28px; height: 28px; background: none; border: 0; border-radius: 4px; color: var(--dim); font-size: 20px; line-height: 1; cursor: pointer; } .lab-x:hover { color: #fff; background: rgb(240 240 250 / .08); }
 .labx .bk-ask, .labx .bk-help { margin: 0; }
 .lx-insp .lab-facts, .lx-insp .lab-tool { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 4px 22px 32px; scrollbar-width: thin; scrollbar-color: rgb(240 240 250 / .2) transparent; }
@@ -103,7 +106,7 @@
 .wm-mark { position: absolute; left: 5px; top: 5px; padding: 2px 5px; font-family: var(--mono); font-size: 7.5px; letter-spacing: .06em; text-transform: uppercase; color: #000; background: #ff9d4d; border-radius: 3px; pointer-events: none; }
 .wm-f { display: flex; align-items: center; gap: 12px; } .wm-f input[type=range] { flex: 1; accent-color: #ff9d4d; } .wm-f output { font-family: var(--display); font-size: 22px; min-width: 62px; text-align: right; font-variant-numeric: tabular-nums; }
 
-@media (max-width: 1280px) { .labx { --insp: 360px; } .lx-tabs { gap: 16px; } .lx-opts { gap: 18px; } }
+@media (max-width: 1280px) { .labx { --insp: 404px; } .lx-tabs { gap: 16px; } .lx-opts { gap: 18px; } }
 @media (max-width: 900px) {
   .labx, .labx.noinsp { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto auto auto auto; grid-template-areas: "top" "view" "time" "rail" "status"; height: auto; min-height: 0; }
   .lx-top { flex-direction: column; align-items: flex-start; gap: 6px; padding: 14px 14px 10px; }
@@ -116,5 +119,11 @@
   .lx-insp { position: fixed; left: 0; right: 0; bottom: 0; z-index: 45; max-height: 70vh; border-left: 0; border-top: .8px solid rgb(240 240 250 / .25); border-radius: 14px 14px 0 0; animation: lx-up .26s cubic-bezier(.2, .7, .2, 1); }
   @keyframes lx-up { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
   .lx-insp .lab-facts, .lx-insp .lab-tool { padding: 4px 16px calc(24px + env(safe-area-inset-bottom)); } .lab-dh { height: 52px; padding: 0 10px 0 16px; }
+  .labx #bk-ctab { min-width: 470px; }
   .lx-status { flex-wrap: wrap; gap: 4px 16px; padding: 8px 14px 14px; } .labx .bk-data { flex-wrap: wrap; white-space: normal; } .lx-read { display: none; }
 }
+
+/* ---- looking closer: the picture enlarges inside its frame ---- */
+.lx-clip { position: absolute; inset: 0; overflow: hidden; } .lx-clip canvas { transform-origin: 50% 50%; will-change: transform; }
+.lx-zoom { position: absolute; right: 12px; bottom: 12px; z-index: 4; padding: 5px 10px; background: rgb(0 0 0 / .78); border: .8px solid rgb(240 240 250 / .3); border-radius: 4px; color: var(--white); font-family: var(--mono); font-size: 10.5px; letter-spacing: .06em; cursor: pointer; } .lx-zoom:hover { border-color: #fff; }
+.lab-f input[type=range] { flex: 1 1 100%; accent-color: #f0f0fa; }

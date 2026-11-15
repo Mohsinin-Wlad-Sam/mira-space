@@ -203,3 +203,5 @@ body.bare .sp-cap, body.bare #spinfo:empty { display: none !important; }
 body.nocard .sp-info, body.nocard .sp-leader { display: none !important; }
 .sk-depth { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin: 2px 0 6px; font-family: var(--mono); font-size: 10px; color: var(--dim); } .sk-depth i { display: inline-block; width: 10px; height: 10px; margin-right: 4px; border-radius: 2px; vertical-align: -1px; } .sk-depth em { font-style: normal; color: var(--faint); }
 #ui .mx-acts .btn.on { background: var(--white); color: #000; border-color: var(--white); }
+#ui .sk-tile, .sk-tile { bottom: 98px; right: 24px; max-width: 46vw; text-align: right; }
+.sp-wm { margin: 0 0 10px; padding: 9px 12px; border-left: 2px solid #b48cff; background: rgb(180 140 255 / .08); font-size: 13px; line-height: 1.5; color: rgb(240 240 250 / .86); } .sp-wm b { color: #fff; font-weight: 600; } .sp-wm.off { border-color: rgb(240 240 250 / .25); background: none; color: var(--dim); }

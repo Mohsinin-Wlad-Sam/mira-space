@@ -40,14 +40,19 @@ def main():
     # the round trip pixel -> sky -> pixel must close
     rng = np.random.default_rng(1); tt = rng.integers(0, NT, 2000); rr = rng.uniform(0, 511, 2000); cc = rng.uniform(0, 511, 2000); ra, dec = tile_sky(tt, rr, cc); t2, r2, c2 = tile_rc(ra, dec, ORDER)
     assert (t2 == tt).mean() > 0.995 and np.median(np.hypot(r2 - rr, c2 - cc)) < 0.08, "tile <-> sky conversion does not close"
-    runs = [os.path.expanduser(r) for r in a.runs.split(",") if r]; res = [json.load(open(f"{r}/result.json")) for r in runs]; nets = []
-    for r, q in zip(runs, res):
-        n = UNet2(q["base"]).to(dev).to(memory_format=torch.channels_last); n.load_state_dict(torch.load(f"{r}/net.pt", map_location=dev)); n.eval(); nets.append(n)
+    import re
+    runs = [os.path.expanduser(r) for r in a.runs.split(",") if r]; res = []; nets = []
+    for r in runs:      # a copy whose own evaluation did not finish still has its trained weights: its size is in its folder's name
+        base = int(re.search(r"_c(\d+)_", r).group(1)); n = UNet2(base).to(dev).to(memory_format=torch.channels_last); n.load_state_dict(torch.load(f"{r}/net.pt", map_location=dev)); n.eval(); nets.append(n)
+        q = json.load(open(f"{r}/result.json")) if os.path.exists(f"{r}/result.json") else {}; steps = q.get("steps")
+        if steps is None:
+            m = re.findall(r"^step (\d+) ", open(f"{r}/train.log").read(), re.M); steps = int(m[-1]) if m else 0
+        res.append({"base": base, "params": sum(p.numel() for p in n.parameters()), "minutes": q.get("minutes", 30.0), "steps": steps, "tiles": q.get("tiles")})
     L = np.load(f"{root}/labels.npz"); D = tuple(torch.from_numpy(np.load(f"{root}/{n}.npy")).to(dev) for n in ("tm", "w2", "sx")) + (torch.from_numpy(L["P"]).to(dev), torch.from_numpy(L["I"]).to(dev))
     def maps(ids, seen=1.0):
         tm, w2, sx = D[:3]; H = []; V = []
-        for i in range(0, len(ids), 16):
-            t = ids[i:i + 16]; a_, b_, c_ = tm[t].float(), w2[t].float(), sx[t].float(); valid = (c_ > 0).float(); z1, _, _ = norm(a_); z2, _, _ = norm(b_); z3, _, _ = norm(c_, valid)
+        for i in range(0, len(ids), 8):
+            t = ids[i:i + 8]; a_, b_, c_ = tm[t].float(), w2[t].float(), sx[t].float(); valid = (c_ > 0).float(); z1, _, _ = norm(a_); z2, _, _ = norm(b_); z3, _, _ = norm(c_, valid)
             x = torch.stack([z1, z2, z3 * seen, torch.full_like(z1, seen)], 1).contiguous(memory_format=torch.channels_last); h = 0; v = 0
             for n in nets:
                 with torch.autocast("cuda", dtype=torch.bfloat16): o = n(x).float()
@@ -103,7 +108,7 @@ def main():
     fast = np.array([(c["pm"][k] or 0) for k in range(n_obj)]); vis = S["vis"] & S["same"]
     summ = lambda lo, hi: {"lo": lo, "hi": hi, "n": int(((fast >= lo) & (fast < hi) & vis).sum()), "marked": int(((fast >= lo) & (fast < hi) & vis & (heat_o >= thr)).sum())}
     scout = {"name": "MIRA sky model, scout", "built": time.strftime("%Y-%m-%d %H:%M UTC", time.gmtime()), "copies": [{"weights_millions": round(q["params"] / 1e6, 1), "minutes": q["minutes"], "steps": q["steps"]} for q in res],
-             "pictures": "2MASS 2.2 um (1999), WISE 4.6 um (2010), SPHEREx 4.5-4.7 um (2025-26); 12,288 order-5 HiPS tiles of 12.9 arcsec pixels from NASA/IPAC IRSA", "tiles": res[0]["tiles"], "threshold": thr, "threshold_table": table,
+             "pictures": "2MASS 2.2 um (1999), WISE 4.6 um (2010), SPHEREx 4.5-4.7 um (2025-26); 12,288 order-5 HiPS tiles of 12.9 arcsec pixels from NASA/IPAC IRSA", "tiles": next((q["tiles"] for q in res if q.get("tiles")), None), "threshold": thr, "threshold_table": table,
              "test": test, "test_forecast": fore, "comparison": cmp,
              "sky": {"tiles": int(len(ids)), "marks": int(len(M)), "marks_on_catalogue_stars": int(known.sum()), "marks_in_the_galactic_plane": int((plane & ~known).sum()), "marks_elsewhere": int(new.sum())},
              "catalogue": {"n": n_obj, "by_motion": [summ(0.15, 0.25), summ(0.25, 0.4), summ(0.4, 0.6), summ(0.6, 1.0), summ(1.0, 2.0), summ(2.0, 99)]},

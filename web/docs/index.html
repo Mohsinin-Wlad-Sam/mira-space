@@ -45,7 +45,7 @@ footer { max-width: 1180px; margin: 0 auto; padding: 24px; border-top: .8px soli
 <div class="wrap">
 <aside id="toc">
   <div class="g">Use it</div><a href="#start">Start here</a><a href="#sky">Sky map</a><a href="#space">Space map</a><a href="#lab">The Lab</a><a href="#search">Search</a><a href="#catalogue">Catalogue</a><a href="#assistant">Assistant</a>
-  <div class="g">Trust it</div><a href="#accuracy">Accuracy</a><a href="#limits">Known limits</a><a href="#worldmodel">Sky world model</a>
+  <div class="g">Trust it</div><a href="#accuracy">Accuracy</a><a href="#limits">Known limits</a><a href="#worldmodel">World models</a>
   <div class="g">Build on it</div><a href="#link">Link and embed</a><a href="#data">Data files</a><a href="#update">New data releases</a><a href="#plans">Plans</a><a href="#credits">Credits</a>
 </aside>
 <main>
@@ -74,13 +74,15 @@ footer { max-width: 1180px; margin: 0 auto; padding: 24px; border-top: .8px soli
 <h3>Survey depth and next visit <span class="tag">for mission teams</span></h3>
 <p>Open <b>SPHEREx, day by day</b> and switch on <b>Survey depth</b>: every 1.8° patch is coloured by how many times SPHEREx has finished imaging it by the date shown. Move over the map to read, for the patch under the pointer, the dates of its visits and about when the next one is due (from the interval between its own past visits).</p>
 <h3>Markers</h3>
-<p>With the whole sky in view only the fastest movers are drawn; the rest appear as you zoom in. Zoomed in, a marker stands where its star was on the date shown, and for 1999 and 2010 the map draws the surveys' own sharp tiles from NASA's archive, so you can see the marker sit on the star. Click a marker for its card; click empty sky to watch that place through time, or to measure it in the Lab.</p>
+<p>With the whole sky in view only the fastest movers are drawn; the rest appear as you zoom in. Zoomed in, a marker stands where its star was on the date shown, and the map draws the surveys' own tiles from NASA's archive (2MASS for 1999, WISE for 2010, SPHEREx's all-sky cube at 4.6 µm for today), placed by their sky coordinates, so you can see the marker sit on the star. Click a marker for its card; click empty sky to watch that place through time, or to measure it in the Lab.</p>
+<p class="note"><b>Why the closest view shows squares.</b> SPHEREx's all-sky picture has pixels 13″ wide (its camera's are 6″). Enlarged beyond that, MIRA shows those pixels as they are instead of blurring them into detail that is not there, and stops zooming at 2.6″ per screen pixel, where no all-sky survey used here has more to show. For the full exposures of one place, open it in the Lab.</p>
 
 <h2 id="space">Space map</h2>
 <p>A 3D map of the Sun's neighbourhood from ESA's Gaia distances. The strip above the time bar steps through scales, from the planets to the nearest stars and beyond. Time has two regimes: among the planets it runs in days (the planets move on their real orbits); among the stars it runs in millennia (each star moves along its measured motion). <b>Planets, live</b> flies to the Solar System and starts the clock.</p>
 
 <h2 id="lab">The Lab</h2>
-<p>The Lab opens on a picture, a time bar and four answers. Nothing else is on screen until you ask for it: click an answer to open the tool that produced it, or <b>All tools</b> for the list. <kbd>Esc</kbd> closes the drawer. A link to a field can carry the open tool (<code>&amp;tool=spectrum</code>).</p>
+<p>The Lab is a workspace laid out like an editing tool. The picture is in the centre and never moves. <b>Left:</b> a rail with one icon per tool (hover for its name and what it answers). <b>Right:</b> the inspector, which shows the four readings (what moved, how fast, what its light says, did it change) or the tool you opened. <b>Top:</b> the target, the view (Evolution, Exposures, Colour, Difference) and the field of view. <b>Bottom:</b> the timeline with its dated pictures, and a status line with the data in use and the position and value under the pointer.</p>
+<p><b>Working on the picture.</b> Scroll on it to enlarge it about the pointer (up to 8×), drag to move, double-click to reset: positions and values under the pointer stay exact. In the Picture tool, the brightness stretch brings out faint sources without touching the data. <kbd>Esc</kbd> hides the inspector; <b>PRO</b> at the foot of the rail adds the researcher tools. A link to a field can carry the open tool (<code>&amp;tool=spectrum</code>).</p>
 <table><tr><th>Tool</th><th>What it answers</th><th>How</th></tr>
 <tr><td><b>Picture</b></td><td>What to show and how far back</td><td>Evolution (one deep picture per SPHEREx visit, blended in time, with 2MASS 1999 and WISE 2010 before them), single exposures, colour, difference (each visit minus the first). Field of view 3.3′ to 13.1′; 36, 72 or all exposures.</td></tr>
 <tr><td><b>Layers</b></td><td>What is drawn on the picture</td><td>Detections, Gaia stars at the date shown, WISE 2010 positions, NASA's per-pixel flags.</td></tr>
@@ -125,14 +127,19 @@ footer { max-width: 1180px; margin: 0 auto; padding: 24px; border-top: .8px soli
 <li><b>Composition pictures</b> come from 8-bit previews: good for where things are, not for amounts.</li>
 <li><b>The assistant</b> takes 15 to 45 seconds for a long explanation.</li></ul>
 
-<h2 id="worldmodel">Sky world model <span class="tag">research preview</span></h2>
-<p>A world model is a network that, shown what happened, predicts what happens next. MIRA's is small and specific: it is shown two real pictures of the same patch of sky taken about eleven years apart (2MASS 1999, WISE 2010) and draws a later one. To do that it has to learn the one rule this sky obeys on human time scales: a star keeps the motion it has.</p>
-<p id="wm-live" class="note">Loading the model's test figures…</p>
-<ul><li><b>Trained</b> on our university's GPU cluster on real pictures from NASA's archive, with artificial moving stars painted in (real fast movers are rare). Code: <code>census/wm_data.py</code>, <code>census/wm_train.py</code>.</li>
-<li><b>Tested</b> only on real, Gaia-confirmed fast movers of MIRA's catalogue, in pictures it never saw, with nothing painted in.</li>
-<li><b>Runs in your browser</b> on the pictures the Lab already holds. The site needs no GPU and no server for it.</li>
-<li><b>Marked as what it is.</b> Every picture the network draws carries the label “AI-generated · prediction”. It is a forecast, not a measurement: the Motion detector and the Astrometer measure.</li></ul>
-<p>Where this goes: the same recipe scales to a model that predicts each new SPHEREx visit from the earlier ones and flags only what it did not expect. That is the search a ninth planet needs: a faint source that is in no catalogue and is not where anything was before.</p>
+<h2 id="worldmodel">World models <span class="tag">research preview</span></h2>
+<p>A world model is a network that, shown what happened, predicts what happens next. MIRA uses three, each where it fits, and says how well each does on real stars it never saw.</p>
+<table><tr><th>Model</th><th>What it does in MIRA</th><th>Where it runs</th></tr>
+<tr><td><b>Pocket model</b><br>ours, 0.7 million weights</td><td>In the Lab: reads a field's 1999 and 2010 pictures, forecasts today and any later year, and shows what it did not expect.</td><td>your browser</td></tr>
+<tr><td><b>Scout</b><br>ours, six networks</td><td>Looks at the whole sky three times (2MASS 1999, WISE 2010, SPHEREx 2025) and marks what moved. On the Sky map: <b>Marked by the sky model</b>. In a star's card: whether the model marks it too.</td><td>our university's GPUs, once per data release; results are files</td></tr>
+<tr><td><b>V-JEPA 2</b><br>Meta's published world model, 326 million weights</td><td>A second opinion on the little video of one star. Used as published it could not tell a moving star from a still one; fine-tuned on MIRA's real examples it can.</td><td>our university's GPUs; results are files</td></tr></table>
+<p id="wm2-live" class="note">Loading the test figures…</p>
+<p id="wm-live" class="note">Loading the pocket model's test figures…</p>
+<ul><li><b>Trained on real pictures</b> from NASA's archive, with real moving stars from MIRA's verified catalogue as examples (and artificial ones painted in where real ones are rare). Code: <code>census/wm_*.py</code>, <code>census/wm2_*.py</code>.</li>
+<li><b>Tested on a fifth of the sky kept aside</b>, with nothing painted in. Where a threshold had to be chosen, it was chosen on a different tenth of the sky.</li>
+<li><b>A model points; the Lab measures.</b> A mark is a place to look at, not a discovery. Marks where the catalogue has nothing are labelled unverified: some will be stars Gaia lists that MIRA's catalogue does not hold, some artefacts.</li>
+<li><b>Marked as what it is.</b> Every picture a network draws carries the label “AI-generated · prediction”.</li></ul>
+<p>Where this goes: the same recipe, on each new SPHEREx release, predicts every visit from the earlier ones and passes on only what it did not expect. That is the search a ninth planet needs: a faint source that is in no catalogue and is not where anything was before.</p>
 
 <h2 id="link">Link and embed</h2>
 <pre>/explore/#sky=Barnard's Star              the Sky map, flown to a name, catalogue number or "RA Dec"
@@ -179,9 +186,13 @@ footer { max-width: 1180px; margin: 0 auto; padding: 24px; border-top: .8px soli
 const links = [...document.querySelectorAll('#toc a')], secs = links.map((a) => document.querySelector(a.getAttribute('href')));
 const spy = () => { let k = 0; secs.forEach((s, i) => { if (s && s.getBoundingClientRect().top < 120) k = i; }); links.forEach((a, i) => a.classList.toggle('on', i === k)); };
 addEventListener('scroll', spy, { passive: true }); spy();
+fetch('/data/wm/scout.json').then((r) => r.ok ? r.json() : null).then((sc) => { const el = document.getElementById('wm2-live'); if (!sc) { el.textContent = 'This server does not carry the scout\'s results yet.'; return; }
+  const t = sc.test, fast = (t.by_pm || []).find((b) => b.lo === 1), w = sc.copies.reduce((q, c) => q + c.weights_millions, 0), ft = sc.vjepa_finetuned, cmp = sc.comparison && ((ft && sc.comparison.vjz) || sc.comparison.vjepa || sc.comparison.vjz);
+  el.innerHTML = `<b>Scout, on the fifth of the sky kept for testing.</b> ${sc.copies.length} networks, ${w.toFixed(0)} million weights together. Of ${t.n.toLocaleString('en-US')} real movers faster than 0.4″ a year it found <b>${Math.round(100 * t.recall)}%</b>${fast ? ` (<b>${Math.round(100 * fast.recall)}%</b> of those above 1″)` : ''}, with ${t.false_per_sqdeg.toFixed(2)} marks per square degree on nothing the catalogue knows, and read their motion to ${t.pm_err_median.toFixed(2)}″ a year. Over the whole sky it marks ${sc.sky.marks.toLocaleString('en-US')} places, ${sc.sky.marks_on_catalogue_stars.toLocaleString('en-US')} of them catalogue stars.`
+    + (cmp ? ` <b>Against V-JEPA 2</b> on the same ${cmp.patches.toLocaleString('en-US')} test patches, one star each, half of them real movers (0.5 is chance, 1 is perfect): V-JEPA 2 as published ${cmp.vjepa2_probe_auc.toFixed(2)} (its zero-shot surprise ${cmp.vjepa2_surprise_auc.toFixed(2)}); MIRA's scout ${cmp.mira_auc.toFixed(2)}${ft ? `; V-JEPA 2 fine-tuned on MIRA's movers <b>${ft.auc_test.toFixed(2)}</b>` : ''}.${ft && ft.marks_scored ? ` The fine-tuned V-JEPA 2 then scored the ${ft.marks_scored} strongest places the scout marked where the catalogue has nothing: it calls <b>${ft.marks_agree}</b> of them movers too. Those are the filled marks on the Sky map.` : ''}` : ''); }).catch(() => {});
 fetch('/data/wm/model.json').then((r) => r.ok ? r.json() : null).then((m) => { const el = document.getElementById('wm-live'); if (!m || !m.test) { el.textContent = 'This server does not carry the model file yet.'; return; }
   const t = m.test, by = (t.by_pm || []).filter((b) => b.n).map((b) => `${b.hi > 50 ? 'above ' + b.lo : b.lo + '–' + b.hi}″/yr: ${Math.round(100 * b.recall)}% of ${b.n}`).join(' · ');
-  el.innerHTML = `<b>Test on real stars.</b> ${t.n} Gaia-confirmed fast movers that both pictures show, none seen in training: the model marked <b>${Math.round(100 * t.recall)}%</b> of them, with <b>${t.fp_per_field.toFixed(2)}</b> false marks per field, and read their motion to <b>${t.pm_err_median.toFixed(2)}″ per year</b> (median error). By speed: ${by}. ${(m.params / 1e6).toFixed(2)} million weights, trained ${m.trained.minutes} minutes on ${m.trained.pairs.toLocaleString('en-US')} real picture pairs (${(m.trained.samples / 1e6).toFixed(1)} million training examples).`; }).catch(() => { document.getElementById('wm-live').textContent = 'The model file could not be read.'; });
+  el.innerHTML = `<b>Pocket model, on real stars.</b> ${t.n} Gaia-confirmed fast movers that both pictures show, none seen in training: the model marked <b>${Math.round(100 * t.recall)}%</b> of them, with <b>${t.fp_per_field.toFixed(2)}</b> false marks per field, and read their motion to <b>${t.pm_err_median.toFixed(2)}″ per year</b> (median error). By speed: ${by}. ${(m.params / 1e6).toFixed(2)} million weights, trained ${m.trained.minutes} minutes on ${m.trained.pairs.toLocaleString('en-US')} real picture pairs (${(m.trained.samples / 1e6).toFixed(1)} million training examples).`; }).catch(() => { document.getElementById('wm-live').textContent = 'The model file could not be read.'; });
 </script>
 </body>
 </html>

@@ -13,7 +13,7 @@ import { hpxFaceXY } from "./blink/hips";
 import { drawTiles, TILESETS, type MapView } from "./hipsmap";
 import { ang2pixNest } from "./blink/engine";
 import { parseCoords, resolveName, CHALLENGE } from "./blink/catalogs";
-import { KIND_PLAIN, isOpenCase, loadVerified, moonYears, mountMoverCard, moverName, votes, type Ver } from "./movercard";
+import { KIND_PLAIN, isOpenCase, loadScout, loadVerified, moonYears, mountMoverCard, moverName, votes, type Scout, type Ver } from "./movercard";
 import { bodiesAt, brightWords, dateOf, eclToEq, lightMinutes, seen, whenSeen, yearOf, zodiac, type SkyBody } from "./ephem";
 import { mountPlaceView } from "./placeview";
 
@@ -30,6 +30,8 @@ export const toGal = (ra: number, dec: number): [number, number] => { const a = 
   const g = AG.map((r) => r[0] * e[0] + r[1] * e[1] + r[2] * e[2]); return [((Math.atan2(g[1], g[0]) / D) + 360) % 360, Math.asin(Math.max(-1, Math.min(1, g[2]))) / D]; };
 export const toEq = (l: number, b: number): [number, number] => { const g = [Math.cos(b * D) * Math.cos(l * D), Math.cos(b * D) * Math.sin(l * D), Math.sin(b * D)];
   const e = [0, 1, 2].map((i) => AG[0][i] * g[0] + AG[1][i] * g[1] + AG[2][i] * g[2]); return [((Math.atan2(e[1], e[0]) / D) + 360) % 360, Math.asin(Math.max(-1, Math.min(1, e[2]))) / D]; };
+/** the closest zoom, in screen pixels per degree: 2.6″ per pixel. Beyond it no all-sky survey used here has more to show */
+const ZMAX = 1400;
 const wrap = (d: number) => ((((d + 180) % 360) + 360) % 360) - 180;
 const hms = (ra: number, dec: number) => { const h = ra / 15, hh = Math.floor(h), mm = Math.floor((h - hh) * 60), a = Math.abs(dec), dd = Math.floor(a), dm = Math.floor((a - dd) * 60);
   return `${String(hh).padStart(2, "0")}h${String(mm).padStart(2, "0")}m ${dec < 0 ? "−" : "+"}${String(dd).padStart(2, "0")}°${String(dm).padStart(2, "0")}′`; };
@@ -62,6 +64,7 @@ export async function openSky(host: HTMLElement, o: SkyOpts): Promise<SkyHandle>
           ${hl("all", "#ff9d4d", "Stars caught moving", "<b id='skn1'>…</b> confirmed on SPHEREx images")}
           ${hl("nogaia", "#ff5d6c", "Not in Gaia", "<b id='skn2'>…</b> missing from Europe's star catalogue")}
           ${hl("open", "#7df0a6", "Help look at one", "<b id='skn3'>…</b> are in no reference database")}
+          ${hl("scout", "#b48cff", "Marked by the sky model", "A neural network looked at the whole sky three times: what it says moved")}
         </div>
         <div class="mx-sub" id="sksub" hidden></div>
         <div class="mx-chips" id="skshow" aria-label="What the map shows"><button data-l="movers" class="on">Moving stars</button><button data-l="planets" class="on">Planets</button><button data-l="marks" class="on">Landmarks</button></div><p class="mx-note" id="sklod" hidden></p>
@@ -93,7 +96,7 @@ export async function openSky(host: HTMLElement, o: SkyOpts): Promise<SkyHandle>
   const scale = () => (cw / 360) * view.z;
   const toScreen = (l: number, b: number): [number, number] => [cw / 2 - wrap(l - view.l) * scale(), ch / 2 - (b - view.b) * scale()];
   const toSky = (x: number, y: number): [number, number] => [(((view.l - (x - cw / 2) / scale()) % 360) + 360) % 360, view.b - (y - ch / 2) / scale()];
-  const clampView = () => { view.z = Math.min(900, Math.max(1, cw ? (2 * ch) / cw : 1, view.z)); const half = ch / 2 / scale(); view.b = half >= 90 ? 0 : Math.max(-90 + half, Math.min(90 - half, view.b)); view.l = ((view.l % 360) + 360) % 360; };
+  const clampView = () => { view.z = Math.min(Math.max(40, ZMAX / Math.max(1, cw / 360)), Math.max(1, cw ? (2 * ch) / cw : 1, view.z)); const half = ch / 2 / scale(); view.b = half >= 90 ? 0 : Math.max(-90 + half, Math.min(90 - half, view.b)); view.l = ((view.l % 360) + 360) % 360; };
   // ---- the time bar: four equal stretches of very different lengths, so that each has room
   const yearAt = (u: number) => (u <= 1 ? Y0 + (Y1 - Y0) * u : u <= 2 ? Y1 + (YS - Y1) * (u - 1) : u <= 3 ? YS + (nowY - YS) * (u - 2) : nowY + (u - 3));
   const uAt = (yr: number) => (yr <= Y1 ? (yr - Y0) / (Y1 - Y0) : yr <= YS ? 1 + (yr - Y1) / (YS - Y1) : yr <= nowY ? 2 + (yr - YS) / (nowY - YS) : 3 + (yr - nowY));
@@ -293,7 +296,7 @@ export async function openSky(host: HTMLElement, o: SkyOpts): Promise<SkyHandle>
     .map((t) => { const dt = nowY - t.epoch, dec = t.dec0 + (t.pmdec * dt) / 3600, ra = t.ra0 + (t.pmra * dt) / 3600 / Math.cos(t.dec0 * D), mid = (Y0 + nowY) / 2 - t.epoch;
       return { name: t.name, sub: t.sub, key: t.key, ra, dec, pm: Math.hypot(t.pmra, t.pmdec), ra0: t.ra0 + (t.pmra * mid) / 3600 / Math.cos(t.dec0 * D), dec0: t.dec0 + (t.pmdec * mid) / 3600 }; });
   const PINGAL = PINS.map((p) => toGal(p.ra, p.dec)), LANDGAL = LAND.map(([, ra, dec]) => toGal(ra, dec));
-  let marks: { x: number; y: number; r: number; go: () => void }[] = [], lodText = "", tileNote = "", tileShown = "";
+  let marks: { x: number; y: number; r: number; go: () => void }[] = [], lodText = "", tileNote = "", tileShown = "", scout: Scout | null = null, scoutGal: [number, number][] = [];
 
   // ---- drawing
   function layer(img: HTMLImageElement | HTMLCanvasElement | null | undefined, alpha: number) {
@@ -334,10 +337,11 @@ export async function openSky(host: HTMLElement, o: SkyOpts): Promise<SkyHandle>
     if (st.depth && cov && cellOf && st.wave < 0 && !st.layer && u >= 2) { depth(u >= 3 ? 1e9 : day); layer(depthCv, 0.78); }       // survey depth: finished visits per patch
     // zoomed in, the surveys' own tiles replace the panorama: markers then sit on the real stars
     tileNote = "";
-    if (s >= 30 && st.wave < 0 && !st.layer && u <= 2) {       // (SPHEREx's own all-sky tiles have gaps wavelength by wavelength: its era keeps the panorama, and the Lab shows its full exposures)
+    if (s >= 30 && st.wave < 0 && !st.layer && (u <= 2 || u >= 2.999)) {
       const mv2: MapView = { cw, ch, scale: s, toSky: (x, y) => { const [l, b] = toSky(x, y); return Math.abs(b) > 90 ? null : toEq(l, b); }, toScreen: (ra, dec) => toScreen(...toGal(ra, dec)) }, a = ease((s - 30) / 14), again = () => (st.dirty = true);
-      const sets: [keyof typeof TILESETS, number][] = u <= 0.02 ? [["tm", 1]] : u < 0.98 ? [["tm", 1], ["wise", ease(u)]] : [["wise", 1]];
+      const sets: [keyof typeof TILESETS, number][] = u >= 2.999 ? [["sx", 1]] : u <= 0.02 ? [["tm", 1]] : u < 0.98 ? [["tm", 1], ["wise", ease(u)]] : [["wise", 1]];
       for (const [k2, w] of sets) { const r = drawTiles(g, TILESETS[k2], mv2, a * w, again); if (r.have < r.need) tileNote = "reading NASA's archive…"; }
+      if (!tileNote && s >= ZMAX * 0.97) tileNote = u >= 2.999 ? "these are SPHEREx's own all-sky pixels, 13″ each · the Lab reads its full exposures" : "the closest view of this survey";
     }
     // my sky now: what is below the visitor's horizon is shaded
     const mine = !!me && isLive() && st.wave < 0;
@@ -349,7 +353,7 @@ export async function openSky(host: HTMLElement, o: SkyOpts): Promise<SkyHandle>
     const mv = u < 1 ? 0 : u < 2 ? ease(u - 1) : 1;
     // with the whole sky in view only the fastest movers are drawn; the others appear as the map is zoomed in.
     // A picture of what the sky is made of is shown without them.
-    const made = st.layer !== "" || st.wave >= 0, pmMin = st.chip !== "all" ? 0 : s < 6 ? 1 : s < 10 ? 0.7 : s < 18 ? 0.5 : s < 30 ? 0.4 : s < 48 ? 0.3 : 0;
+    const scoutOn = st.chip === "scout", made = st.layer !== "" || st.wave >= 0 || scoutOn, pmMin = st.chip !== "all" ? 0 : s < 6 ? 1 : s < 10 ? 0.7 : s < 18 ? 0.5 : s < 30 ? 0.4 : s < 48 ? 0.3 : 0;
     if (V && st.show.movers && mv > 0) { const r = Math.max(pmMin >= 0.5 ? 1.5 : 1, Math.min(4, 0.2 + 0.11 * s)), dense = false, sel = st.sel, wait = u < 3 && cov && CELL.length === GL.length; shown = [];
       for (let k = 0; k < GL.length; k++) { if (k !== sel && (made || V.pm[k] < pmMin || Math.abs(V.glat[k]) < 10)) continue;                       // the crowded plane is left out, as in the Catalogue
         const nog = V.known[k] !== 1, open = isOpenCase(V, k); if ((st.chip === "nogaia" && !nog) || (st.chip === "open" && !open)) continue;
@@ -357,8 +361,15 @@ export async function openSky(host: HTMLElement, o: SkyOpts): Promise<SkyHandle>
         shown.push(k); const lit = !wait || (u >= 2 && day >= firstEnd[CELL[k]]);         // grey while only WISE had seen it move, in colour once SPHEREx had imaged the place
         g.fillStyle = !lit ? "#a89a8c" : open ? "#7df0a6" : nog ? "#ff5d6c" : "#ff9d4d"; g.globalAlpha = mv * (!lit ? 0.55 : dense && !nog ? Math.min(0.75, 0.3 + 0.045 * s) : dense ? 0.85 : 1); g.fillRect(x - r, y - r, 2 * r, 2 * r); }
       g.globalAlpha = 1; } else shown = [];
+    // the places the sky model marks where the catalogue has nothing: unverified, each one a click away from its pictures and from the Lab
+    if (scoutOn && scout && st.wave < 0 && !st.layer) { g.strokeStyle = "#b48cff"; g.lineWidth = 1.3;
+      // a filled mark is one that the second model (V-JEPA 2, fine-tuned) also calls a mover; a hollow one it does not
+      scoutGal.forEach(([gl, gb], i) => { const x = cw / 2 - wrap(gl - view.l) * s, y = ch / 2 - (gb - view.b) * s; if (x < -6 || y < -6 || x > cw + 6 || y > ch + 6) return; const m = scout!.marks[i], both = (m.vj ?? 0) >= 0.5, r = (s < 8 ? 3 : 5) + (both ? 1 : 0);
+        g.fillStyle = both ? "rgba(180,140,255,.9)" : "rgba(180,140,255,.12)"; g.globalAlpha = both || m.vj === undefined ? 1 : 0.6;
+        g.beginPath(); g.moveTo(x, y - r); g.lineTo(x + r, y); g.lineTo(x, y + r); g.lineTo(x - r, y); g.closePath(); g.fill(); g.stroke(); g.globalAlpha = 1;
+        marks.push({ x, y, r: 9, go: () => openPlace(m.ra, m.dec, both ? "Marked by both sky models" : "Marked by the sky model", `MIRA's scout reads about ${m.pm.toFixed(1)}″ per year here (confidence ${Math.round(m.conf * 100)}%).${m.vj === undefined ? "" : ` Meta's V-JEPA 2, fine-tuned on MIRA's movers, gives it ${Math.round(m.vj * 100)}%.`} MIRA's catalogue has nothing at this place. Unverified: watch the pictures, then measure it in the Lab.`) }); }); }
     if (tileNote !== tileShown) { tileShown = tileNote; const e3 = host.querySelector<HTMLElement>("#sktile"); if (e3) e3.textContent = tileNote; }
-    const lod = made || !st.show.movers ? "" : pmMin ? `Showing the ${shown.length.toLocaleString("en-US")} fastest in view. Zoom in for the rest.` : ""; if (lod !== lodText) { lodText = lod; const e2 = host.querySelector<HTMLElement>("#sklod"); if (e2) { e2.textContent = lod; e2.hidden = !lod; } }
+    const lod = scoutOn ? "" : made || !st.show.movers ? "" : pmMin ? `Showing the ${shown.length.toLocaleString("en-US")} fastest in view. Zoom in for the rest.` : ""; if (lod !== lodText) { lodText = lod; const e2 = host.querySelector<HTMLElement>("#sklod"); if (e2) { e2.textContent = lod; e2.hidden = !lod; } }
     // the wanderers, with their names
     if (wanderers) { ephem();
       for (const b of bodies) { const tr = trails[b.key]; if (!tr) continue; const mid = PAST / STEP; g.lineWidth = 1.4; g.strokeStyle = b.col; g.globalAlpha = 0.55; path(tr, 0, mid); g.globalAlpha = 0.5; g.setLineDash([1.5, 4]); path(tr, mid, tr.length - 1); g.setLineDash([]); g.globalAlpha = 1; }
@@ -412,6 +423,13 @@ export async function openSky(host: HTMLElement, o: SkyOpts): Promise<SkyHandle>
         : `<p class="mx-note">The dates of SPHEREx's exposures could not be read just now.</p>`;
       const run = host.querySelector("#skrun") as HTMLElement | null; if (run) run.onclick = () => playTo(2, 3);
       const dp = host.querySelector("#skdepth") as HTMLElement | null; if (dp) dp.onclick = () => { st.depth = !st.depth; if (st.depth && st.u < 2) st.u = 3; sync(); }; }
+    else if (st.panel === "scout") { const key = `w${!!scout}`; if (key === subKey) return; subKey = key;
+      if (!scout) { el.innerHTML = `<p class="mx-note">Reading what the model marked…</p>`; return; }
+      const t = scout.test, fast = t.by_pm.find((b) => b.lo === 1), w = scout.copies.reduce((q, c2) => q + c2.weights_millions, 0), ft = scout.vjepa_finetuned ?? null, cmp = (ft ? scout.comparison?.vjz : null) ?? scout.comparison?.vjepa ?? scout.comparison?.vjz ?? null, ftOn = !!ft && cmp === scout.comparison?.vjz;
+      el.innerHTML = `<div class="mx-stat"><b>${Math.round(100 * t.recall)}%</b><span>of ${t.n.toLocaleString("en-US")} real movers faster than 0.4″ a year found on the fifth of the sky kept for testing${fast ? ` · ${Math.round(100 * fast.recall)}% of those above 1″` : ""}</span></div>
+        <p class="mx-note">${scout.copies.length} networks (${w.toFixed(0)} million weights together), trained on our university's GPUs, were shown the whole sky three times: 2MASS 1999, WISE 2010, SPHEREx 2025. Their average marks ${scout.sky.marks.toLocaleString("en-US")} places; ${scout.sky.marks_on_catalogue_stars.toLocaleString("en-US")} are stars MIRA's catalogue holds. The purple marks are the ${scout.marks.length} strongest of the others.</p>
+        <p class="mx-note"><b>Unverified.</b> On the test sky ${t.false_per_sqdeg.toFixed(2)} marks per square degree fell on nothing the catalogue knows: some are stars Gaia lists and MIRA's catalogue does not hold, some are artefacts. Click a mark to watch the place through time, then measure it in the Lab. The model points; the Lab measures.</p>
+        ${cmp ? `<p class="mx-note"><b>Two models, two jobs.</b> On the same ${cmp.patches.toLocaleString("en-US")} test patches, one star each (0.5 is chance, 1 is perfect): Meta's V-JEPA 2 as published <b>${cmp.vjepa2_probe_auc.toFixed(2)}</b>, MIRA's scout <b>${cmp.mira_auc.toFixed(2)}</b>${ftOn ? `, V-JEPA 2 after fine-tuning on MIRA's movers <b>${ft!.auc_test.toFixed(2)}</b>` : ""}.${ftOn && ft!.marks_scored ? ` So the scout searches the whole sky and V-JEPA 2 gives each mark a second opinion: <b>${ft!.marks_agree} of ${ft!.marks_scored}</b> marks are movers for both (filled); the hollow ones only for the scout.` : ""}</p>` : ""}`; }
     else if (st.panel === "colours") { const key = `c${st.wave}|${LAM.length}|${st.layer}|${!!spec}`; if (key === subKey) return; subKey = key; const lam = LAM[st.wave]; loadSpec();
       el.innerHTML = `<div class="mx-h">Only SPHEREx sees the whole sky in 102 colours</div>
         <div class="mx-chips sk-layers"><button data-ly="" class="${!st.layer && st.wave < 0 ? "on" : ""}">Picture</button>${Object.entries(LAYERS).map(([k, L2]) => `<button data-ly="${k}" class="${st.layer === k ? "on" : ""}">${L2.t}</button>`).join("")}</div>
@@ -431,10 +449,10 @@ export async function openSky(host: HTMLElement, o: SkyOpts): Promise<SkyHandle>
     $("#skdate").textContent = u < 2 ? String(Math.floor(yr)) : dayText(yr);
     if (u > 2 && u < 3 && cov && cellOf) reveal(dayOf(yr));
     $("#skera").textContent = st.layer && st.wave < 0 ? `SPHEREx · ${LAYERS[st.layer].era}${layerImg.get(st.layer) ? "" : " · loading"}` : st.wave >= 0 ? `SPHEREx at ${LAM[st.wave] ? LAM[st.wave].toFixed(2) : "…"} µm${frames.has(st.wave) ? "" : " · loading"}`
-      : live ? "now · planets live" : u > 3 ? "ahead · the planets' road" : u <= 0.02 ? "2MASS · near-infrared" : u < 0.98 ? "from 2MASS to WISE" : u <= 1.02 ? "WISE · mid-infrared" : u < 2 ? "WISE years · movers caught" : !cov ? "SPHEREx" : prog.pct < 0.999 ? `SPHEREx · ${Math.round(prog.pct * 100)}% of the sky` : `SPHEREx · sky seen ${prog.visits.toFixed(1)}×`;
+      : live ? (scale() >= 44 ? "now · SPHEREx at 4.6 µm" : "now · planets live") : u > 3 ? "ahead · the planets' road" : u <= 0.02 ? "2MASS · near-infrared" : u < 0.98 ? "from 2MASS to WISE" : u <= 1.02 ? "WISE · mid-infrared" : u < 2 ? "WISE years · movers caught" : !cov ? "SPHEREx" : prog.pct < 0.999 ? `SPHEREx · ${Math.round(prog.pct * 100)}% of the sky` : `SPHEREx · sky seen ${prog.visits.toFixed(1)}×`;
     $("#sknow").classList.toggle("on", live); $("#skmine").classList.toggle("on", !!me && live);
     host.querySelectorAll<HTMLButtonElement>(".mx-ticks button").forEach((b) => b.classList.toggle("on", Math.abs(+b.dataset.u! - u) < 0.02));
-    host.querySelectorAll<HTMLButtonElement>("#skhl .mx-hl").forEach((b) => { const h = b.dataset.h!; b.classList.toggle("on", h === st.panel || (st.show.movers && h === st.chip && ["all", "nogaia", "open"].includes(h))); });
+    host.querySelectorAll<HTMLButtonElement>("#skhl .mx-hl").forEach((b) => { const h = b.dataset.h!; b.classList.toggle("on", h === st.panel || (st.show.movers && h === st.chip && ["all", "nogaia", "open", "scout"].includes(h))); });
     host.querySelectorAll<HTMLButtonElement>("#skshow button").forEach((b) => b.classList.toggle("on", !!st.show[b.dataset.l!]));
     renderSub(); if (st.body) renderBody();
     st.dirty = true;
@@ -547,6 +565,8 @@ export async function openSky(host: HTMLElement, o: SkyOpts): Promise<SkyHandle>
       if (open && what !== "spherex") { rail.classList.remove("shut"); fold.setAttribute("aria-expanded", "true"); }       // its panel must be in sight (on a phone the list starts folded)
       if (open && what === "planets") { st.show.planets = true; if (st.u < 2) jump(3); } if (open && what === "spherex") { whole(); playTo(2, 3); } if (!open && what === "colours") { st.wave = -1; st.layer = ""; specPin = false; } if (open && what === "colours" && !st.layer && st.wave < 0) { st.layer = "mix"; st.u = 3; loadLayer("mix"); } sync(); return true; }
     if (what === "story") { st.panel = ""; whole(); playTo(0, 3); return true; }
+    if (what === "scout") { const open = st.panel !== "scout"; st.panel = open ? "scout" : ""; st.chip = open ? "scout" : "all"; st.wave = -1; st.layer = ""; st.playing = false; if (st.u < 2.999 || st.u > 3) { nowY = yearOf(); st.u = 3; }
+      if (open) { rail.classList.remove("shut"); fold.setAttribute("aria-expanded", "true"); loadScout(o.base).then((j) => { scout = j; scoutGal = j ? j.marks.map((m) => toGal(m.ra, m.dec)) : []; subKey = ""; sync(); }); } sync(); return true; }
     if (what === "all" || what === "nogaia" || what === "open") { st.show.movers = true; st.panel = ""; st.wave = -1; if (what === "open" && st.chip === "open") { nextCase(); return true; } st.chip = what; if (st.u < 2) jump(3); sync(); if (what === "open") nextCase(); return true; }
     return false;
   }

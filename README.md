@@ -40,11 +40,14 @@ NASA's SPHEREx is photographing the whole sky in 102 infrared colours and every 
 - **For mission teams and science centres:** the Sky map plays SPHEREx's survey as it really advanced, from the
   dates of its 1.6 million public exposures, and any view (a map or a Lab field) can be put on another page with one
   line of HTML (More → Copy code to embed it).
-- **For research teams and agencies:** researcher tools in the Lab (a switch in its tool list): a **watchlist** that
-  puts a list of targets through the whole chain in one run, and a **sky world model**, a small network trained on
-  our university's GPUs that forecasts a field from its 1999 and 2010 pictures and marks what moved (tested on 984
-  real fast movers it never saw: half found, 79% of those moving 1–2″ a year; it runs in the browser). Plans:
-  `docs/13_business_plan.md`.
+- **For research teams and agencies:** the Lab is a workspace (tools in a rail, the picture in the centre, an
+  inspector, a timeline) with researcher tools behind the PRO switch: a **watchlist** that puts a list of targets
+  through the whole chain in one run, a printable **field report**, and **world models**, each tested on real stars it
+  never saw: a small one that forecasts a field in the browser; a **scout** (six networks trained on our university's
+  GPUs on the whole sky at three dates) whose marks are on the Sky map; and **Meta's V-JEPA 2**, which as published
+  cannot tell a moving star from a still one but, fine-tuned on MIRA's examples, gives a second opinion. Figures are
+  on the documentation page (`/docs/#worldmodel`) and in `web/public/data/wm/scout.json`. The Sky map also shows the
+  survey's **depth** and when each place is next due. Plans: `docs/13_business_plan.md`.
 - **For researchers:** one click deeper, the Lab: give a position, and instruments read every SPHEREx exposure of
   that field straight from the public archive and measure it: **which sources moved** since 1999 and 2010 and how
   fast; for the nearest, a parallax; a 0.75–5 µm spectrum with its molecular bands; whether they brightened or

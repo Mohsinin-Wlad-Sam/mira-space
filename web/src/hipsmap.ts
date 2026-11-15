@@ -11,7 +11,7 @@ export type TileSet = { key: string; url: string; ext: string; max: number; fram
 export const TILESETS: Record<"tm" | "wise" | "sx", TileSet> = {
   tm: { key: "tm", url: `${IRSA}/CDS/2MASS/Color`, ext: "jpg", max: 9 },
   wise: { key: "wise", url: `${IRSA}/CDS/AllWISE/RGB-W4-W2-W1`, ext: "jpg", max: 8 },
-  sx: { key: "sx", url: `${IRSA}/SPHEREx/spherex_allsky_cube`, ext: "png", max: 5, frames: [16, 46, 85] },      // 1.10, 2.19 and 4.44 µm
+  sx: { key: "sx", url: `${IRSA}/SPHEREx/spherex_allsky_cube`, ext: "png", max: 5, frames: [86, 90, 94] },      // 4.47, 4.60 and 4.74 µm, averaged: one wavelength alone has strips with no data
 };
 const JRLL = [2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4], JPLL = [1, 3, 5, 7, 0, 2, 4, 6, 1, 3, 5, 7], R2D = 180 / Math.PI;
 /** sky position (degrees) of the point (x, y) of a HEALPix base face, x and y from 0 to 1 */
@@ -34,13 +34,13 @@ function request(set: TileSet, order: number, t: number, done: () => void): Tile
   queue.push(async () => {
     try {
       if (!set.frames) { const im = await loadImage(`${base}.${set.ext}`); me.img = im; me.state = im ? "ok" : "none"; }
-      else {      // three wavelengths of the SPHEREx cube into one colour picture: 1.1 µm blue, 2.2 µm green, 4.4 µm red
+      else {      // three neighbouring wavelengths of the SPHEREx cube, averaged where each has data; where none has, the tile is left clear
         const ims = await Promise.all(set.frames.map((k) => loadImage(`${base}${k ? "_" + k : ""}.${set.ext}`)));
         if (ims.some((q) => !q)) me.state = "none";
         else { const W = ims[0]!.width, c = document.createElement("canvas"); c.width = c.height = W; const g = c.getContext("2d", { willReadFrequently: true })!, ch: Uint8ClampedArray[] = [];
-          for (const im of ims) { g.drawImage(im!, 0, 0); ch.push(g.getImageData(0, 0, W, W).data.slice()); }
-          const id = g.createImageData(W, W), d = id.data, lut = (gain: number) => Uint8ClampedArray.from({ length: 256 }, (_, v) => 255 * (1 - Math.exp(-(v * gain) / 70))), LB = lut(1.5), LG = lut(1.7), LR = lut(2.1);
-          for (let q = 0; q < W * W; q++) { d[q * 4] = LR[ch[2][q * 4]]; d[q * 4 + 1] = LG[ch[1][q * 4]]; d[q * 4 + 2] = LB[ch[0][q * 4]]; d[q * 4 + 3] = 255; }
+          for (const im of ims) { g.clearRect(0, 0, W, W); g.drawImage(im!, 0, 0); ch.push(g.getImageData(0, 0, W, W).data.slice()); }
+          const id = g.createImageData(W, W), d = id.data, lut = Uint8ClampedArray.from({ length: 256 }, (_, v) => 255 * (1 - Math.exp((-Math.max(0, v - 3) * 2.2) / 70)));
+          for (let q = 0; q < W * W; q++) { let sum = 0, n = 0; for (const a of ch) { const v = a[q * 4]; if (v > 0) { sum += v; n++; } } if (!n) continue; const v = lut[Math.round(sum / n)]; d[q * 4] = v; d[q * 4 + 1] = v * 0.97; d[q * 4 + 2] = v * 0.93; d[q * 4 + 3] = 255; }
           g.putImageData(id, 0, 0); me.img = c; me.state = "ok"; }
       }
     } catch { me.state = "none"; }
@@ -65,7 +65,8 @@ export function drawTiles(g: CanvasRenderingContext2D, set: TileSet, v: MapView,
   const order = Math.max(1, Math.min(set.max, Math.floor(Math.log2(Math.max(1, (v.scale * 58.6) / 640))))), N = 2 ** order, side = (v.scale * 58.6) / N, step = Math.max(24, Math.min(96, side / 2.5)), want = new Set<number>();
   for (let y = 0; y <= v.ch + step; y += step) for (let x = 0; x <= v.cw + step; x += step) { const p = v.toSky(Math.min(x, v.cw), Math.min(y, v.ch)); if (!p) continue; const [face, ix, iy] = hpxFaceXY(N, p[0], p[1]); want.add(face * 4 ** order + spread(ix, order) + 2 * spread(iy, order)); }
   if (want.size > 90) return { need: want.size, have: 0, order };
-  let have = 0; const n = order <= 2 ? 12 : order <= 3 ? 8 : order <= 4 ? 6 : order <= 6 ? 4 : 3; g.globalAlpha = alpha; g.imageSmoothingEnabled = true; g.imageSmoothingQuality = "high";
+  // enlarged beyond about twice its own pixels, a tile is drawn with those pixels showing: real pixels, not a blur
+  let have = 0; const n = order <= 2 ? 12 : order <= 3 ? 8 : order <= 4 ? 6 : order <= 6 ? 4 : 3; g.globalAlpha = alpha; g.imageSmoothingEnabled = side / 512 < 2.2; g.imageSmoothingQuality = "high";
   for (const t of want) {
     const T = request(set, order, t, onLoad); if (T.state !== "ok" || !T.img) continue; have++;
     const face = Math.floor(t / 4 ** order), rem = t % 4 ** order, tx = unspread(rem, order), ty = unspread(Math.floor(rem / 2), order), W = (T.img as HTMLImageElement).width || 512;
@@ -78,5 +79,5 @@ export function drawTiles(g: CanvasRenderingContext2D, set: TileSet, v: MapView,
       tri(g, T.img, [u0, v0, u0, v1, u1, v0], [a[0], a[1], b[0], b[1], c[0], c[1]]); tri(g, T.img, [u1, v1, u1, v0, u0, v1], [d[0], d[1], c[0], c[1], b[0], b[1]]);
     }
   }
-  g.globalAlpha = 1; return { need: want.size, have, order };
+  g.globalAlpha = 1; g.imageSmoothingEnabled = true; return { need: want.size, have, order };
 }

@@ -124,10 +124,11 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
       </header>
       <section class="lx-view" id="bk-view">
         <div class="bk-stage" id="bk-stage">
-          <canvas id="bk-cv" aria-label="SPHEREx frames of this position"></canvas>
+          <div class="lx-clip"><canvas id="bk-cv" aria-label="SPHEREx frames of this position"></canvas></div>
           <div class="bk-hud tl" id="bk-hud"></div>
           <div class="bk-hud tr" id="bk-flags"></div>
           <div class="bk-load" id="bk-load"></div>
+          <button class="lx-zoom" id="bk-zoom" hidden title="Back to the whole field (double-click the picture)"></button>
           <i class="lx-c tl"></i><i class="lx-c tr"></i><i class="lx-c bl"></i><i class="lx-c br"></i>
         </div>
       </section>
@@ -142,7 +143,7 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
       </footer>
       <aside class="lx-insp" id="bk-drawer" aria-label="Inspector">
         <header class="lab-dh">
-          <button class="lab-back" id="bk-back" title="Back to the readings">‹ Readings</button>
+          <button class="lab-back" id="bk-back" title="Back to the readings" aria-label="Back to the readings">‹</button>
           <b id="bk-toolname">Readings</b>
           <span class="lab-dh-r">${opts.onExplain ? `<button class="bk-ask" id="bk-ask" title="Ask the assistant to explain this tool in everyday words">Explain</button>` : ""}<button class="bk-help" id="bk-help" title="Show or hide the method notes" aria-label="Show or hide the method notes">?</button><button class="lab-x" id="bk-close" aria-label="Hide the inspector" title="Hide (Esc)">×</button></span>
         </header>
@@ -158,6 +159,8 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
             <div class="lab-f"><span class="eyebrow">Display</span><div class="bk-toggles" id="bk-pic">
               <button data-v="lock" title="One brightness scale for all frames (L)">Lock brightness</button><button data-v="smooth" title="Interpolate between pixels">Smooth pixels</button>
               <select id="bk-cmap" aria-label="Colour map"><option value="gray">Grey</option><option value="heat">Heat</option><option value="invert">Inverted</option></select></div></div>
+            <div class="lab-f"><span class="eyebrow">Brightness stretch · <span id="bk-pctv"></span></span><input type="range" id="bk-pct" min="95" max="99.9" step="0.1" aria-label="Brightness stretch"></div>
+            <p class="bk-cap show">The stretch sets which pixels are shown fully white: with 99.5, the brightest half per cent. Lower it to bring out faint sources; nothing is changed in the data or in any measurement. Scroll on the picture to enlarge it about the pointer, drag to move, double-click to reset.</p>
           </div>
           <div class="lab-sec" data-sec="layers">
             <div class="bk-layers" id="bk-toggles">
@@ -394,7 +397,7 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
   // ------------------------------------------------------------ drawing
   function fit() {
     const st = $("#bk-stage"), w = st.clientWidth; if (!w) return;
-    const px = Math.max(N, Math.round((w * Math.min(devicePixelRatio || 1, 2)) / N) * N);
+    const px = Math.max(N, Math.round((w * Math.min(devicePixelRatio || 1, 2) * Math.min(zoom.k, 3)) / N) * N);      // enlarged, the overlays are drawn finer
     if (cv.width !== px) { cv.width = px; cv.height = px; }
   }
   function tone(t: number): [number, number, number] {
@@ -449,7 +452,7 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
   const rowColor = (r: ChangeRow) => (r.tags.includes("MOVED") ? "#ff9d4d" : r.tags.includes("BRIGHTER") || r.tags.includes("FAINTER") ? "#f0d35b" : r.tags.includes("NEW") ? "#ff7ad9" : r.tags.includes("VARIABLE") ? "#78dcff"
     : r.tags.some((t) => t === "SATURATED" || t === "BLENDED" || t === "EDGE") ? "rgba(240,240,250,.42)" : "#7df0a6");
   function overlays(it: Item) {
-    const W = cv.width, s = W / N, [ox, oy] = shiftOf(it), year = mjdToYear(itMjd(it)), u = W / 640;
+    const W = cv.width, s = W / N, [ox, oy] = shiftOf(it), year = mjdToYear(itMjd(it)), u = W / 640 / zoom.k;       // markers keep their size on screen when the picture is enlarged
     const P = (x: number, y: number): [number, number] => [(x + ox + 0.5) * s, (y + oy + 0.5) * s];
     const inside = (x: number, y: number) => x > -4 && y > -4 && x < W + 4 && y < W + 4;
     ctx.lineWidth = 1.4 * u; ctx.font = `${11 * u}px "JetBrains Mono", monospace`; ctx.textBaseline = "middle";
@@ -712,7 +715,7 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
     const panel = isTab(tool); host.querySelector(".bk-body")!.classList.toggle("noinsp", !drawerOpen); $("#bk-drawer").hidden = !drawerOpen;
     $("#bk-facts").hidden = !!tool; $("#bk-toolbody").hidden = !tool; $("#bk-back").hidden = !tool; $("#bk-toolname").textContent = tool ? TOOLS.find((q) => q.k === tool)?.t ?? "" : "Readings";
     host.querySelectorAll<HTMLElement>("#bk-rail [data-tool]").forEach((b) => b.classList.toggle("on", drawerOpen && (b.dataset.tool || null) === tool));
-    ($("#bk-fovsel") as HTMLSelectElement).value = String(N);
+    ($("#bk-fovsel") as HTMLSelectElement).value = String(N); ($("#bk-pct") as HTMLInputElement).value = String(view.pct); $("#bk-pctv").textContent = `brightest ${(100 - view.pct).toFixed(1)}% shown white`;
     host.querySelectorAll<HTMLElement>(".lab-sec").forEach((q) => (q.hidden = q.dataset.sec !== tool)); $("#bk-panel").hidden = !panel; $("#bk-readouts").hidden = !panel || tool === "frames" || tool === "export" || tool === "limits";
     host.querySelectorAll<HTMLElement>(".lab-fact").forEach((b) => b.classList.toggle("on", drawerOpen && (b.dataset.tool || null) === tool));
     const ask = host.querySelector<HTMLElement>("#bk-ask"); if (ask) ask.hidden = !tool; $("#bk-help").hidden = !tool;
@@ -1047,6 +1050,7 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
     refresh();
   }
   ($("#bk-fovsel") as HTMLSelectElement).onchange = (e) => host.querySelector<HTMLButtonElement>(`#bk-fov button[data-s="${(e.target as HTMLSelectElement).value}"]`)?.click();
+  ($("#bk-pct") as HTMLInputElement).oninput = (e) => { view.pct = +(e.target as HTMLInputElement).value; imgCache.clear(); lockCache.clear(); det6Key = ""; refresh(); };
   ($("#bk-cmap") as HTMLSelectElement).onchange = (e) => { view.cmap = (e.target as HTMLSelectElement).value; paint(); syncControls(); };
   /** open one tool in the drawer (null: the list of tools) */
   function openTool(k: ToolKey | null) {
@@ -1087,6 +1091,18 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
     if (n) seek(Math.round(Math.min(1, Math.max(0, (e.clientX - r.left - 8) / (r.width - 16))) * (n - 1))); };
   strip.addEventListener("pointerdown", (e) => { strip.setPointerCapture(e.pointerId); scrub(e); strip.onpointermove = scrub; });
   strip.addEventListener("pointerup", () => (strip.onpointermove = null));
+  // ---- looking closer: the wheel enlarges the picture about the pointer, a drag moves it, a double-click resets.
+  //      The canvas itself is scaled, so every read-out (position, value, selection) stays exact.
+  const zoom = { k: 1, x: 0, y: 0 }; let dragFrom: [number, number, number, number] | null = null, dragged = 0;
+  function applyZoom() { const st = $("#bk-stage"), w = st.clientWidth, lim = (w * (zoom.k - 1)) / 2; zoom.x = Math.max(-lim, Math.min(lim, zoom.x)); zoom.y = Math.max(-lim, Math.min(lim, zoom.y));
+    cv.style.transform = zoom.k === 1 ? "" : `translate(${zoom.x}px, ${zoom.y}px) scale(${zoom.k})`; const zb = $("#bk-zoom"); zb.hidden = zoom.k === 1; zb.textContent = `${zoom.k.toFixed(1)}× · reset`; paint(); }
+  cv.addEventListener("wheel", (e) => { e.preventDefault(); const st = $("#bk-stage").getBoundingClientRect(), k0 = zoom.k, k1 = Math.max(1, Math.min(8, k0 * Math.exp(-e.deltaY * 0.0016)));
+    const px = e.clientX - st.left - st.width / 2, py = e.clientY - st.top - st.height / 2; zoom.x = px - ((px - zoom.x) * k1) / k0; zoom.y = py - ((py - zoom.y) * k1) / k0; zoom.k = k1; if (k1 === 1) { zoom.x = zoom.y = 0; } applyZoom(); }, { passive: false });
+  cv.addEventListener("pointerdown", (e) => { dragged = 0; if (zoom.k > 1) { dragFrom = [e.clientX, e.clientY, zoom.x, zoom.y]; cv.setPointerCapture(e.pointerId); } });
+  cv.addEventListener("pointermove", (e) => { if (!dragFrom) return; const dx = e.clientX - dragFrom[0], dy = e.clientY - dragFrom[1]; dragged = Math.max(dragged, Math.abs(dx) + Math.abs(dy)); if (dragged > 4) { zoom.x = dragFrom[2] + dx; zoom.y = dragFrom[3] + dy; applyZoom(); } });
+  cv.addEventListener("pointerup", () => (dragFrom = null)); cv.addEventListener("pointercancel", () => (dragFrom = null));
+  cv.addEventListener("dblclick", () => { zoom.k = 1; zoom.x = zoom.y = 0; applyZoom(); });
+  $("#bk-zoom").onclick = () => { zoom.k = 1; zoom.x = zoom.y = 0; applyZoom(); };
   const pixAt = (e: MouseEvent): [number, number] => { const r = cv.getBoundingClientRect(), it = items[idx], [ox, oy] = it ? shiftOf(it) : [0, 0];
     return [((e.clientX - r.left) / r.width) * N - 0.5 - ox, ((e.clientY - r.top) / r.height) * N - 0.5 - oy]; };
   cv.addEventListener("pointermove", (e) => {
@@ -1097,7 +1113,7 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
   });
   cv.addEventListener("pointerleave", () => { hover = null; $("#bk-read").textContent = ""; });
   cv.addEventListener("click", (e) => {
-    const it = items[idx]; if (!it) return;
+    const it = items[idx]; if (!it || dragged > 4) return;       // a drag that moved the picture is not a click on a source
     let [x, y] = pixAt(e);
     // a click on a measured source selects it
     if (view.det && report) { const yr = mjdToYear(itMjd(it)); let hit: ChangeRow | null = null, hd = 2.5; for (const r of report.rows) { const [rx, ry] = rowAt(r, yr), d2 = Math.hypot(rx - x, ry - y); if (d2 < hd) { hd = d2; hit = r; } } if (hit) { selectRow(hit); return; } }
