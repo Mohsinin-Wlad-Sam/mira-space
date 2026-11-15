@@ -1,36 +1,36 @@
 1
-00:00:00,400 --> 00:00:03,400
+00:00:00,500 --> 00:00:04,140
 Beyond Neptune, cold worlds drift in the dark.
 
 2
-00:00:03,500 --> 00:00:06,400
-NASA's SPHEREx photographs the whole sky in 102 infrared colours.
+00:00:03,960 --> 00:00:07,130
+NASA's SPHEREx maps the whole sky in infrared.
 
 3
-00:00:06,500 --> 00:00:09,400
-MIRA. The public web observatory on NASA's SPHEREx data.
+00:00:07,250 --> 00:00:08,470
+This is MIRA.
 
 4
-00:00:09,600 --> 00:00:12,600
-Point anywhere. Watch 27 years of NASA pictures play.
+00:00:09,700 --> 00:00:13,080
+Point anywhere. Watch twenty-seven years play.
 
 5
-00:00:12,700 --> 00:00:15,900
+00:00:13,000 --> 00:00:15,540
 See what moved, and how fast.
 
 6
-00:00:16,000 --> 00:00:19,200
+00:00:16,100 --> 00:00:19,170
 Read its light. This one shows methane.
 
 7
-00:00:19,300 --> 00:00:22,300
-Measured on NASA's raw exposures. Checked by AI models.
+00:00:19,000 --> 00:00:22,150
+A sky model forecasts where it goes next.
 
 8
-00:00:22,700 --> 00:00:25,900
-17,604 stars caught moving. 635 in neither Gaia nor SIMBAD.
+00:00:22,600 --> 00:00:25,810
+Seventeen thousand stars, caught moving.
 
 9
-00:00:26,400 --> 00:00:29,000
-MIRA. Point at the sky. See what moved. Measure it.
+00:00:26,200 --> 00:00:29,130
+MIRA. See what moved. Measure it.
 

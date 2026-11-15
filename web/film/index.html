@@ -42,14 +42,15 @@
 #art { right: 64px; top: 53px; font-family: var(--mono); font-size: 13px; letter-spacing: .2em; color: rgb(238 242 248 / .74); text-shadow: 0 0 12px rgb(5 7 11 / .9); }
 #live { left: 46px; top: 0; height: 1080px; writing-mode: vertical-rl; transform: rotate(180deg); text-align: center; font-family: var(--mono); font-size: 13px; letter-spacing: .3em; color: rgb(238 242 248 / .78); white-space: nowrap; } #live i { font-style: normal; color: #ff4d5e; }
 #cap { left: 0; right: 0; bottom: 32px; text-align: center; font-size: 34px; font-weight: 500; letter-spacing: -.005em; line-height: 1.2; text-shadow: 0 0 22px rgb(5 7 11 / .95), 0 0 4px rgb(5 7 11 / .9); }
-#ttl { left: 0; right: 0; top: 392px; text-align: center; } #ttl h1 { margin: 0 -.52em 0 0; font-weight: 600; font-size: 104px; letter-spacing: .52em; line-height: 1; text-shadow: 0 0 40px rgb(5 7 11 / .8); } #ttl p { margin: 30px 0 0; font-size: 30px; font-weight: 400; color: rgb(238 242 248 / .94); text-shadow: 0 0 18px rgb(5 7 11 / .95), 0 0 4px rgb(5 7 11 / .9); }
+#ttl { left: 0; right: 0; top: 138px; text-align: center; } #ttl h1 { margin: 0 -.52em 0 0; font-weight: 600; font-size: 104px; letter-spacing: .52em; line-height: 1; text-shadow: 0 0 40px rgb(5 7 11 / .8); } #ttl p { margin: 30px 0 0; font-size: 30px; font-weight: 400; color: rgb(238 242 248 / .94); text-shadow: 0 0 18px rgb(5 7 11 / .95), 0 0 4px rgb(5 7 11 / .9); }
 #ttl::before { content: ""; position: absolute; left: 50%; top: 50%; width: 1500px; height: 460px; transform: translate(-50%, -50%); background: radial-gradient(closest-side, rgb(5 7 11 / .5), rgb(5 7 11 / 0)); z-index: -1; }
 #cta { padding: 13px 26px; border: 1px solid rgb(238 242 248 / .5); border-radius: 999px; background: rgb(14 17 25 / .7); font-size: 22px; font-weight: 500; white-space: nowrap; }
 #lead { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; pointer-events: none; opacity: 0; } #lead line { stroke: rgb(238 242 248 / .55); stroke-width: 1; } #lead circle { fill: none; stroke: rgb(238 242 248 / .85); stroke-width: 1.2; }
 #endc { inset: 0; background: #020305; } #endin { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; opacity: 0; }
 #endin h1 { margin: 0 -.52em 0 0; font-weight: 600; font-size: 96px; letter-spacing: .52em; line-height: 1; } #endin .tag { margin: 34px 0 0; font-size: 32px; font-weight: 400; }
-#endin .num { margin: 46px 0 0; font-family: var(--mono); font-size: 21px; letter-spacing: .05em; font-variant-numeric: tabular-nums; color: rgb(238 242 248 / .92); }
-#endin .foot { margin: 64px 0 0; font-size: 16px; line-height: 1.75; color: rgb(238 242 248 / .62); }
+#endin .team { margin: 44px 0 0; font-size: 25px; font-weight: 500; letter-spacing: .01em; } #endin .team span { display: block; margin-bottom: 12px; font-family: var(--mono); font-size: 13px; letter-spacing: .3em; color: rgb(238 242 248 / .6); }
+#endin .num { margin: 34px 0 0; font-family: var(--mono); font-size: 21px; letter-spacing: .05em; font-variant-numeric: tabular-nums; color: rgb(238 242 248 / .92); }
+#endin .foot { margin: 44px 0 0; font-size: 16px; line-height: 1.75; color: rgb(238 242 248 / .62); }
 #msg { position: fixed; left: 16px; bottom: 12px; z-index: 99; font-family: var(--mono); font-size: 12px; color: rgb(238 242 248 / .5); } body.rec #msg { display: none; }
 </style>
 </head>
@@ -68,8 +69,8 @@
   <div class="ov" id="ttl"><h1>MIRA</h1><p>The public web observatory on NASA’s SPHEREx data.</p></div>
   <div class="ov" id="cta">Help look at one →</div>
   <div id="flash"></div>
-  <div class="ov" id="endc"><div id="endin"><h1>MIRA</h1><p class="tag">Point at the sky. See what moved. Measure it.</p><p class="num" id="end-num"></p>
-    <p class="foot">Built on open data: NASA SPHEREx · 2MASS · WISE · ESA Gaia<br>Team Mohsinin Wlad Dario · NASA Space Apps Challenge 2026 · Music: “Time and Space” by Scott Buckley (CC BY 4.0)<br>The opening is an artist’s rendering, computer-generated with AI assistance; the rest is recorded from the running site · Not affiliated with or endorsed by NASA</p></div></div>
+  <div class="ov" id="endc"><div id="endin"><h1>MIRA</h1><p class="tag">Point at the sky. See what moved. Measure it.</p><p class="team"><span>TEAM MOHSININ WLAD DARIO</span>Mohammed Ouabdrrahmane · Hamza Ba-mohammed · Hiba Nemry · Aya Driouche · Abdelmonaim Bounite</p><p class="num" id="end-num"></p>
+    <p class="foot">Built on open data: NASA SPHEREx · 2MASS · WISE · ESA Gaia<br>NASA Space Apps Challenge 2026 · Music: “Time and Space” by Scott Buckley (CC BY 4.0) · Narration: a synthetic voice<br>The opening is an artist’s rendering, computer-generated with AI assistance; the rest is recorded from the running site · Not affiliated with or endorsed by NASA</p></div></div>
   <div class="ov" id="cap"><span></span></div>
 </div>
 <div id="msg">loading…</div>
@@ -87,13 +88,13 @@ const LABWIN = { s: 0.9, x: 96, y: 22 };                // the Lab as a window o
 let ST = { x: 413, y: 86, w: 862 };                     // the Lab's picture inside its page (measured again when it has loaded)
 const FIELD = 396;                                      // arcseconds across that picture (6.6 arcminutes)
 const CAPS = [[0.4, 3.4, "Beyond Neptune, cold worlds drift in the dark."], [3.5, 6.4, "NASA’s SPHEREx photographs the whole sky in 102 infrared colours."],
-  [9.6, 12.6, "Point anywhere. Watch 27 years of NASA pictures play."], [12.7, 15.9, "See what moved, and how fast."], [16.0, 19.2, "Read its light. This one shows methane."],
-  [19.3, 22.3, "Measured on NASA’s raw exposures. Checked by AI models."], [22.7, 25.9, "17,604 stars caught moving. 635 in neither Gaia nor SIMBAD."]];
-const T = { a1: 6.5, pull: [6.9, 8.9], real: [9.0, 9.9], rewind: [11.2, 12.0], play1: [12.4, 13.4], play2: [13.7, 14.9], spec: [16.0, 19.2], out: 22.0, end: 26.0 };
+  [9.6, 12.6, "Point anywhere. Watch 27 years of NASA pictures play."], [12.7, 15.9, "See what moved, and how fast."], [16.0, 18.7, "Read its light. This one shows methane."],
+  [18.9, 22.0, "A sky model forecasts where it goes next."], [22.7, 25.9, "17,604 stars caught moving. 635 in neither Gaia nor SIMBAD."]];
+const T = { a1: 6.5, pull: [6.9, 8.9], real: [9.0, 9.9], rewind: [11.2, 12.0], play1: [12.4, 13.4], play2: [13.7, 14.9], spec: [16.0, 18.7], wm: [18.7, 21.95], out: 22.0, end: 26.0 };
 function labDate(t) { if (t < T.rewind[0]) return YL; if (t < T.rewind[1]) return lerp(YL, Y0, io(seg(t, ...T.rewind))); if (t < T.play1[0]) return Y0; if (t < T.play1[1]) return lerp(Y0, 2010.5, io(seg(t, ...T.play1)));
   if (t < T.play2[0]) return 2010.5; if (t < T.play2[1]) return lerp(2010.5, YL, io(seg(t, ...T.play2))); return YL; }
 // the camera on the Lab: [time, scale, x, y]
-const CAM = [[0, 0.9, 96, 22], [15.2, 0.9, 96, 22], [17.0, 1.5, -960, -143], [19.1, 1.5, -960, -143], [20.9, 1.18, -345.6, -26], [22.0, 1.18, -345.6, -26]];
+const CAM = [[0, 0.9, 96, 22], [15.2, 0.9, 96, 22], [17.0, 1.5, -960, -143], [22.0, 1.5, -960, -143]];
 function camAt(t) { let k = 0; while (k < CAM.length - 2 && t >= CAM[k + 1][0]) k++; const a = CAM[k], b = CAM[k + 1], u = io(seg(t, a[0], b[0])); return [lerp(a[1], b[1], u), lerp(a[2], b[2], u), lerp(a[3], b[3], u)]; }
 
 // ------------------------------------------------------------------ act one: the dark beyond Neptune, ray-traced
@@ -156,24 +157,51 @@ vec3 stars(vec3 rd) { vec3 c = vec3(0.0);
   return c; }
 vec3 galaxy(vec3 rd) { vec3 g = uGal * rd; vec2 q = vec2(atan(g.y, g.x) / 6.2831853, 0.5 - asin(clamp(g.z, -1.0, 1.0)) / 3.14159265);       // NASA's SPHEREx all-sky picture, far away and dim
   vec2 px = vec2(2.6 / 2048.0, 2.6 / 1024.0); vec3 m = (texture(uSky, q).rgb * 2.0 + texture(uSky, q + vec2(px.x, 0.0)).rgb + texture(uSky, q - vec2(px.x, 0.0)).rgb + texture(uSky, q + vec2(0.0, px.y)).rgb + texture(uSky, q - vec2(0.0, px.y)).rgb + texture(uSky, q + px * 0.7).rgb + texture(uSky, q - px * 0.7).rgb + texture(uSky, q + vec2(px.x, -px.y) * 0.7).rgb + texture(uSky, q + vec2(-px.x, px.y) * 0.7).rgb) / 10.0;
-  m = pow(m, vec3(2.2)); m = mix(vec3(dot(m, vec3(0.3, 0.5, 0.2))), m, 0.38); return max(m - 0.02, 0.0) * 0.17; }
+  m = pow(m, vec3(2.2)); m = mix(vec3(dot(m, vec3(0.3, 0.5, 0.2))), m, 0.25); return max(m - 0.02, 0.0) * 0.13; }
 float hgt(vec3 n) { return 0.50 * fbm(n * 5.0 + 3.0) + 0.30 * (1.0 - abs(2.0 * nz(n * 14.0 + 1.7).r - 1.0)) + 0.20 * nz(n * 34.0 + 8.3).g; }
+uniform vec3 uGiant; uniform float uSpin;
+const vec3 LS = vec3(-0.3041, -0.1216, 0.9448);                  // toward the Sun: ahead, just under the horizon, a little to the left
+const vec3 GND = vec3(0.0, -62.2, 0.0); const float RG0 = 60.0;   // the world we fly over: its centre and radius
+const float RGI = 96.0;                                         // the ringed giant's radius
+const vec3 RN = vec3(0.2495, 0.9184, -0.2995);                  // the rings' axis
+float ringDens(float r) { float u = (r - 1.22) / 1.12; if (u < 0.0 || u > 1.0) return 0.0; float b = 0.55 + 0.45 * nz(vec3(u * 9.0, 0.5, 0.5)).r; b *= 0.6 + 0.4 * nz(vec3(u * 37.0, 3.5, 1.5)).g; b *= 1.0 - smoothstep(0.52, 0.56, u) * (1.0 - smoothstep(0.585, 0.62, u)) * 0.92;      // a gap, as Saturn's rings have
+  return b * smoothstep(0.0, 0.03, u) * (1.0 - smoothstep(0.95, 1.0, u)); }
 vec3 scene(vec2 uv) {
-  vec3 rd = rayDir(uv), ro = uRo; vec4 V = texture(uVol, uv);
-  float tp = sph(ro, rd, PLANET, RP), td = sph(ro, rd, DWARF, RD); vec3 bg;
-  if (tp > 0.0 && (td < 0.0 || tp < td)) { vec3 n = normalize(ro + rd * tp - PLANET);
-    // the frozen world: its relief is traced into the normal, so the low Sun picks out every ridge along the crescent
-    vec3 t1 = normalize(cross(n, vec3(0.0, 1.0, 0.0))), t2 = cross(n, t1); const float e = 0.006; float h0 = hgt(n), hx = hgt(normalize(n + t1 * e)), hy = hgt(normalize(n + t2 * e));
-    vec3 nb = normalize(n - (t1 * (hx - h0) + t2 * (hy - h0)) / e * 0.10);
-    float geo = smoothstep(0.0, 0.16, dot(n, L)), nl = max(dot(nb, L), 0.0), ice = smoothstep(0.36, 0.66, h0);
-    vec3 alb = mix(vec3(0.028, 0.034, 0.045), vec3(0.20, 0.25, 0.32), ice);
-    bg = alb * SUN * nl * geo * 0.30 + SUN * pow(max(dot(reflect(-L, nb), -rd), 0.0), 26.0) * geo * ice * 0.022 + alb * 0.006; }
-  else if (td > 0.0) { vec3 n = normalize(ro + rd * td - DWARF); float bands = 0.65 * fbm(vec3(n.y * 5.0, n.x * 0.9 + uT * 0.02, n.z * 0.9) + 31.0) + 0.35 * fbm(vec3(n.y * 16.0, n.x * 2.0, n.z * 2.0) + 5.0), limb = pow(max(dot(n, -rd), 0.0), 0.8);
-    bg = mix(vec3(0.035, 0.003, 0.002), vec3(0.80, 0.10, 0.025), smoothstep(0.30, 0.75, bands)) * (0.10 + 1.1 * limb); }
-  else { float sd = max(dot(rd, L), 0.0); bg = galaxy(rd) + stars(rd) + SUN * (pow(sd, 400000.0) * 3000.0 + pow(sd, 14000.0) * 0.8 + pow(sd, 500.0) * 0.02); }
-  vec3 c = V.rgb + V.a * bg;
-  vec3 oc = DWARF - ro; if (dot(oc, rd) > 0.0) c += vec3(0.9, 0.11, 0.035) * 0.16 * exp(-pow(length(cross(rd, oc)) / (RD * 2.6), 1.1)) * mix(1.0, V.a, 0.4) * (td > 0.0 ? 0.35 : 1.0);     // the dwarf's own glow
-  return c;
+  vec3 rd = rayDir(uv), ro = uRo; vec3 c = vec3(0.0);
+  float tg = sph(ro, rd, GND, RG0);
+  if (tg > 0.0) {      // the ground: dark, with its relief, lit only where the low Sun reaches it; a thin haze toward the limb
+    vec3 n = normalize(ro + rd * tg - GND); float cs = cos(uSpin), sn = sin(uSpin); vec3 m = vec3(n.x, cs * n.y - sn * n.z, sn * n.y + cs * n.z);      // the ground slides under the camera
+    vec3 t1 = normalize(cross(n, vec3(1.0, 0.0, 0.0))), t2 = cross(n, t1), m1 = normalize(cross(m, vec3(1.0, 0.0, 0.0))), m2 = cross(m, m1); const float e = 0.0016;
+    float h0 = 0.55 * fbm(m * 46.0 + 3.0) + 0.30 * (1.0 - abs(2.0 * nz(m * 150.0 + 1.7).r - 1.0)) + 0.15 * nz(m * 420.0).g;
+    float hx = 0.55 * fbm((m + m1 * e) * 46.0 + 3.0) + 0.30 * (1.0 - abs(2.0 * nz((m + m1 * e) * 150.0 + 1.7).r - 1.0)) + 0.15 * nz((m + m1 * e) * 420.0).g;
+    float hy = 0.55 * fbm((m + m2 * e) * 46.0 + 3.0) + 0.30 * (1.0 - abs(2.0 * nz((m + m2 * e) * 150.0 + 1.7).r - 1.0)) + 0.15 * nz((m + m2 * e) * 420.0).g;
+    vec3 nb = normalize(n - (t1 * (hx - h0) + t2 * (hy - h0)) / e * 0.012);
+    float day = smoothstep(-0.10, 0.22, dot(n, LS)), nl = max(dot(nb, LS), 0.0), ice = smoothstep(0.36, 0.68, h0);
+    vec3 alb = mix(vec3(0.035, 0.045, 0.060), vec3(0.30, 0.37, 0.46), ice);
+    c = alb * SUN * (nl * day * 0.55 + 0.004) + SUN * pow(max(dot(reflect(-LS, nb), -rd), 0.0), 40.0) * day * ice * 0.05;
+    float graze = pow(1.0 - max(dot(n, -rd), 0.0), 6.0); c += vec3(0.30, 0.55, 1.0) * graze * (0.10 + 1.6 * day) * 0.22;      // the air, seen edge-on
+    return c; }
+  // above the ground: the sky, the giant and its rings
+  vec3 oc = ro - GND; float bq = dot(oc, rd), near = sqrt(max(dot(oc, oc) - bq * bq, 0.0)) - RG0;      // how high this ray passes over the limb
+  float sunny = pow(max(dot(rd, LS), 0.0), 6.0);
+  vec3 air = vec3(0.32, 0.56, 1.0) * exp(-max(near, 0.0) / 0.10) * (0.22 + 2.6 * sunny) + vec3(1.0, 0.82, 0.62) * exp(-max(near, 0.0) / 0.035) * sunny * 2.2;
+  float tp = sph(ro, rd, uGiant, RGI); float tr = -1.0; float dn = dot(rd, RN); if (abs(dn) > 1e-4) { float t = dot(uGiant - ro, RN) / dn; if (t > 0.0) tr = t; }
+  vec3 bg = galaxy(rd) + stars(rd); float ringA = 0.0; vec3 ringC = vec3(0.0);
+  if (tr > 0.0) { vec3 p = ro + rd * tr; float r = length(p - uGiant) / RGI, d = ringDens(r);
+    if (d > 0.0) { float sh = sph(p, LS, uGiant, RGI) > 0.0 ? 0.04 : 1.0;      // the giant's shadow across its own rings: a ray toward the Sun that meets the planet
+      float mu = dot(rd, LS), fw = 0.35 + 2.4 * pow(max(mu, 0.0), 5.0);        // ice grains throw the light forward: rings are brightest seen against the Sun
+      ringC = mix(vec3(0.95, 0.80, 0.60), vec3(1.0, 0.94, 0.86), nz(vec3(r * 21.0, 1.5, 2.5)).b) * SUN * 0.125 * fw * sh; ringA = clamp(d * 1.25, 0.0, 0.96); } }
+  if (tp > 0.0) { vec3 p = ro + rd * tp, n = normalize(p - uGiant); float lat = dot(n, RN);
+    float bands = 0.6 * nz(vec3(lat * 7.0, 0.5, 0.5)).r + 0.4 * nz(vec3(lat * 23.0 + 0.6 * nz(n * 3.0).g, 2.5, 0.5)).g, nl = max(dot(n, LS), 0.0);
+    // the rings' shadow on the giant: a ray from here toward the Sun that crosses the rings
+    float lit = 1.0, dl = dot(LS, RN); if (abs(dl) > 1e-4) { float t = dot(uGiant - p, RN) / dl; if (t > 0.0) lit = 1.0 - 0.8 * ringDens(length(p + LS * t - uGiant) / RGI); }
+    vec3 alb = mix(vec3(0.20, 0.16, 0.12), vec3(0.62, 0.52, 0.40), smoothstep(0.25, 0.75, bands));
+    vec3 pc = alb * SUN * pow(nl, 0.85) * 0.5 * lit + alb * vec3(1.0, 0.86, 0.66) * 0.012 * max(dot(n, normalize(RN + vec3(0.0, 0.0, -0.4))), 0.0);      // sunlight, and a little light thrown back by the rings on the night side
+    pc += vec3(1.0, 0.80, 0.56) * pow(1.0 - max(dot(n, -rd), 0.0), 3.5) * (0.02 + 0.9 * pow(max(dot(rd, LS), 0.0), 3.0)) * smoothstep(-0.25, 0.25, dot(n, LS));       // its upper air, lit from behind
+    bool ringFirst = tr > 0.0 && tr < tp; bg = ringFirst ? mix(pc, ringC, ringA) : pc; if (!ringFirst) ringA = 0.0; }
+  c = mix(bg, ringC, tp > 0.0 ? 0.0 : ringA) + (tp > 0.0 ? vec3(0.0) : vec3(0.0));
+  if (tp > 0.0) c = bg;
+  return c + air;
 }
 vec3 lens(vec2 uv) {      // what a lens does with a point as bright as the Sun: spikes from its blades, a long streak, a halo; only where the dust lets the Sun through
   vec3 lv = vec3(dot(L, uRt), dot(L, uUp), dot(L, uFw)); if (lv.z < 0.05) return vec3(0.0);
@@ -183,13 +211,13 @@ vec3 lens(vec2 uv) {      // what a lens does with a point as bright as the Sun:
   vec2 dr = vec2(d.x + d.y, d.x - d.y) * 0.7071; float diag = (exp(-abs(dr.x) * 270.0) / (1.0 + pow(abs(dr.y) * 7.0, 1.8)) + exp(-abs(dr.y) * 270.0) / (1.0 + pow(abs(dr.x) * 7.0, 1.8))) * 0.09;
   float halo = 0.006 / (dot(d, d) + 0.004);
   return (vec3(0.60, 0.77, 1.0) * streak + vec3(1.0, 0.95, 0.88) * (up + diag + halo)) * seen; }
-vec3 shot(vec2 uv) { vec3 c = vec3(0.0); for (int k = 0; k < 4; k++) c += scene(uv + OFF[k] / uRes); return c * 0.25 + lens(uv); }      // four rays a pixel
+vec3 shot(vec2 uv) { vec3 c = vec3(0.0); for (int k = 0; k < 4; k++) c += scene(uv + OFF[k] / uRes); return c * 0.25; }      // four rays a pixel
 void main() {
   vec2 uv = gl_FragCoord.xy / uRes; vec3 c;
   if (uDisp > 0.0004) { vec2 d = vec2(uDisp, 0.0); vec3 a = shot(uv - d), b = shot(uv), e = shot(uv + d);      // the light split into its colours
     c = vec3(a.r, 0.25 * a.g + 0.5 * b.g + 0.25 * e.g, e.b); }
   else c = shot(uv);
-  vec2 q = uv - 0.5; c *= 1.0 - 1.25 * dot(q, q);                             // the lens falls off toward its corners
+  vec2 q = uv - 0.5; c *= 1.0 - 0.9 * dot(q, q);                             // the lens falls off toward its corners
   c *= uExp; c = (c * (2.51 * c + 0.03)) / (c * (2.43 * c + 0.59) + 0.14);    // the film curve (ACES fit)
   c = pow(clamp(c, 0.0, 1.0), vec3(1.0 / 2.2));
   c += (fract(sin(dot(gl_FragCoord.xy, vec2(41.3, 289.1))) * 43758.5453) - 0.5) / 255.0;
@@ -218,16 +246,17 @@ async function initSky() {
 }
 const v3 = { sub: (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]], norm: (a) => { const l = Math.hypot(a[0], a[1], a[2]) || 1; return [a[0] / l, a[1] / l, a[2] / l]; }, cross: (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]], mix: (a, b, u) => [lerp(a[0], b[0], u), lerp(a[1], b[1], u), lerp(a[2], b[2], u)] };
 function drawSky(t) {
-  if (!G || !G.ok) return; const u = seg(t, 0, T.a1), e = 1 - Math.pow(1 - u, 1.8);
-  const ro = v3.mix([-0.55, -0.12, 0.0], [0.10, 0.08, 1.15], e), tg = v3.mix([-0.35, 0.05, 6.0], [1.05, 0.42, 7.2], sm(seg(t, 0.5, 5.4)));          // it ends looking straight at the brown dwarf
-  const fw = v3.norm(v3.sub(tg, ro)), rt = v3.norm(v3.cross([0, 1, 0], fw)), up = v3.cross(fw, rt);
+  if (!G || !G.ok) return; const u = seg(t, 0, T.a1 + 0.2), e = 1 - Math.pow(1 - u, 1.6);
+  const pitch = lerp(-9.5, -8.0, e) * D, roll = lerp(-9, -6, e) * D, ro = [0, 0, 0], fw = [0, Math.sin(pitch), Math.cos(pitch)], up0 = [Math.sin(roll), Math.cos(roll), 0], rt = v3.norm(v3.cross(up0, fw)), up = v3.cross(fw, rt);
+  // the giant climbs over the limb as the camera flies toward it
+  const el = lerp(-13.4, -8.6, e) * D, az = lerp(5.5, 3.0, e) * D, Dg = 1000, giant = [Dg * Math.sin(az) * Math.cos(el), Dg * Math.sin(el), Dg * Math.cos(az) * Math.cos(el)];
   const uni = (p) => { const U = (nm) => gl.getUniformLocation(p, nm); gl.uniform1f(U("uT"), t); gl.uniform1f(U("uFov"), Math.tan(19 * D)); gl.uniform1f(U("uAsp"), 16 / 9); gl.uniform3fv(U("uRo"), ro); gl.uniform3fv(U("uFw"), fw); gl.uniform3fv(U("uRt"), rt); gl.uniform3fv(U("uUp"), up);
     gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_3D, G.nt); gl.uniform1i(U("uN"), 0); return U; };
   gl.bindVertexArray(G.vao); gl.disable(gl.BLEND); gl.disable(gl.DEPTH_TEST);
-  gl.bindFramebuffer(gl.FRAMEBUFFER, G.fb); gl.viewport(0, 0, VW, VH); gl.useProgram(G.pv); let U = uni(G.pv); gl.uniform2f(U("uRes"), VW, VH); gl.drawArrays(gl.TRIANGLES, 0, 3);
-  gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.viewport(0, 0, sky.width, sky.height); gl.useProgram(G.pc); U = uni(G.pc); gl.uniform2f(U("uRes"), sky.width, sky.height);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.viewport(0, 0, sky.width, sky.height); gl.useProgram(G.pc); const U = uni(G.pc); gl.uniform2f(U("uRes"), sky.width, sky.height);
   gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, G.vt); gl.uniform1i(U("uVol"), 1); gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, G.st); gl.uniform1i(U("uSky"), 2); gl.uniformMatrix3fv(U("uGal"), false, G.gal);
-  gl.uniform1f(U("uExp"), 0.86); gl.uniform1f(U("uDisp"), 0.017 * Math.pow(seg(t, 5.4, 6.95), 2.0)); gl.drawArrays(gl.TRIANGLES, 0, 3); gl.flush();
+  gl.uniform3fv(U("uGiant"), giant); gl.uniform1f(U("uSpin"), 0.012 * e);
+  gl.uniform1f(U("uExp"), 1.0); gl.uniform1f(U("uDisp"), 0.0); gl.drawArrays(gl.TRIANGLES, 0, 3); gl.flush();
 }
 
 // ------------------------------------------------------------------ act four: the whole sky
@@ -293,15 +322,18 @@ let applied = { date: null, layers: "", tool: "" };
 function driveLab(t) {
   const Lb = lab(), on = true, lay = "on";                // Gaia's rings and the track are part of the picture from the start: nothing pops in
   if (applied.layers !== lay) { applied.layers = lay; Lb.act({ layers: { det: false, wise: false, mask: false, gaia: on, track: on } }); }
-  const tool = t >= T.spec[0] && t < T.spec[1] ? "spectrum" : "readings";
-  if (applied.tool !== tool) { applied.tool = tool; if (tool === "spectrum") Lb.act({ instrument: "spectrum" }); else Lq("#bk-back")?.click(); }
+  const tool = t >= T.spec[0] && t < T.spec[1] ? "spectrum" : t >= T.wm[0] && t < T.wm[1] ? "wm" : "readings";
+  if (applied.tool !== tool) { applied.tool = tool; applied.yr = 0; if (tool === "readings") Lq("#bk-back")?.click(); else Lb.act({ instrument: tool }); }
+  if (tool === "wm") { const yr = Math.round(lerp(2026, 2040, io(seg(t, 19.5, 21.3)))), sl = Lq("#wm-yr");      // the forecast's year, drawn along its slider
+    if (sl && applied.yr !== yr && yr > 2026) { applied.yr = yr; sl.value = String(yr); sl.dispatchEvent(new (W().Event)("input", { bubbles: true })); }
+    const big = Lq("#wm-big"); let sc = big?.parentElement; while (sc && sc.scrollHeight <= sc.clientHeight + 8) sc = sc.parentElement; if (sc) sc.scrollTop = 118 * sm(seg(t, 19.0, 19.9)); }
   const d = +labDate(t).toFixed(2); if (applied.date !== d) { applied.date = d; Lb.act({ date: d }); }
 }
 const setL = (sel, o, tf = "") => { const e = Lq(sel); if (!e) return; e.style.opacity = String(o); e.style.transform = tf; };
 function styleLab(t) {
   setL(".lx-time", sm(seg(t, 9.2, 10.0)), `translateY(${(1 - out3(seg(t, 9.2, 10.1))) * 30}px)`); setL(".lx-top", sm(seg(t, 9.6, 10.2)));
   setL("#bk-rail", sm(seg(t, 9.8, 10.5)), `translateX(${(1 - out3(seg(t, 9.8, 10.6))) * -18}px)`); setL(".lx-status", sm(seg(t, 10.5, 11.0)));
-  const dip = Math.min(1, Math.abs(t - T.spec[0]) / 0.2, Math.abs(t - T.spec[1]) / 0.2);            // the panel changes behind a short dip
+  const dip = Math.min(1, Math.abs(t - T.spec[0]) / 0.2, Math.abs(t - T.spec[1]) / 0.2, Math.abs(t - T.wm[1]) / 0.2);            // the panel changes behind a short dip
   setL("#bk-drawer", sm(seg(t, 10.1, 10.8)) * dip, `translateX(${(1 - out3(seg(t, 10.1, 10.9))) * 18}px)`);
   const cards = Dc().querySelectorAll("#bk-facts .lab-fact"), at = [13.6, 14.6, 19.35, 19.6, 20.0]; cards.forEach((e, k) => { e.style.opacity = String(sm((t - (at[k] ?? 20.0)) / 0.5)); });
   const hint = Lq(".lx-hint"); if (hint) hint.style.opacity = String(sm((t - 20.4) / 0.5));
@@ -313,19 +345,23 @@ const set = (e, o, tf) => { e.style.opacity = String(o); if (tf !== undefined) e
 let running = false, recording = false, t0 = 0, lastT = -1, ready = false, skyState = "";
 function render(t) {
   // act one, then its last picture settling into the Lab's pane
-  const skyA = 1 - sm(seg(t, 6.15, 6.95)); sky.style.opacity = String(skyA); sky.style.visibility = skyA <= 0 ? "hidden" : "visible"; if (skyA > 0) drawSky(t);          // the opening dissolves to black as the name comes up
+  const skyA = 1 - sm(seg(t, ...T.real)); sky.style.opacity = String(skyA); sky.style.visibility = skyA <= 0 ? "hidden" : "visible";
+  if (skyA > 0) { if (t < T.a1 + 0.2) { drawSky(t); skyState = "live"; } else if (skyState !== "held") { drawSky(T.a1 + 0.2); skyState = "held"; }
+    // the picture settles into the Lab's centre pane, where NASA's real picture then takes its place
+    const u = io(seg(t, ...T.pull)), cw = ST.w * LABWIN.s, s2 = cw / 1080, px = LABWIN.x + (ST.x + ST.w / 2) * LABWIN.s, py = LABWIN.y + (ST.y + ST.w / 2) * LABWIN.s, half = cw / 2 / s2, sc = lerp(1, s2, u);
+    sky.style.transform = `translate(${lerp(0, px - 960 * s2, u)}px, ${lerp(0, py - 540 * s2, u)}px) scale(${sc})`; sky.style.clipPath = `inset(${lerp(0, 540 - half, u)}px ${lerp(0, 960 - half, u)}px)`; }
   // the reticle around the picture
-  $("#ret").style.opacity = String(sm(seg(t, 8.0, 8.3)) * (1 - sm(seg(t, 10.2, 10.8)))); $("#ret-box").setAttribute("stroke-dashoffset", String(1 - io(seg(t, 8.1, 9.1)))); $("#ret-ticks").style.opacity = String(sm(seg(t, 8.8, 9.3)));
+  $("#ret").style.opacity = String(sm(seg(t, 8.2, 8.5)) * (1 - sm(seg(t, 10.2, 10.8)))); $("#ret-box").setAttribute("stroke-dashoffset", String(1 - io(seg(t, 8.3, 9.3)))); $("#ret-ticks").style.opacity = String(sm(seg(t, 9.0, 9.5)));
   // the Lab
   if (ready) { try { driveLab(t); styleLab(t); } catch (e) { /* the Lab is between two states */ } }
-  let [s, x, y] = camAt(t), la = sm(seg(t, 8.6, 9.6)); const anchor = [x + (ST.x + ST.w / 2) * s, y + (ST.y + ST.w / 2) * s];       // where the object is on screen when the Lab lets go
+  let [s, x, y] = camAt(t), la = 1; const anchor = [x + (ST.x + ST.w / 2) * s, y + (ST.y + ST.w / 2) * s];       // where the object is on screen when the Lab lets go
   if (t >= T.out) { const u = io(seg(t, T.out, T.out + 1.2)), s3 = s * lerp(1, 0.25, u); x = anchor[0] - (ST.x + ST.w / 2) * s3; y = anchor[1] - (ST.y + ST.w / 2) * s3; s = s3; la *= 1 - sm(seg(t, T.out + 0.1, T.out + 0.9)); }
   const lw = $("#labwrap"); lw.style.transform = `translate(${x}px, ${y}px) scale(${s})`; lw.style.opacity = String(la); lw.style.visibility = la <= 0 ? "hidden" : "visible"; lw.style.borderRadius = `${14 / s}px`;
   const win = $("#win"); win.style.transform = lw.style.transform; win.style.borderRadius = `${14 / s}px`; win.style.borderWidth = `${1.2 / s}px`; win.style.opacity = String(sm(seg(t, 9.6, 10.5)) * la);
   // the whole sky
   drawMap(t, anchor);
   // words
-  set($("#badge"), fade(t, 0.3, 3.4)); set($("#art"), fade(t, 0.4, 6.3)); set($("#ttl"), sm(seg(t, 6.45, 7.05)) * (1 - sm(seg(t, 7.9, 8.4))));
+  set($("#badge"), fade(t, 0.3, 3.4)); set($("#art"), fade(t, 0.4, 6.3)); set($("#ttl"), fade(t, 6.4, 9.3, 0.45));
   const liveA = sm(seg(t, 10.8, 11.4)) * (1 - sm(seg(t, 21.8, 22.3))); set($("#live"), liveA); $("#livebg").style.opacity = String(liveA * sm(seg(t, 15.2, 16.2)));
   const cp = CAPS.find((q) => t >= q[0] && t <= q[1]); if (cp) { const sp = $("#cap span"); if (sp.textContent !== cp[2]) sp.textContent = cp[2]; } set($("#cap"), cp ? fade(t, cp[0], cp[1], 0.3) : 0);
   $("#capbg").style.opacity = String(Math.max(sm(seg(t, 15.2, 16.1)) * (1 - sm(seg(t, 22.1, 22.7))), fade(t, 0.2, 6.35, 0.4) * 0.5));
@@ -347,7 +383,7 @@ async function prepare() {
   await until(() => { const c = lab().context(); return !c.loading && c.exposures > 0 && c.field; }, 180000);
   css(".embed-out{display:none!important} #bk-rail,.lx-top,.lx-time,#bk-drawer,.lx-status,.lab-fact,.lab-fact *{transition:none!important} ::-webkit-scrollbar{display:none}");
   // the spectrum is read once now, so that it opens at once later
-  lab().act({ instrument: "spectrum" }); await until(() => Lq("#bk-panel .bk-plot-host svg"), 90000); await wait(700); Lq("#bk-back")?.click(); await wait(600);
+  lab().act({ instrument: "spectrum" }); await until(() => Lq("#bk-panel .bk-plot-host svg"), 90000); await wait(700); lab().act({ instrument: "wm" }); await until(() => Lq("#wm-big"), 90000); await wait(900); Lq("#bk-back")?.click(); await wait(600);
   const b = Lq("#bk-stage").getBoundingClientRect(); ST = { x: b.left, y: b.top, w: b.width };
   // the reticle: the picture's edge, a tick every 30 arcseconds, a longer one every arcminute
   const x = LABWIN.x + ST.x * LABWIN.s, y = LABWIN.y + ST.y * LABWIN.s, w = ST.w * LABWIN.s, step = (w / FIELD) * 30; $("#ret-box").setAttribute("d", `M${x} ${y}h${w}v${w}h${-w}Z`);

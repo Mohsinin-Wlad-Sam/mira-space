@@ -73,6 +73,8 @@ ui.innerHTML = `
   </nav>
   <form class="search" id="search" role="search"><input id="q" placeholder="Search a planet, a star, or any place in the sky" autocomplete="off" enterkeyhint="search" aria-label="Search: a planet, a star by name, or coordinates">
     <div class="suggest" id="suggest" hidden></div></form>
+  <a class="btn ghost sm hd-link" href="${import.meta.env.BASE_URL}docs/" title="Documentation: how every tool works, the pipeline, the architecture">Docs</a>
+  <a class="btn ghost sm hd-link" href="${import.meta.env.BASE_URL}console/" title="The data API: make a key, try a call, see what it costs">API</a>
   <button class="btn ghost sm" id="asstbtn" title="Ask the assistant: it reads this page, explains it in everyday words and can operate the map and the instruments">Ask</button>
 </header>
 <section class="catpage" id="catpage"></section>
