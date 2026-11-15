@@ -3,7 +3,6 @@
 // are read from NASA's infrared archive (IRSA) at the surveys' own sharpness, so a star that moved only a few
 // arcseconds visibly shifts. Nothing plays by itself: the visitor drags the slider or presses play.
 import { SURVEYS, pastCutout } from "./blink/hips";
-import { levels, asinhT } from "./blink/imaging";
 
 export type MoveTarget = { ra: number; dec: number; /** arcsec per year, east and north */ pmra: number; pmdec: number; /** year of (ra, dec) */ epoch: number };
 const N = 96, Y_TM = 1999.5, Y_WISE = 2010.5;
@@ -19,13 +18,17 @@ export function mountPastView(host: HTMLElement, t: MoveTarget, o: { label?: str
     <div class="pv-stage"><canvas class="pv-cv" aria-label="Pictures of this object in about 1999 and in 2010"></canvas><div class="pv-cap" aria-live="polite">Reading two pictures from NASA's archive…</div></div>
     <div class="pv-ctl"><button class="icon-btn pv-play" aria-label="Play from 1999 to today" title="Play from 1999 to today">▶</button>
       <input class="pv-range" type="range" min="0" max="1000" value="0" aria-label="Date, from 1999 to today"><b class="pv-yr mono">1999</b></div>
-    <div class="pv-stops"><button data-y="${Y_TM}">≈ 1999</button><button data-y="${Y_WISE}">2010</button><button data-y="${yNow}">${Math.floor(yNow)} · today</button></div>
+    <div class="pv-stops"><button data-y="${Y_TM}">≈ 1999</button><button data-y="${Y_WISE}">2010</button><button data-y="${yNow}">${Math.floor(yNow)} · SPHEREx</button></div>
     <p class="pv-note">${o.label ? esc(o.label) + " " : ""}The circle marks where the measured motion puts the object at the date shown. Field ${field < 100 ? field.toFixed(0) + "″" : (field / 60).toFixed(1) + "′"} wide, north up, east left. Cold objects can be invisible in the 1999 picture (2.2 µm) and bright in the 2010 one (4.6 µm).</p></div>`;
   const cv = host.querySelector(".pv-cv") as HTMLCanvasElement, cap = host.querySelector(".pv-cap") as HTMLElement, range = host.querySelector(".pv-range") as HTMLInputElement,
     yrEl = host.querySelector(".pv-yr") as HTMLElement, playBtn = host.querySelector(".pv-play") as HTMLButtonElement;
   const img: Record<string, Float32Array | null> = { tm: null, wise: null }; let done = 0, y = Y_TM, raf = 0, playing = false, dead = false, last = 0, hold = 0;
   const small = document.createElement("canvas"); small.width = small.height = N;
-  const disp = (a: Float32Array) => { const [lo, hi] = levels(a, 99.7), d = new Float32Array(a.length); for (let k = 0; k < a.length; k++) d[k] = Number.isFinite(a[k]) ? asinhT(a[k], lo, hi) : 0; return d; };
+  // display: black just under the sky, white well above the noise (14 sigma or the brightest pixels), so that the sky
+  // stays dark and only real sources stand out
+  const disp = (a: Float32Array) => { const v: number[] = []; for (let k = 0; k < a.length; k++) if (Number.isFinite(a[k])) v.push(a[k]); v.sort((p, q) => p - q);
+    const med = v[v.length >> 1] ?? 0, sig = Math.max(med - (v[Math.floor(v.length * 0.16)] ?? med), 1e-9), lo = med - 0.5 * sig, hi = Math.max(v[Math.floor(v.length * 0.999)] ?? med, med + 14 * sig), d = new Float32Array(a.length);
+    for (let k = 0; k < a.length; k++) d[k] = Number.isFinite(a[k]) ? Math.pow(Math.min(1, Math.max(0, (a[k] - lo) / (hi - lo))), 0.62) : 0; return d; };
   function draw() {
     if (dead) return;
     const dpr = Math.min(2, window.devicePixelRatio || 1), w = Math.max(160, Math.round(cv.clientWidth * dpr)); if (cv.width !== w) cv.width = cv.height = w;
@@ -49,7 +52,7 @@ export function mountPastView(host: HTMLElement, t: MoveTarget, o: { label?: str
     const bar = [5, 10, 30, 60, 120].find((b) => b / pix * s > 0.16 * w) ?? 120, bw = (bar / pix) * s; g.strokeStyle = g.fillStyle = "rgba(240,240,250,.85)"; g.lineWidth = 1 * dpr;
     g.beginPath(); g.moveTo(w - 10 * dpr - bw, w - 12 * dpr); g.lineTo(w - 10 * dpr, w - 12 * dpr); g.stroke(); g.textAlign = "center"; g.fillText(bar < 60 ? `${bar}″` : `${bar / 60}′`, w - 10 * dpr - bw / 2, w - 22 * dpr);
     g.textAlign = "left"; g.fillText("N ↑   E ←", 10 * dpr, w - 12 * dpr);
-    yrEl.textContent = y.toFixed(0);
+    yrEl.textContent = String(Math.floor(y + 1e-6));
     cap.textContent = done < 2 && !A && !B ? "Reading two pictures from NASA's archive…" : !A && !B ? "The pictures could not be read just now. The measured path is shown."
       : Math.abs(y - Y_TM) < 0.3 ? (A ? "About 1999 · picture by the 2MASS survey, 2.2 µm" : "About 1999 · no picture could be read for this date")
       : Math.abs(y - Y_WISE) < 0.3 ? (B ? "2010 · picture by NASA's WISE, 4.6 µm" : "2010 · no picture could be read for this date")

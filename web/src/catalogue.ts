@@ -11,7 +11,7 @@ type Cols = { id: string[]; ra: number[]; dec: number[]; pm: number[]; pmra: num
 type Meta = { built: string; remeasured: number; claims: Record<string, number>; funnel: Record<string, Record<string, number>>; confirmed_movers: number; movers_known: number; movers_gaia_other: number; movers_gaia_nopm: number; movers_no_gaia: number; kinds: Record<string, number>; cone_checked: number;
   high_latitude?: { n: number; known: number; gaia_other: number; gaia_nopm: number; no_gaia: number; plane_n: number; plane_known: number } };
 type Change = { id: string; ra: number; dec: number; allwise: string; w1_2010: number; w2_2010: number; w1_now: number; w2_now: number; r1: number; r2: number; k_1999: number | null; k_now: number | null; verdict: string; simbad?: string };
-export type CatCtx = { onObserve: (t: { ra: number; dec: number; pmra?: number; pmdec?: number; epoch?: number; name?: string }) => void; toast?: (m: string) => void };
+export type CatCtx = { /** show an object, by survey id, on the map */ onMap?: (id: string) => void; onObserve: (t: { ra: number; dec: number; pmra?: number; pmdec?: number; epoch?: number; name?: string }) => void; toast?: (m: string) => void };
 type Filter = "all" | "nogaia" | "red" | "methane" | "wd" | "fast" | "changes";
 const FILTERS: [Filter, string, string][] = [["all", "All confirmed movers", "Every motion claim that passed the raw-exposure test"], ["nogaia", "No Gaia motion", "Confirmed movers with no matching proper motion in Gaia DR3: too red or too faint for Gaia, or missed"],
   ["red", "Red (W1−W2 > 0.6)", "Brighter at 4.6 µm than at 3.4 µm: the colour of cold brown dwarfs"], ["methane", "Methane dip", "3.3 µm flux below 60% of the 4.0 µm flux, measured on the raw exposures"], ["wd", "White dwarfs", "Faint for their Gaia colour"],
@@ -125,8 +125,9 @@ export function mountCatalogue(host: HTMLElement, ctx: CatCtx) {
         ${c.known[i] === 1 ? `Gaia lists the same star with ${c.gpm[i]?.toFixed(3)}″ per year: the two agree.` : c.known[i] === 2 ? `A Gaia star lies within 4″ but with a different motion (${c.gpm[i]?.toFixed(3)}″ per year).` : c.known[i] === 3 ? "Gaia has a source here but measured no motion for it." : "<b class=\"hl\">Gaia DR3 has no source here.</b>"}
         ${c.methane[i] ? ` Its 3.3 µm flux is ${Math.round((1 - (c.ch4[i] ?? 0)) * 100)}% below the 4.0 µm flux: methane.` : ""}</p>
       <div class="ct-sed" id="ct-sed"></div>
-      <div class="ct-act"><button class="btn sm" id="ct-open" title="Read the SPHEREx exposures of this object now and run every instrument on it">Measure it in the Lab</button>
+      <div class="ct-act"><button class="btn sm" id="ct-map" title="Fly to this object on the map and see it move in two real pictures">See it on the map</button><button class="btn sm ghost" id="ct-open" title="Read the SPHEREx exposures of this object now and run every instrument on it">Deep analysis in the Lab</button>
         <a class="btn sm ghost" target="_blank" rel="noopener" href="https://simbad.cfa.harvard.edu/simbad/sim-coo?Coord=${c.ra[i]}+${c.dec[i]}&Radius=20&Radius.unit=arcsec">SIMBAD ↗</a></div>`;
+    ($("#ct-map") as HTMLElement).onclick = () => ctx.onMap?.(c.id[i]);
     ($("#ct-open") as HTMLElement).onclick = () => ctx.onObserve({ ra: c.ra[i], dec: c.dec[i], pmra: c.pmra[i], pmdec: c.pmdec[i], epoch: c.yr[i], name: c.simbad[i] ? c.simbad[i].replace(/^NAME /, "").replace(/ \(.*$/, "") : c.known[i] === 1 ? `Gaia DR3 ${c.gaia[i]}` : `MIRA ${c.id[i]}` });
     const pts = ([[1.25, c.J[i]], [1.65, c.H[i]], [2.15, c.K[i]], [3.35, c.W1[i]], [4.6, c.W2[i]]] as [number, number | null][]).filter((p) => p[1] !== null && p[1]! > 0) as [number, number][];
     if (pts.length >= 2) { const lo = Math.min(...pts.map((p) => p[1])) / 2, hi = Math.max(...pts.map((p) => p[1])) * 2;

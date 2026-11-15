@@ -51,12 +51,15 @@ export interface Stat {
 
 // ---------------------------------------------------------------------------
 // The app is a separate page (not a React route), so links to it are plain
-// same-tab <a href>. /explore/ opens the Lab (the instruments);
+// same-tab <a href>. /explore/ opens the map; #lab the Lab (the instruments);
 // ?target=<name> or ?ra=..&dec=..&fov=.. opens it on a field; #catalogue opens
 // the verified catalogue, #cases the saved measurements, #about the method page.
 // ---------------------------------------------------------------------------
 export const viewer = {
   home: '/explore/',
+  lab: '/explore/#lab',
+  coldWorld: '/explore/#universe=6275-47643',
+  takePart: '/explore/#take-part',
   barnard: '/explore/?target=barnard',
   methane: '/explore/?target=eps-indi-b',
   luhman: '/explore/?target=Luhman%2016',
@@ -187,88 +190,97 @@ export const unsplashHome = 'https://unsplash.com/' + REF
 // Navigation
 // ---------------------------------------------------------------------------
 export const navLinks: NavLink[] = [
-  { label: 'The Lab', href: '/#mission' },
-  { label: 'Instruments', href: '/#data' },
-  { label: 'Time', href: '/#how-it-works' },
-  { label: 'Catalogue', href: '/#lenses' },
+  { label: 'See it move', href: '/#map' },
+  { label: 'Take part', href: '/#take-part' },
+  { label: 'Classrooms', href: '/#learn' },
+  { label: 'Researchers', href: '/#research' },
   { label: 'Evidence', href: '/#evidence' },
   { label: 'Plan', href: '/#plan' },
   { label: 'Team', href: '/#team' },
 ]
 
 // ---------------------------------------------------------------------------
-// Page sections
+// Page sections. Figures quoted here and their sources:
+//   150,000 volunteers, about 3,000 brown dwarfs: NASA, "Citizen Scientists Help Create 3D Map of Cosmic
+//     Neighborhood", 13 Jan 2021 (Backyard Worlds: Planet 9)
+//   US$488 million: SPHEREx lifecycle cost, NASA/JPL press kit
+//   6 billion people online: ITU Facts and Figures 2025
+//   12,329 / 92% / 5,757 / 17,600: our own results (see the Method page of the app)
 // ---------------------------------------------------------------------------
 export const hero = {
   /** Shown in the eyebrow until the live census numbers arrive. */
-  eyebrow: 'NASA SPHEREx · a research observatory in your browser',
-  title: 'Find what moves',
-  sub: 'Instruments on NASA’s SPHEREx exposures · motion, distance, spectrum',
-  cta: { label: 'Open the Lab', href: viewer.home } satisfies Cta,
-  tour: { label: 'See a brown dwarf move', href: viewer.methane } satisfies Cta,
+  eyebrow: 'NASA SPHEREx · open to everyone, in your browser',
+  title: 'The sky is not still',
+  sub: 'Watch real stars move in NASA pictures · help find the Sun’s unknown neighbours',
+  cta: { label: 'Open the map', href: viewer.home } satisfies Cta,
+  tour: { label: 'See a cold world move', href: viewer.coldWorld } satisfies Cta,
   image: images.hero as SiteImage,
 }
 
 export const features: Feature[] = [
   {
-    id: 'mission',
+    id: 'map',
     align: 'left',
-    eyebrow: 'The Lab',
-    title: 'Point at a field. See what moved.',
+    eyebrow: 'For everyone',
+    title: 'Click a star. Watch it move.',
     body:
-      'Enter coordinates or a name. Mira reads every SPHEREx exposure of that field from NASA’s archive and ' +
-      'measures each source at each visit, against where the surveys of 2010 and 1999 saw it and where Gaia says ' +
-      'it should be. The answer is a table: what moved, how surely, and whether anyone already knew.',
-    cta: { label: 'Try Barnard’s Star', href: viewer.barnard },
-    image: images.survey,
-  },
-  {
-    id: 'data',
-    align: 'right',
-    eyebrow: 'The instruments',
-    title: 'Motion, distance, spectrum, limits',
-    body:
-      'An astrometer plots position against time over 27 years. A spectrograph turns SPHEREx’s 102 colors into a ' +
-      'spectrum for any source and points out methane, the mark of cold worlds. A photometer checks its ' +
-      'brightness against 1999 and 2010. A limits panel says which planet or brown dwarf could still hide there.',
-    cta: { label: 'See a methane world', href: viewer.methane },
-    image: images.bands,
-  },
-  {
-    id: 'how-it-works',
-    align: 'left',
-    eyebrow: 'At your pace',
-    title: 'Time you can steer',
-    body:
-      'One time bar, three NASA missions: the pictures 2MASS took around 1999 and WISE in 2010, then one deep ' +
-      'SPHEREx image per visit. Drag it, step from date to date, slow it down: a moving source walks along its ' +
-      'measured path while the stars stay put. Nothing plays by itself, and every mark on the image is explained ' +
-      'beside it.',
-    cta: { label: 'Follow a brown dwarf across 27 years', href: viewer.luhman },
+      'NASA’s newest sky survey, SPHEREx, is photographing the whole sky in 102 infrared colours, and every image ' +
+      'is public. But one image is a 65-megabyte scientific file only specialists can read. Mira turns them into ' +
+      'a map of the Sun’s neighbourhood where every point is a real star at its real distance. Click one, and two ' +
+      'NASA pictures taken eleven years apart show it moving, with the path it has followed to today. No install, ' +
+      'no account, and it works on a phone.',
+    cta: { label: 'Open the map', href: viewer.home },
     image: images.motion,
   },
   {
-    id: 'lenses',
+    id: 'take-part',
     align: 'right',
-    eyebrow: 'The catalogue',
-    title: 'Verified, not just claimed',
+    eyebrow: 'Take part',
+    title: 'Help find our unknown neighbours',
     body:
-      'Sixteen years of WISE data gave 1.56 million claims of motion or change. We re-measured more than 200,000 ' +
-      'of them on raw SPHEREx exposures. About 17,600 motions pass; away from the crowded Milky Way, nearly ' +
-      'nine in ten are stars Gaia knows with the same motion, and the rest are there to examine. The lists that ' +
-      'did not survive are gone.',
-    cta: { label: 'Open the catalogue', href: viewer.catalogue },
-    image: images.starfield,
+      'The coldest worlds near the Sun give off no visible light. They are found because they move. In NASA’s ' +
+      'Backyard Worlds project, 150,000 volunteers looking for moving dots in older images have helped find about ' +
+      '3,000 of them. Mira brings that search to SPHEREx: the map holds confirmed movers that no optical ' +
+      'catalogue lists and nobody has named. Open one, look at its pictures, and say what you see.',
+    cta: { label: 'Look at one', href: viewer.takePart },
+    image: images.galaxy,
+  },
+  {
+    id: 'learn',
+    align: 'left',
+    eyebrow: 'For classrooms',
+    title: 'A telescope for every classroom',
+    body:
+      'A school needs no telescope and no dark sky. Students pick a star, measure how fast it crosses the sky on ' +
+      'NASA’s own images, and compare their number with the Gaia space observatory’s: for the brown dwarf Epsilon ' +
+      'Indi B the Lab finds 4.70 arcseconds a year, Gaia 4.68. It is free, it runs in a browser, and an assistant ' +
+      'explains each result in plain words.',
+    cta: { label: 'Measure a star', href: viewer.methane },
+    image: images.survey,
+  },
+  {
+    id: 'research',
+    align: 'right',
+    eyebrow: 'For researchers',
+    title: 'Instruments, not screenshots',
+    body:
+      'Behind the map is a working Lab: a motion detector, an astrometer, a spectrograph, a photometer and ' +
+      'detection limits, reading SPHEREx exposures straight from NASA’s archive for any field of the sky. Tested ' +
+      'blind on 459 fields, the detector found 92% of known moving stars and raised no false alarm among 5,757 ' +
+      'still ones.',
+    cta: { label: 'Open the Lab', href: viewer.lab },
+    image: images.bands,
   },
   {
     id: 'evidence',
     align: 'left',
     eyebrow: 'Our approach',
-    title: 'Evidence before discovery',
+    title: 'Verified, not just claimed',
     body:
-      'Every field is tied to Gaia with its own stars, and the scatter of those stars sets the bar for calling ' +
-      'anything moved. NASA’s pixel flags are applied to every source; blended and saturated ones are listed but ' +
-      'not judged. Each number links back to the exposures behind it, and every view has an address to share.',
+      'Sixteen years of WISE data gave 1.56 million claims of motion or change. We re-measured more than 200,000 ' +
+      'of them on raw SPHEREx exposures. About 17,600 motions pass; away from the crowded Milky Way, nearly nine ' +
+      'in ten are stars Gaia knows with the same motion. The lists that did not survive are gone, and every ' +
+      'number on the site leads back to the images behind it.',
     cta: { label: 'See the method', href: viewer.about },
     image: images.evidence,
   },
@@ -276,11 +288,12 @@ export const features: Feature[] = [
     id: 'plan',
     align: 'right',
     eyebrow: 'Sustainability',
-    title: 'Free to use, built to last',
+    title: 'Free for everyone, built to last',
     body:
-      'The browser reads NASA’s archive directly, so serving the world costs a few dollars a month. Free and open ' +
-      'for everyone; sustained by research grants and by work for archives, survey teams and universities that ' +
-      'want the same instruments on their own data.',
+      'The public paid US$488 million for SPHEREx; with Mira it can look at what it bought. The browser reads ' +
+      'NASA’s archive directly, so serving the world costs a few dollars a month. Free and open for everyone; ' +
+      'sustained by research and education grants and by work for archives and universities that want the same ' +
+      'instruments on their own data.',
     cta: { label: 'Read the plan', href: links.plan },
     image: images.stats,
   },
@@ -290,9 +303,9 @@ export const features: Feature[] = [
 export const stats: { image: SiteImage; items: Stat[] } = {
   image: images.stats,
   items: [
-    { value: 102, suffix: '', label: 'Infrared colors' },
-    { value: 27, suffix: '', label: 'Years of baseline, 1999–2026' },
-    { value: 202528, suffix: '', label: 'Claims re-measured on raw exposures' },
+    { value: 12329, suffix: '', label: 'Moving stars on the map, each confirmed on SPHEREx images' },
+    { value: 150000, suffix: '', label: 'Volunteers who searched older NASA images this way' },
+    { value: 6, suffix: ' billion', label: 'People online who can open it: no install, no account' },
   ],
 }
 
@@ -302,15 +315,16 @@ export const team: Feature = {
   eyebrow: 'NASA Space Apps Challenge 2026',
   title: 'Built for Planet X & SPHEREx',
   body:
-    'Mira is our answer to the Planet X and SPHEREx challenge: instruments anyone can point at the sky to find ' +
-    'and measure what moves in SPHEREx data, backed by a survey of sixteen years of infrared sky that was ' +
-    'checked, claim by claim, on NASA’s raw exposures.',
+    'Mira is our answer to the Planet X and SPHEREx challenge: a public tool that shows SPHEREx images of any ' +
+    'place over time so that moving objects are easy to spot, a map that makes what was found visible to ' +
+    'everyone, and a survey of sixteen years of infrared sky checked, claim by claim, on NASA’s raw exposures.',
   cta: { label: 'View the challenge', href: links.challenge },
-  image: images.galaxy,
+  image: images.starfield,
 }
 
 export const footerLinks: NavLink[] = [
-  { label: 'The Lab', href: viewer.home },
+  { label: 'The map', href: viewer.home },
+  { label: 'The Lab', href: viewer.lab },
   { label: 'Catalogue', href: viewer.catalogue },
   { label: 'Challenge', href: links.challenge },
   { label: 'IRSA archive', href: links.irsa },

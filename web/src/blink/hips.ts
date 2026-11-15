@@ -105,8 +105,6 @@ export async function pastImage(s: Survey, ra0: number, dec0: number, N: number,
   // resolution of the WISE and SPHEREx ones, so that the three epochs can be compared by eye
   return out && s.fmt === "jpg" ? smooth3(out, N) : out;
 }
-/** tile pixel size at a HiPS order, arcsec */
-const tilePix = (order: number) => 0.8052 * 2 ** (9 - order);
 /** A cutout at the survey's own sharpness: N x N pixels of `pix` arcsec centred on (ra0, dec0), north up, east left.
  *  Used where a slow mover has to be seen shifting by a few arcseconds (the map's object card). */
 export async function pastCutout(s: Survey, ra0: number, dec0: number, N: number, pix: number, signal?: AbortSignal): Promise<Float32Array | null> {
@@ -114,5 +112,5 @@ export async function pastCutout(s: Survey, ra0: number, dec0: number, N: number
   const toSky = (i: number, j: number): [number, number] => { const x = -(i - c) * sc, y = -(j - c) * sc, den = Math.cos(d0) - y * Math.sin(d0);
     return [ra0 + Math.atan2(x, den) / D, Math.atan2(Math.sin(d0) + y * Math.cos(d0), Math.hypot(x, den)) / D]; };
   const out = await sample(s, order, N, toSky, signal);
-  return out && s.fmt === "jpg" && tilePix(order) < 0.75 * pix ? smooth3(out, N) : out;
+  return out && s.fmt === "jpg" ? smooth3(out, N) : out;      // the 8-bit 2MASS tiles are always smoothed a little (0.7 pixel): it removes their block noise
 }

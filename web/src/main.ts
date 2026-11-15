@@ -53,12 +53,12 @@ ui.innerHTML = `
     <img src="/brand/mira-mark.png" width="59" height="32" alt="">
     <span>MIRA<small>Digital research observatory</small></span></a>
   <nav class="mainnav" aria-label="The observatory">
-    <button data-view="blink" title="The working environment: point at a field and measure it with the instruments">Lab</button>
-    <button data-view="cat" title="The survey: every motion claim that passed the raw-exposure test, to filter, sort and open in the Lab">Catalogue</button>
+    <button data-view="universe" title="Everything found, where it is: fly to a star, see it move in real pictures, help look at the unnamed ones">Map</button>
+    <button data-view="blink" title="Deep analysis: point at any field of the sky and measure it with the instruments">Lab</button>
+    <button data-view="cat" title="The data behind the map: every confirmed motion, to filter, sort and export">Catalogue</button>
     <button data-view="log" title="Your saved measurements, lists and notes">Cases</button>
-    <button data-view="universe" title="Where these objects are: the neighbourhood of the Sun in 3D, out to the oldest light">Universe</button>
   </nav>
-  <form class="search" id="search" role="search"><input id="q" placeholder="Measure a field: a name or coordinates" autocomplete="off" enterkeyhint="search" aria-label="Measure a field: a name or coordinates"></form>
+  <form class="search" id="search" role="search"><input id="q" placeholder="Find a star, or any position in the sky" autocomplete="off" enterkeyhint="search" aria-label="Find a star by name, or give coordinates to measure that field"></form>
   <button class="btn ghost sm" id="asstbtn" title="Ask the assistant: it reads this page and can operate the instruments">Assistant</button>
   <button class="btn ghost sm" id="aboutbtn">Method</button>
 </header>
@@ -629,7 +629,7 @@ async function setView(v: View, arg?: string) {
   document.querySelectorAll<HTMLElement>("#unimode button").forEach((b) => b.classList.toggle("on", b.dataset.m === uniMode));
   markNav();
   if (v === "universe") {
-    if (uniMode === "3d") { const sp = await ensureSpace(); if (sp && view === "universe" && uniMode === "3d") { sp.pause(false); if (arg) sp.focus(arg); } }
+    if (uniMode === "3d") { const sp = await ensureSpace(); if (sp && view === "universe" && uniMode === "3d") { sp.pause(false); if (arg && !sp.focus(arg)) toast("Not on the map: its distance is not known yet. Open it in the Lab instead."); } }
     else { space?.pause(true); await ensureAtlas(); nudge([100, 700, 1800]); }
   } else if (v === "blink") blink.resume();
   else if (v === "cat") { await ensureCatalogue(); }
@@ -643,7 +643,7 @@ async function loadBasics() {
 }
 function ensureAtlas() { return (atlasP ??= bootAtlas()); }
 /** the verified catalogue is mounted once and keeps its filters and selection */
-async function ensureCatalogue() { if (!catalogue) { const m = await import("./catalogue"); catalogue ??= m.mountCatalogue($("#catpage"), { onObserve: (t) => observe(t as BlinkTarget), toast }); } return catalogue; }
+async function ensureCatalogue() { if (!catalogue) { const m = await import("./catalogue"); catalogue ??= m.mountCatalogue($("#catpage"), { onObserve: (t) => observe(t as BlinkTarget), onMap: (id) => showUniverse("3d", id), toast }); } return catalogue; }
 /** the 3D universe starts once and is then only paused and resumed, so the camera and the selection survive a visit to another section */
 function ensureSpace(): Promise<SpaceHandle | null> {
   return (spaceP ??= (async () => {
@@ -719,6 +719,7 @@ function closeAbout() { if (!$("#about").classList.contains("open")) return; $("
 async function renderAbout() {
   await loadBasics();
   const check: [string, string][] = [
+    ["A public tool, so that moving objects are easy to spot", "The first screen is a <b>map</b> anyone can use: confirmed movers are marked, and a click shows two real pictures of the object (2MASS about 1999, WISE 2010) on a slider with its measured path to today. For the ones nobody has named, three buttons let a visitor say what they see."],
     ["Enter RA and Dec, get a series of images “like a little video”", "The <b>Lab</b> takes coordinates in any common notation, or a name. <b>Evolution</b> shows one deep image per SPHEREx visit on a time bar you steer (drag, step from date to date, choose the speed), preceded by the pictures NASA's WISE (2010) and 2MASS (~1999) took of the same field, so that 27 years pass in a few seconds and a moving object walks across the frame; <b>Exposures</b> shows every single 2-minute exposure, in time or wavelength order."],
     ["Make moving objects easy to spot", "The <b>Motion detector</b> measures every source of the field and lists the ones that moved, with their significance and whether Gaia knows them; their dated positions since 1999 are drawn on the image. <b>Follow target</b>, Gaia positions at each date and <b>Difference</b> are there for the eye."],
     ["Test on Barnard's Star, ε Indi B, WISE 0855, RW Aur, R Dra", "One click each on the Lab's start screen; results in the tables below. Typing the challenge's 2010 coordinates for WISE 0855 is recognised and followed to where it is now."],
@@ -735,7 +736,7 @@ async function renderAbout() {
   $("#about").innerHTML = `<button class="icon-btn aclose" id="aclose" aria-label="Close">✕</button>
     <div class="about-in">
     <div class="eyebrow">Method</div><h2 class="display">What MIRA measures, and how far to trust it</h2>
-    <p class="lead">MIRA is a research observatory in the browser. Its instruments read NASA's SPHEREx exposures directly from the public archive and answer one chain of questions about any field of the sky: what moved, how fast and how far away it is, what it is, whether it changed, and what could still hide there. The motivating case is the search for unknown cold bodies near the Sun ("Planet X"); the instruments work on any star, brown dwarf or variable source.</p>
+    <p class="lead">MIRA has two layers. The <b>map</b> is for everyone: the Sun's neighbourhood in 3D, where each star caught moving has a card in plain words with two real NASA pictures that show it move, and where anyone can help look at the ones nobody has named. The <b>Lab</b> is the deep analysis behind it: a research observatory in the browser whose instruments read NASA's SPHEREx exposures directly from the public archive and answer one chain of questions about any field of the sky: what moved, how fast and how far away it is, what it is, whether it changed, and what could still hide there. The motivating case is the search for unknown cold bodies near the Sun ("Planet X"); the instruments work on any star, brown dwarf or variable source.</p>
 
     <div class="eyebrow sec">How a field is measured</div>
     <ol class="steps">
@@ -860,17 +861,20 @@ async function bootAtlas() {
 async function route(initial: boolean) {
   const g = hashParams();
   if (g.has("about") || g.has("method")) { if (initial) await setView("blink"); renderAbout(); }
-  else if (g.has("catalogue") || g.has("catalog") || g.has("tour") || g.has("atlas") || g.has("map") || g.has("sky")) await setView("cat");
+  else if (g.has("catalogue") || g.has("catalog") || g.has("tour") || g.has("atlas") || g.has("sky")) await setView("cat");
   else if (g.has("cases") || g.has("log") || g.has("logbook")) await setView("log");
-  else if (g.has("space") || g.has("hood") || g.has("universe")) await showUniverse("3d");
-  else if (g.has("lab") || g.has("observe") || g.has("blink") || initial) await setView("blink");
+  else if (g.has("take-part")) { await showUniverse("3d");       // straight to an object nobody has named, once the map knows them
+    const t0 = Date.now(), iv = setInterval(() => { const btn = document.querySelector<HTMLElement>('#spfind [data-f="help"]'), n = document.querySelector("#spfn3")?.textContent ?? "";
+      if (btn && /\d/.test(n)) { clearInterval(iv); btn.click(); } else if (Date.now() - t0 > 20000) clearInterval(iv); }, 400); }
+  else if (g.has("space") || g.has("hood") || g.has("universe") || g.has("map")) await showUniverse("3d", g.get("universe") || g.get("map") || undefined);
+  else if (g.has("lab") || g.has("observe") || g.has("blink")) await setView("blink");
+  else if (initial) { await showUniverse("3d"); if (!space) await setView("blink"); }       // the map is the front door; without WebGL, the Lab is
 }
 /** fetch the code and data of the other sections while the visitor reads the first one, so that moving between
  *  sections never waits on the network: nothing is started, only downloaded */
 function preload() {
   const idle = (f: () => void, ms: number) => ((window as any).requestIdleCallback ? (window as any).requestIdleCallback(f, { timeout: ms }) : setTimeout(f, ms));
   idle(() => { import("./catalogue"); import("./logbook"); import("./assistant"); for (const f of ["meta", "objects", "changes"]) fetch(`${import.meta.env.BASE_URL}data/verified/${f}.json`).catch(() => {}); }, 1500);
-  idle(() => { if (!EMBED && !LOW_POWER) import("./space"); }, 6000);
 }
 async function boot() {
   document.querySelectorAll<HTMLButtonElement>(".mainnav button").forEach((b) => b.onclick = () => { const v = b.dataset.view as View; history.replaceState(null, "", location.pathname + location.search); if (v === "universe") showUniverse(uniMode); else setView(v); });
@@ -885,7 +889,8 @@ async function boot() {
   // one search for the whole observatory: on the sky map it flies the map there; everywhere else it points the telescope
   $("#search").onsubmit = async (e) => {
     e.preventDefault(); const inp = $("#q") as HTMLInputElement, q = inp.value.trim(); if (!q) return; endTour(); inp.blur();
-    if (inp) { inp.value = ""; observe(q); return; }
+    // on the map a name flies there; anything the map does not hold (and any coordinates) goes to the Lab to be measured
+    if (inp) { inp.value = ""; if (view === "universe" && uniMode === "3d" && space && !parseCoords(q) && space.focus(q)) return; observe(q); return; }
     const xy = parseCoords(q);
     if (xy) { flyTo(xy[0], xy[1], 0.2); setTimeout(() => openPosition(xy[0], xy[1]), 2400); return; }
     const norm = (x: string) => x.toLowerCase().replace(/\beps\b/g, "epsilon").replace(/\balf\b/g, "alpha").replace(/[^a-z0-9]/g, "");

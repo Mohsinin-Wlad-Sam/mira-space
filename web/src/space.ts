@@ -36,6 +36,7 @@ const KIND_PLAIN: Record<string, string> = { "M dwarf": "Red dwarf star", "late 
   "white dwarf": "White dwarf: the Earth-sized core a dead star leaves", subdwarf: "Old, metal-poor star from the Galaxy's halo", "L dwarf": "Brown dwarf (type L): too small to shine as a star",
   "T dwarf": "Brown dwarf (type T): cold enough for methane, like Jupiter", "Y dwarf": "Brown dwarf (type Y): the coldest kind", "brown dwarf": "Brown dwarf: too small to shine as a star",
   "methane dwarf": "Methane dwarf: cold enough for methane, like Jupiter", "red: brown dwarf?": "Cold and red: possibly a brown dwarf", "cool dwarf?": "Cool dwarf star, not yet classified", unclassified: "Not yet classified" };
+const REPO = (import.meta.env.VITE_MIRA_REPORT_URL as string | undefined) ?? "https://github.com/Mohsinin-Wlad-Sam/assrar-dawla/issues/new";
 const VOTES = "mira.votes.v1";
 const votes = (): Record<string, { v: string; t: number; name: string }> => { try { return JSON.parse(localStorage.getItem(VOTES) ?? "{}"); } catch { return {}; } };
 const CLS_COL = ["#ffe6b8", "#ff9a5a", "#d05cff", "#5cc8ff"];
@@ -48,7 +49,7 @@ export type SpaceOpts = { lowPower: boolean; focus?: string; lab?: boolean; onLa
   /** "put it under the telescope": hand a selected object to the Observe section */
   onObserve?: (t: { ra: number; dec: number; name?: string; pmra?: number; pmdec?: number; epoch?: number }) => void };
 /** close(); pause(true/false) suspends rendering while another section of the observatory is in front */
-export type SpaceHandle = (() => void) & { pause: (on: boolean) => void; focus: (nameOrId: string) => void };
+export type SpaceHandle = (() => void) & { pause: (on: boolean) => void; /** fly to an object by name or survey id; false if the map does not hold it */ focus: (nameOrId: string) => boolean };
 
 function parse(buf: ArrayBuffer): Cat {
   const n = Math.floor(buf.byteLength / 32), dv = new DataView(buf);
@@ -158,6 +159,12 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<Spa
       <h2 class="display">The sky is not still</h2>
       <p class="sp-sub" id="spsub">Loading the 3D catalogue…</p>
     </div>
+    <div class="sp-intro" id="spintro" hidden>
+      <button class="icon-btn" id="spintrox" aria-label="Hide this introduction">✕</button>
+      <b>The sky is not still.</b>
+      <p>Every point is a real star at its real distance. The orange ones were caught moving between pictures taken years apart, and each was confirmed on the images of NASA's newest sky survey, SPHEREx. Some are cold worlds no optical telescope can see.</p>
+      <div><button class="btn sm solid" id="spintro1">Show me one</button><button class="btn sm ghost" id="spintro2">Two-minute tour</button><button class="btn sm ghost" id="spintro3">Help look at one nobody has named</button></div>
+    </div>
     <aside class="sp-ctl" id="spctl">
       <div class="sp-find" id="spfind">
         <div class="eyebrow">Caught moving · confirmed on NASA's SPHEREx images</div>
@@ -174,7 +181,7 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<Spa
         <div class="eyebrow">See with</div>
         <div class="seg" id="speyes"><button data-v="ir" class="on">Infrared eyes</button><button data-v="vis">Human eyes</button></div>
         <div class="eyebrow">Colour by</div>
-        <div class="seg" id="spcol"><button data-v="temp" class="on">Temperature</button><button data-v="cls">Kind</button><button data-v="lens">Findings</button><button data-v="sig">Certainty</button></div>
+        <div class="seg" id="spcol"><button data-v="lens" class="on">Findings</button><button data-v="temp">Temperature</button><button data-v="cls">Kind</button><button data-v="sig">Certainty</button></div>
         <div class="eyebrow">Show</div><div class="sp-chips" id="spshow"></div>
         <label class="row"><span>Exposure</span><input type="range" id="spexp" min="-6" max="10" step="0.1" value="0"></label>
         <label class="row chk"><input type="checkbox" id="spgrid" checked><span>Distance rings & Galactic centre</span></label>
@@ -297,7 +304,7 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<Spa
   const names: string[] = meta?.names ?? fbNames;
   const nameOf = (i: number) => (cat!.obj[i] === 999999 && cat!.tile[i] === 65535 ? "Sun" : cat!.tile[i] === 65535 ? names[cat!.obj[i]] ?? "Nearby star" : `Census ${cat!.tile[i]}-${cat!.obj[i]}`);
 
-  const S = { time: 0, playing: false, speed: 1000, eyes: "ir", colorBy: "temp", exp: 0, show: new Set([1, 2, 4, 8, 32, 0, 100, 101, 102, 200, 300]), sel: -1, hover: -1, follow: false,
+  const S = { time: 0, playing: false, speed: 1000, eyes: "ir", colorBy: "lens", exp: 0, show: new Set([1, 2, 4, 8, 32, 0, 100, 101, 102, 200, 300]), sel: -1, hover: -1, follow: false,
     body: null as null | { kind: "planet" | "probe" | "craft" | "rock"; k: number }, followFn: null as null | (() => THREE.Vector3),
     free: false, freeSpeed: 1, yaw: 0, pitch: 0 };
   let points: THREE.Points, geom: THREE.BufferGeometry;
@@ -358,7 +365,7 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<Spa
     for (let i = 0; i < c.n; i++) {
       if (S.colorBy === "temp") tcol(c.teff[i], tmp);
       else if (S.colorBy === "cls") tmp.set(CLS_COL[c.cls[i]] ?? "#fff");
-      else if (S.colorBy === "lens") { const l = LENS.find((x) => c.lens[i] & x.bit); tmp.set(l ? l.c : "#5a6070"); }
+      else if (S.colorBy === "lens") { const l = LENS.find((x) => c.lens[i] & x.bit); if (l) tmp.set(l.c); else { tcol(c.teff[i], tmp); tmp.multiplyScalar(0.4); } }
       else { const s = Math.min(1, c.sig[i] / 0.45); tmp.setRGB(0.3 + 0.7 * s, 1 - 0.65 * s, 0.45 - 0.2 * s); if (c.src[i] !== 3) tmp.setRGB(0.55, 0.85, 1); }
       a[i * 3] = tmp.r; a[i * 3 + 1] = tmp.g; a[i * 3 + 2] = tmp.b;
     }
@@ -401,7 +408,7 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<Spa
     const L = $("#splegend");
     if (S.colorBy === "temp") L.innerHTML = `<div class="grad" style="background:linear-gradient(90deg,#b23aa0,#ff6a3c,#ffb46b,#fff3e0,#cfe0ff,#9bb5ff)"></div><div class="lt"><span>500 K</span><span>3,000 K</span><span>6,000 K</span><span>15,000 K</span></div>`;
     else if (S.colorBy === "cls") L.innerHTML = CLASSES.slice(0, 3).map((n, i) => `<span class="lg"><i style="background:${CLS_COL[i]}"></i>${n}</span>`).join("");
-    else if (S.colorBy === "lens") L.innerHTML = LENS.map((l) => `<span class="lg"><i style="background:${l.c}"></i>${l.name}</span>`).join("") + `<span class="lg"><i style="background:#5a6070"></i>Field</span>`;
+    else if (S.colorBy === "lens") L.innerHTML = LENS.map((l) => `<span class="lg"><i style="background:${l.c}"></i>${l.name}</span>`).join("") + `<span class="lg"><i style="background:#5a6070"></i>Other stars (their own colour, dimmed)</span>`;
     else L.innerHTML = `<div class="grad" style="background:linear-gradient(90deg,#8cd9ff,#4dff73,#ffd24d,#ff4d40)"></div><div class="lt"><span>parallax</span><span>AI ±5%</span><span>±20%</span><span>±45%</span></div>`;
   }
   build();
@@ -443,7 +450,17 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<Spa
     fetch(`${BASE}data/space/${meta.deep.file}`).then((r) => r.arrayBuffer()).then((b) => { cat = concat(cat!, parse(b)); build(); if (exo.hosts.length) exo.attach(cat!.n, epochPos, () => null); });
   }
 
-  fetch(`${BASE}data/verified/objects.json`).then((r) => (r.ok ? r.json() : null)).then((j) => { if (!j?.cols) return; ver = j.cols as Ver; ver.id.forEach((id, k) => verIdx.set(id, k)); build(); }).catch(() => {});
+  fetch(`${BASE}data/verified/objects.json`).then((r) => (r.ok ? r.json() : null)).then((j) => { if (!j?.cols) return; ver = j.cols as Ver; ver.id.forEach((id, k) => verIdx.set(id, k)); build(); if (S.sel >= 0) info(S.sel); }).catch(() => {});      // a card opened before the catalogue arrived is completed
+  // the introduction is shown once per visit and leaves as soon as an object is opened
+  const intro = $("#spintro"); let introSeen = false; try { introSeen = sessionStorage.getItem("mira.intro") === "1"; } catch { /* storage off */ }
+  const hideIntro = () => { intro.hidden = true; try { sessionStorage.setItem("mira.intro", "1"); } catch { /* storage off */ } };
+  intro.hidden = introSeen || !!opts.focus;
+  $("#spintrox").onclick = hideIntro;
+  $("#spintro1").onclick = () => { hideIntro(); const c = cat!, pool: number[] = [];      // a fast, cold one that Gaia cannot see: the clearest case
+    if (ver) for (let i = 0; i < c.n; i++) { const k = vi[i]; if (k >= 0 && ver.known[k] === 0 && ver.pm[k] > 1 && ver.simbad[k]) pool.push(i); }
+    const i = pool.length ? pool[Math.floor(Math.random() * pool.length)] : byId("6275-47643"); if (i >= 0) flyToStar(i); };
+  $("#spintro2").onclick = () => { hideIntro(); $("#sptour").click(); };
+  $("#spintro3").onclick = () => { hideIntro(); (host.querySelector('#spfind [data-f="help"]') as HTMLElement).click(); };
   host.querySelectorAll<HTMLButtonElement>("#spfind .sp-findbtn").forEach((b) => (b.onclick = () => {
     const f = b.dataset.f;
     if (f === "help") { const v = votes(), left = todo.filter((i) => !v[`${cat!.tile[i]}-${cat!.obj[i]}`]), from = left.length ? left : todo; if (from.length) flyToStar(from[Math.floor(Math.random() * from.length)]); return; }
@@ -582,17 +599,20 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<Spa
   let pastView: { destroy: () => void } | null = null;
   function info(i: number) {
     const c = cat!, el = $("#spinfo");
-    pastView?.destroy(); pastView = null;
+    pastView?.destroy(); pastView = null; el.classList.remove("ver");
     if (i < 0) { el.classList.remove("open"); if (exo.sysHost >= 0 && exo.star[exo.sysHost] >= 0) exo.show(-1); return; }
     const p0 = new THREE.Vector3(c.pos[i * 3], c.pos[i * 3 + 1], c.pos[i * 3 + 2]), p = cur(i), d0 = p0.length(), d = p.length();
     const v = new THREE.Vector3(c.vel[i * 3], c.vel[i * 3 + 1], c.vel[i * 3 + 2]).divideScalar(PCYR), sp = v.length(), vr = d0 > 0 ? v.dot(p0) / d0 : 0;
     const lens = LENS.filter((l) => c.lens[i] & l.bit && l.bit !== 32).map((l) => `<span style="--c:${l.c}">${l.name}</span>`).join("");
     const isSun = c.obj[i] === 999999 && c.tile[i] === 65535, vk = vi.length > i ? vi[i] : -1, V = vk >= 0 ? ver : null;
-    const T = c.teff[i];
+    const T = c.teff[i], vid = `${c.tile[i]}-${c.obj[i]}`, isTodo = !!V && V.known[vk] === 0 && !V.simbad[vk];
+    if (V) el.classList.add("ver");
+    intro.hidden = true;
     const lightLeft = EPOCH - d0 * LY;
     el.innerHTML = `<button class="icon-btn" id="spiclose">✕</button>
       <div class="eyebrow">${V ? KIND_PLAIN[V.kind[vk]] ?? V.kind[vk] : isSun ? "Our star" : whiteDwarf.has(i) ? "White dwarf" : noPhot.has(i) ? "Nearby star" : CLASSES[c.cls[i]]}${c.src[i] === 3 ? " · AI classification" : ""}</div>
       <h3 class="display">${labelText(i)}</h3>
+      ${V ? `<p class="sp-lead"><b>${fmtDist(d)}</b> from the Sun. It crosses the width of the full Moon in our sky every <b>${Math.round(1800 / Math.max(V.pm[vk], 1e-3)).toLocaleString()} years</b>${V.known[vk] === 0 ? ", and no optical catalogue lists it" : ""}.</p>` : ""}
       <div class="facts">
         <div class="fact"><b>${isSun ? "0" : fmtDist(d)}</b><span>${Math.abs(S.time) > 1 ? `distance in ${fmtYear(NOW_Y + S.time)}` : "distance now"}${c.sig[i] > 0.005 ? ` · ±${Math.round(c.sig[i] * 100)}%` : ""}</span></div>
         <div class="fact"><b>${noPhot.has(i) || !T ? "–" : whiteDwarf.has(i) && T >= 12000 ? "> 12,000 K" : T.toLocaleString() + " K"}</b><span>${noPhot.has(i) ? "no colour measured by Gaia" : whiteDwarf.has(i) ? "temperature from its colour · about the size of Earth" : `temperature${c.src[i] === 3 ? " (AI)" : ""} · ≈${(() => { const R = isSun ? 1 : radiusRsun(T, c.M[i], c.cls[i]); return R < 0.2 ? (R * 9.73).toFixed(1) + " Jupiters" : R.toFixed(R < 3 ? 2 : 0) + " Suns"; })()} wide`}</span></div>
@@ -603,8 +623,10 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<Spa
       ${exo.byStar.has(i) ? planetsHTML(exo.byStar.get(i)!) : ""}
       <p class="why">${isSun ? "Everything here moves relative to the Sun, which sits at the centre of the rings." :
         `${c.src[i] ? `Distance from ${SOURCES[c.src[i]]}.` : ""} ${d0 * LY < 3000 ? `The light reaching SPHEREx in 2025 left it around <b>${fmtYear(lightLeft)}</b>.` : ""}`}</p>
-      ${V ? `<div class="sp-ver"><b>Caught moving: ${V.pm[vk].toFixed(2)}″ per year</b>, the width of the full Moon in ${Math.round(1800 / Math.max(V.pm[vk], 1e-3)).toLocaleString()} years. Checked on ${V.n[vk]} raw SPHEREx exposures: it sits ${V.dp[vk].toFixed(1)}″ from where this motion predicts and ${V.ds[vk].toFixed(1)}″ from where it would be had it stood still. ${V.known[vk] === 1 ? "The Gaia catalogue lists the same motion." : V.known[vk] === 0 ? "The Gaia catalogue has no source here: too cold or too faint for visible light." : "The Gaia catalogue does not list this motion."}</div>
-      <div class="eyebrow">See it move · two real pictures</div><div id="sppv"></div>` : ""}
+      ${V ? `<div class="sp-ver"><b>Caught moving: ${V.pm[vk].toFixed(2)}″ per year.</b> Checked on ${V.n[vk]} raw SPHEREx exposures: it sits ${V.dp[vk].toFixed(1)}″ from where this motion predicts and ${V.ds[vk].toFixed(1)}″ from where it would be had it stood still. ${V.known[vk] === 1 ? "The Gaia catalogue lists the same motion." : V.known[vk] === 0 ? "The Gaia catalogue has no source here: too cold or too faint for visible light." : "The Gaia catalogue does not list this motion."}</div>
+      <div class="sp-pics"><div class="eyebrow">See it move · two real pictures, eleven years apart</div><div id="sppv"></div></div>
+      ${isTodo ? `<div class="sp-vote" id="spvote"><b>Take part.</b> Nobody has named or classified this object. Drag the slider above: is there a dot inside the circle in 2010, and does it follow the path?
+        <div class="sp-vbtn"><button data-v="moves">Yes, it follows</button><button data-v="unsure">I can't tell</button><button data-v="no">No dot there</button></div><small id="spvmsg"></small></div>` : ""}` : ""}
       <div class="actions">
         ${!isSun && opts.onObserve ? `<button class="btn sm solid" id="spobs" title="Read the SPHEREx exposures of this object and run the instruments on it">Deep analysis in the Lab</button>` : ""}
         <button class="btn sm${!isSun && opts.onObserve ? " ghost" : ""}" id="spfly">Fly here</button>
@@ -613,6 +635,19 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<Spa
         ${c.tile[i] !== 65535 && opts.onDossier ? `<button class="btn sm ghost" id="spdos">Evidence</button>` : ""}
       </div>`;
     el.classList.add("open");
+    const vb = el.querySelector("#spvote") as HTMLElement | null;
+    if (vb) {
+      const msg = el.querySelector("#spvmsg") as HTMLElement;
+      const show = () => { const v = votes(), mine = v[vid], seen = todo.filter((q) => v[`${c.tile[q]}-${c.obj[q]}`]).length;
+        vb.querySelectorAll<HTMLButtonElement>(".sp-vbtn button").forEach((b) => b.classList.toggle("on", mine?.v === b.dataset.v));
+        msg.innerHTML = mine ? `Saved on this device. You have looked at <b>${seen} of ${todo.length}</b>. <button class="link" id="spvnext">Next one</button> · <a class="link" id="spvsend" target="_blank" rel="noopener">Send my answers to the team</a>` : "Your answer stays on this device until you choose to send it.";
+        const nx = msg.querySelector("#spvnext") as HTMLElement | null; if (nx) nx.onclick = () => (host.querySelector('#spfind [data-f="help"]') as HTMLElement).click();
+        const sd = msg.querySelector("#spvsend") as HTMLAnchorElement | null;
+        if (sd) { const L = Object.entries(v).slice(-40).map(([id, q]) => `${id} | ${q.v} | ${q.name}`);
+          sd.href = `${REPO}?title=${encodeURIComponent(`Visitor answers on ${L.length} unnamed objects`)}&body=${encodeURIComponent(`Sent from the MIRA map. For each object: does a dot follow the measured path between the 1999 and 2010 pictures?\n\nid | answer | label\n${L.join("\n")}`)}`; } };
+      vb.querySelectorAll<HTMLButtonElement>(".sp-vbtn button").forEach((b) => (b.onclick = () => { const v = votes(); v[vid] = { v: b.dataset.v!, t: Date.now(), name: labelText(i) }; try { localStorage.setItem(VOTES, JSON.stringify(v)); } catch { /* private mode: the answer lasts for this page only */ } show(); }));
+      show();
+    }
     const pvh = el.querySelector("#sppv") as HTMLElement | null;
     if (pvh && V) pastView = mountPastView(pvh, { ra: V.ra[vk], dec: V.dec[vk], pmra: V.pmra[vk], pmdec: V.pmdec[vk], epoch: V.yr[vk] });
     if (exo.sysHost !== (exo.byStar.get(i) ?? -1)) exo.show(exo.byStar.get(i) ?? -1);
@@ -837,6 +872,7 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<Spa
     const hit = allNames.find(([n]) => n.toLowerCase() === q) ?? allNames.find(([n]) => n.toLowerCase().includes(q));
     if (hit) { stopTour(); hit[1](); ($("#spq") as HTMLInputElement).blur(); return; }
     const m = q.match(/^(\d+)-(\d+)$/); if (m) { const i = byId(q); if (i >= 0) { flyToStar(i); return; } }
+    const vk2 = ver ? ver.simbad.findIndex((n) => n.toLowerCase().includes(q)) : -1, vi2 = vk2 >= 0 ? byId(ver!.id[vk2]) : -1; if (vi2 >= 0) { stopTour(); flyToStar(vi2); return; }
     $("#sphint").textContent = `No placed object called "${q}"`;
   };
   const onKey = (e: KeyboardEvent) => {
@@ -1038,8 +1074,11 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<Spa
   }
   $("#spclose").onclick = () => { close(); (host as any).onclosed?.(); };
   const handle = close as SpaceHandle;
-  handle.focus = (f: string) => { const i = /^\d+-\d+$/.test(f) ? byId(f) : named(f); if (i >= 0) { flyToStar(i, 0.03); return; }
-    const pk = PLANETS.findIndex((q) => q.name === f); if (pk >= 0) flyToBody({ kind: "planet", k: pk }); else if (f === "Sun") flyToStar(0); };
+  handle.focus = (f: string) => { const q = f.trim().toLowerCase(); let i = /^\d+-\d+$/.test(f) ? byId(f) : named(f);
+    if (i < 0 && q.length > 2) { const hit = allNames.find(([n]) => n.toLowerCase() === q) ?? allNames.find(([n]) => n.toLowerCase().includes(q)); if (hit) { hit[1](); return true; }
+      const k = ver ? ver.simbad.findIndex((n) => n.toLowerCase().includes(q)) : -1; if (k >= 0) i = byId(ver!.id[k]); }
+    if (i >= 0) { flyToStar(i, i > 0 && vi[i] >= 0 ? undefined : 0.03); return true; }
+    const pk = PLANETS.findIndex((p2) => p2.name === f); if (pk >= 0) { flyToBody({ kind: "planet", k: pk }); return true; } if (f === "Sun") { flyToStar(0); return true; } return false; };
   handle.pause = (on: boolean) => { paused = on; cancelAnimationFrame(raf); keys.clear(); if (!on) { last = performance.now(); resize(); raf = requestAnimationFrame(loop); } };
   return handle;
 }

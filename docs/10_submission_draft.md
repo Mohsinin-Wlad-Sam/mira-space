@@ -1,38 +1,56 @@
 # 10 · Submission draft (project page, 7 slides, 30-second video)
 
-Updated 15 Nov 2026 for the instrument-based observatory. Numbers come from `web/public/data/verified/meta.json`
-(the verification funnel), `web/scripts/test_detect.mts` (field detector) and `web/public/validation.json`
-(engine validation); re-run them before submitting if the index has been refreshed.
+Updated 15 Nov 2026 (map-first, impact-first). Our own numbers come from `web/public/data/verified/meta.json` (the
+verification funnel), `detector_validation.json` (blind control run), `web/scripts/test_detect.mts` (field detector)
+and `web/public/validation.json` (engine validation); re-run them before submitting if the index has been
+refreshed. Outside figures are sourced in section "Why it matters" below.
 
 ## Project page fields
 
-**Project name:** MIRA — a research observatory in the browser
+**Project name:** MIRA — the sky is not still
 
 **High-level summary (≈150 words)**
-Planet X, if it exists, would give itself away the way Pluto did: as a faint dot that moved. NASA's SPHEREx photographs the
-whole infrared sky every six months, but never twice at the same wavelength, so simply flipping its images shows
-colour flicker, not motion. MIRA is a set of instruments that does the measuring. Type a position: your browser
-reads every SPHEREx exposure of that field from NASA's archive, builds one deep image per visit, ties it to Gaia's
-stars, compares each source with where the surveys of 2010 and 1999 saw it, and lists what moved, how surely, and
-whether anyone knew — then gives its spectrum, its brightness history and what could still hide there. A time bar
-lets you watch it happen at your own pace. Behind the instruments stands a survey of 39.9 billion WISE detections
-whose 202,528 strongest claims we re-measured on raw SPHEREx exposures: 17,604 motions pass, and away from the
-crowded Milky Way nearly nine in ten are stars Gaia already knows with the same motion — the rest are open to examine.
+NASA's SPHEREx is photographing the whole sky in 102 infrared colours, and every image is public. But one image is
+a 65-megabyte scientific file in which each pixel has a different colour: today only specialists can look at what
+the public paid for. MIRA opens it to everyone. Its front door is a map of the Sun's neighbourhood where every
+point is a real star at its real distance; the 12,329 orange ones were caught moving and confirmed, one by one, on
+SPHEREx images. Click one and two NASA pictures taken eleven years apart show it move. Some are cold worlds that no
+optical catalogue lists and nobody has named: anyone can look at them and report what they see, the way 150,000
+volunteers found about 3,000 brown dwarfs with NASA's Backyard Worlds. One click deeper is the Lab the challenge
+asks for: type any position, watch that field through time, and measure what moved, how fast and what it is.
+No install, no account, no server.
 
 **Link to project / demo:** ⟨hosted URL⟩ · repo: github.com/Mohsinin-Wlad-Sam/assrar-dawla
 
 **Project details**
 
+0. *Why it matters, and to whom.* SPHEREx cost about US$488 million (NASA/JPL press kit) and its data are public,
+   but unusable without a research pipeline. MIRA makes them usable by four groups, in this order of size:
+   - **Anyone curious** (about 6 billion people are online, ITU 2025): a map that runs in a phone browser, where
+     each star has a card in plain words and real pictures that show it moving.
+   - **Students and teachers**: a real-data lab for a classroom without a telescope. Students measure a star's
+     motion on NASA's own images and check it against ESA's Gaia (ε Indi B: 4.70 against 4.68″ per year).
+   - **Citizen scientists**: NASA's Backyard Worlds: Planet 9 showed what the public can do, with 150,000
+     volunteers helping to find about 3,000 brown dwarfs by spotting moving dots in WISE images (NASA, 13 Jan
+     2021). MIRA brings that task to SPHEREx: confirmed movers that nobody has named are one click away, with their
+     pictures and three answer buttons (prototype: answers stay on the device until the visitor sends them).
+   - **Researchers**: instruments on raw exposures for any field, a verified catalogue, exports.
+   The cost of reaching all of them is that of a static website: the browser reads NASA's archive directly.
 1. *The problem.* SPHEREx re-images the sky every six months in 102 infrared bands; nobody can look at it all.
    Existing blink tools stop at WISE. And SPHEREx is hard to blink: its pixels are 6″, it rolls between visits, and
    every exposure sees a different colour, so a constant star flickers and the eye cannot tell a mover from noise.
-2. *What we built.* **The Lab**: RA/Dec or a name in; out comes (a) **Evolution**, one deep image per visit on a
-   time bar that reaches back to 1999, steered by the user; (b) the **Motion detector**, a table of every source in
-   the field — moved, brighter, fainter, new or steady — with its significance and its Gaia identity; (c) the
+2. *What we built.* **The map** (first screen): the Sun's neighbourhood in 3D, out to the oldest light, with the
+   confirmed movers marked. A click flies to a star and opens its card: what it is in plain words, its distance,
+   how long it takes to cross a full Moon's width of sky, and two real pictures (2MASS about 1999, WISE 2010) on a
+   slider with its measured path to today. **The Lab** (deep analysis, one click from every card): RA/Dec or a
+   name in; out comes (a) **Evolution**, a time bar the user steers through three NASA pictures of the field
+   (2MASS, WISE, then one deep SPHEREx image per visit); (b) the **Motion detector**, every source of the field
+   judged moved, brighter, fainter, new or steady, with its significance and its Gaia identity; (c) the
    **Astrometer** (position against time, proper motion, parallax), **Spectrograph** (0.75–5 µm spectrum on the fly,
    methane detected automatically), **Photometer** (brightness against 1999 and 2010) and **Detection limits** (the
    planet or brown dwarf this field's depth would reveal). Field of view 3.3′–13′; Gaia and WISE overlays; NASA's
    pixel flags applied to every source; coordinates in the URL; embeddable; CSV, FITS and Python exports.
+   **The catalogue** is the table behind the map, for those who want to filter, sort and export.
 3. *How it works.* No server: a small index lists the exposures covering each patch of sky; the browser fetches the
    rows it needs from NASA's public bucket by HTTP Range (under 1 MB of a 65 MB file), registers them (TAN-SIP),
    decodes NASA's Rice-compressed flag table, and measures. Each visit is tied to Gaia with the field's own stars;
@@ -77,28 +95,30 @@ data and checked against independent references; the assistant is told to use on
 
 ## 7 slides
 
-1. **Find what moves.** The Lab's start screen. One line: "Point at a field; the instruments tell you what moved."
-2. **The problem.** A new sky every six months, 102 colours, 6″ pixels, never the same wavelength twice: flipping
-   images shows flicker, not motion.
-3. **The Lab.** ε Indi B: press play on the time bar. Three NASA pictures of the same field (2MASS 1999, WISE
-   2010, SPHEREx 2025–26) follow one another and the brown dwarf walks along its dated track; the Motion detector's
-   table says "12 sources measured, 1 moved". "Read live from NASA's archives. No server."
-4. **Instruments.** Astrometer plot (27 years, +3.99, −2.50″/yr against Gaia's +3.98, −2.47); Spectrograph with the
-   methane band; Detection limits.
-5. **Verified, not just claimed.** The funnel: 39.9 billion → 1.56 million → 202,528 → 17,604; away from the
-   Galactic plane 88% are known Gaia stars with the same motion; what failed the test is gone. Blind control run:
-   92% of known movers found without Gaia, no false alarm among 5,757 still stars.
-6. **An assistant that operates it.** One question, the Lab opens Luhman 16 and answers with the measured motion.
-7. **Built to last.** Static, free, embeddable; one script per data release; who pays (grants, verification as a
-   service, teaching); limits; team.
+1. **The sky is not still.** The map with its introduction card. One line: "NASA photographed the whole sky.
+   MIRA lets anyone see what moves in it."
+2. **The problem, for everyone.** A US$488 million mission whose public images only specialists can read: 65 MB
+   files, 102 colours, never the same wavelength twice. Six billion people online, a few thousand who can use it.
+3. **Click a star, watch it move.** The card of a brown dwarf no optical catalogue lists: two real NASA pictures,
+   eleven years apart, its path to today, "18 light-years from the Sun".
+4. **Take part.** NASA's own precedent: 150,000 volunteers, about 3,000 brown dwarfs. In MIRA: 36 confirmed movers
+   on the map that nobody has named, with pictures and three answer buttons. A classroom can do it.
+5. **One click deeper: the Lab.** ε Indi B: press play, three NASA pictures of the field follow one another and the
+   brown dwarf walks along its dated track; "12 sources measured, 1 moved"; Astrometer (+3.99, −2.49″/yr against
+   Gaia's +3.98, −2.47), Spectrograph with the methane band. "Read live from NASA's archives. No server."
+6. **Verified, not just claimed.** The funnel: 39.9 billion → 1.56 million → 202,528 → 17,604. Blind control run:
+   92% of known movers found without Gaia, no false alarm among 5,757 still stars. What failed the test is gone.
+7. **Built to last, for everyone.** Static, free, embeddable, phone-ready; one script per data release; an
+   assistant that explains and operates; who pays (grants for open science and education, work for archives and
+   universities); limits; team.
 
 ## 30-second video (storyboard)
 
 | t | Picture | Caption / voice |
 |---|---|---|
-| 0–4 s | Start screen; typing "08h55m10.83s −07d14m42.5s" | "A planet nobody has seen would give itself away one way: it moves." |
-| 4–10 s | ε Indi B: exposures stream in; the time bar dragged from 1999 to 2026, the orange track growing | "MIRA reads NASA's SPHEREx exposures and shows a field through time — at your pace." |
-| 10–16 s | Motion detector table; row 1 "moved 4.7″ per year"; Astrometer plot | "It measures every source and tells you what moved, and how surely." |
-| 16–21 s | Spectrograph with the methane band shaded | "Its spectrum says what it is: methane, a cold world." |
-| 21–26 s | Catalogue funnel, then the assistant opening Luhman 16 | "A survey checked on raw NASA data, and an assistant that works the instruments." |
+| 0–5 s | The map: stars drifting as the time slider runs; the introduction card | "The sky is not still. NASA has photographed all of it. Almost nobody can look." |
+| 5–12 s | Click "Show me one": fly to a brown dwarf; its card; the slider dragged from 1999 to 2010, the dot following the circle | "MIRA shows anyone a real star moving, in real NASA pictures." |
+| 12–17 s | "Help look at one": an unnamed object, the three answer buttons | "Some of them nobody has named. You can help look, as 150,000 volunteers did for NASA." |
+| 17–23 s | "Deep analysis": ε Indi B in the Lab, play pressed, the track growing; the Motion detector's table; the Astrometer plot | "One click deeper, instruments measure any place in the sky: what moved, how fast, what it is." |
+| 23–26 s | Catalogue funnel and the blind-test line | "Every claim checked on NASA's raw images." |
 | 26–30 s | Logo + URL | "MIRA. Find what moves." |

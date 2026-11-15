@@ -45,12 +45,28 @@ export function rockAt(r: Rock, jd: number): [number, number, number] {
 export function rockSize(r: Rock) {   // km; from H with a typical albedo 0.14 when no measured diameter
   return r.diameter_km ?? (r.H !== null ? 1329 / Math.sqrt(0.14) * Math.pow(10, -r.H / 5) : null);
 }
-/** DONKI CME analyses of the last `days` days: browser-direct (CORS-enabled), falling back to the hourly static copy */
+/** NASA's open API allows few calls per hour from one address with the public demo key. The site's own hourly copy is
+ *  used while it is fresh; otherwise one call is made and its answer kept for three hours in this browser, and after a
+ *  refusal (HTTP 429) no further call is tried for an hour. */
+const FRESH = 3 * 3600e3;
+const liveIsFresh = (L: any) => !!L?.updated && Date.now() - Date.parse(L.updated) < FRESH;
+async function nasaJson(key: string, url: string): Promise<any | null> {
+  try { const c = JSON.parse(localStorage.getItem(key) ?? "null"); if (c && Date.now() - c.t < FRESH && c.u === url) return c.v; } catch { /* storage off */ }
+  try { if (+(localStorage.getItem("mira.nasa429") ?? 0) > Date.now() - 3600e3) return null; } catch { /* storage off */ }
+  try {
+    const r = await fetch(url);
+    if (r.status === 429) { try { localStorage.setItem("mira.nasa429", String(Date.now())); } catch { /* storage off */ } return null; }
+    if (!r.ok) return null;
+    const v = await r.json(); try { localStorage.setItem(key, JSON.stringify({ t: Date.now(), u: url, v })); } catch { /* quota */ }
+    return v;
+  } catch { return null; }
+}
+/** DONKI CME analyses of the last `days` days: the hourly static copy when fresh, else browser-direct (CORS-enabled) */
 export async function loadCMEs(days = 10): Promise<CME[]> {
   const end = new Date(), start = new Date(end.getTime() - days * 864e5), f = (d: Date) => d.toISOString().slice(0, 10);
-  let j: any = null;
-  try { const r = await fetch(`https://api.nasa.gov/DONKI/CMEAnalysis?startDate=${f(start)}&endDate=${f(end)}&mostAccurateOnly=true&api_key=${NASA_KEY}`); if (r.ok) j = await r.json(); } catch { /* rate-limited or offline */ }
-  if (!Array.isArray(j) || !j.length) j = ((await loadLive()) as any)?.cmes ?? [];
+  const L = (await loadLive()) as any; let j: any = liveIsFresh(L) && L.cmes?.length ? L.cmes : null;
+  if (!j) j = await nasaJson("mira.donki", `https://api.nasa.gov/DONKI/CMEAnalysis?startDate=${f(start)}&endDate=${f(end)}&mostAccurateOnly=true&api_key=${NASA_KEY}`);
+  if (!Array.isArray(j) || !j.length) j = L?.cmes ?? [];
   try {
     return (j as any[]).filter((c) => c.speed && c.time21_5 && c.latitude !== null && c.longitude !== null).map((c) => ({
       id: c.associatedCMEID, t21: Date.parse(c.time21_5), speed: c.speed, lat: c.latitude, lon: c.longitude, half: c.halfAngle ?? 30, type: c.type, link: c.associatedCMELink, note: c.note ?? "" }));
@@ -58,10 +74,10 @@ export async function loadCMEs(days = 10): Promise<CME[]> {
 }
 /** NeoWs: how many asteroids pass Earth today */
 export async function neoToday(): Promise<{ n: number; hazardous: number; closest?: { name: string; ld: number } } | null> {
-  const d = new Date().toISOString().slice(0, 10);
+  const d = new Date().toISOString().slice(0, 10), S0 = (await loadLive()) as any;
+  if (liveIsFresh(S0) && S0.neo_today) return { n: S0.neo_today.n, hazardous: S0.neo_today.hazardous, closest: S0.neo_today.closest ?? undefined };
   try {
-    const r = await fetch(`https://api.nasa.gov/neo/rest/v1/feed?start_date=${d}&end_date=${d}&api_key=${NASA_KEY}`); if (!r.ok) throw new Error("rate limited");
-    const j = await r.json();
+    const j = await nasaJson("mira.neo", `https://api.nasa.gov/neo/rest/v1/feed?start_date=${d}&end_date=${d}&api_key=${NASA_KEY}`); if (!j) throw new Error("rate limited");
     const L = (j.near_earth_objects?.[d] ?? []) as any[];
     const c = L.map((o) => ({ name: o.name, ld: +o.close_approach_data?.[0]?.miss_distance?.lunar })).sort((a, b) => a.ld - b.ld)[0];
     return { n: L.length, hazardous: L.filter((o) => o.is_potentially_hazardous_asteroid).length, closest: c };

@@ -1,9 +1,19 @@
-# 13 · Business plan — MIRA, a research observatory that runs in the browser
+# 13 · Business plan — MIRA, the moving sky opened to everyone
 
-**In one sentence.** MIRA gives anyone research-grade measurements from a NASA space telescope's public archive —
-what moved in a field, how fast, how far, what it is — without telescope time, software or a server; it is free to
-the public because serving it costs almost nothing, and it is paid for by grants and by institutions that want the
-same instruments, or the same verification run, on their own data.
+**In one sentence.** MIRA lets anyone with a browser see what moves in the sky NASA's SPHEREx is photographing, and
+gives those who want to go deeper research-grade measurements from the same public archive, without telescope
+time, software or a server; it is free to the public because serving it costs almost nothing, and it is paid for by
+open-science and education grants and by institutions that want the same instruments, or the same verification
+run, on their own data.
+
+**Impact, before money.** The return on a public mission of about US$488 million [12] is measured in how many
+people can use its data. Today that is a few thousand specialists. MIRA widens it in three steps, each with an
+existing proof that the audience is there: the curious public (about 6 billion people are online [13], and the map
+runs on a phone); classrooms without a telescope (online-observatory memberships are already sold to schools,
+section 1); and citizen scientists (150,000 volunteers helped NASA find about 3,000 brown dwarfs by spotting
+moving dots in older images [1]). What we will count after launch: visitors who open an object's card, answers
+sent on unnamed objects and how many of those objects several visitors agree on, classrooms that complete the
+"measure a star" exercise, and fields measured in the Lab.
 
 **Positioning.** *MIRA turns public SPHEREx exposures into measured, shareable evidence about any source: an
 instrument bench in the browser and a survey verified on raw NASA data.* Planet X — an unknown cold body near the
@@ -173,6 +183,10 @@ no personal data.
     and dates; the range is quoted).
 11. B612 Foundation, *Asteroid Institute and Google Cloud identify 27,500 new asteroids*, press release, 30 April
     2024 (candidates, pending confirmation; THOR algorithm on the ADAM platform).
+12. NASA/JPL, SPHEREx press kit, quick facts: lifecycle cost of about US$488 million,
+    https://www.jpl.nasa.gov/press-kits/spherex/quick-facts/
+13. ITU, *Facts and Figures 2025* (17 November 2025): about 6 billion people online, 74% of the world,
+    https://www.itu.int/en/mediacentre/Pages/PR-2025-11-17-facts-and-figures.aspx
 
 *Prices and figures from other organisations were read from their public pages in November 2026 and may change;
 where pages disagreed the range is given. Budgets and milestones are our own estimates.*

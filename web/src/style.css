@@ -786,3 +786,16 @@ body.asst-on .blinkpage, body.asst-on .catpage, body.asst-on .logpage { right: m
 .pv-ctl { display: flex; align-items: center; gap: 8px; margin-top: 8px; } .pv-ctl .icon-btn { position: static; width: 32px; height: 32px; flex: none; } .pv-range { flex: 1; min-width: 0; } .pv-yr { min-width: 40px; text-align: right; }
 .pv-stops { display: flex; gap: 6px; margin-top: 6px; } .pv-stops button { flex: 1; padding: 5px 4px; font-size: 11px; font-family: var(--mono); background: none; color: var(--white); border: .8px solid var(--line); border-radius: var(--radius); cursor: pointer; }
 .pv-stops button.on { background: var(--white); color: #000; } .pv-note { font-size: 11px; opacity: .7; line-height: 1.45; margin: 8px 0 0; }
+
+.sp-info .eyebrow { padding-right: 34px; }
+.sp-info.ver { display: flex; flex-direction: column; width: 372px; max-height: calc(100vh - 200px); }
+.sp-info.ver > * { order: 6; flex: none; } .sp-info.ver > .eyebrow, .sp-info.ver > h3, .sp-info.ver > .icon-btn { order: 0; }
+.sp-info.ver > .sp-lead { order: 1; } .sp-info.ver > .sp-pics { order: 2; } .sp-info.ver > .sp-vote { order: 3; } .sp-info.ver > .sp-ver { order: 4; } .sp-info.ver > .facts { order: 5; } .sp-info.ver > .actions { order: 9; }
+.sp-lead { font-size: 15px; line-height: 1.5; margin: 0 0 12px; } .sp-lead b { color: #ff9d4d; }
+.sp-vote { margin: 4px 0 12px; padding: 10px 12px; border: .8px solid #7df0a6; border-radius: var(--radius); font-size: 13px; line-height: 1.5; }
+.sp-vbtn { display: flex; gap: 6px; margin: 8px 0 6px; flex-wrap: wrap; } .sp-vbtn button { flex: 1 1 auto; padding: 7px 8px; font-size: 12px; background: none; color: var(--white); border: .8px solid var(--line); border-radius: var(--radius); cursor: pointer; }
+.sp-vbtn button.on { background: #7df0a6; color: #000; border-color: #7df0a6; } .sp-vote small { display: block; opacity: .8; font-size: 11.5px; } .sp-vote .link { color: inherit; text-decoration: underline; background: none; border: 0; padding: 0; cursor: pointer; font: inherit; }
+.sp-intro { position: absolute; z-index: 5; top: 92px; left: 50%; transform: translateX(-50%); width: min(600px, calc(100vw - 700px)); min-width: 320px; padding: 16px 44px 16px 18px; background: var(--glass2); border: .8px solid var(--hair); border-radius: var(--radius); }
+.sp-intro[hidden] { display: none; } .sp-intro > b { font-family: var(--display, inherit); font-size: 22px; text-transform: uppercase; letter-spacing: .02em; }
+.sp-intro p { margin: 6px 0 12px; font-size: 14px; line-height: 1.5; color: var(--dim); } .sp-intro > div { display: flex; gap: 8px; flex-wrap: wrap; } .sp-intro .icon-btn { position: absolute; top: 10px; right: 10px; width: 28px; height: 28px; }
+@media (max-width: 900px) { .sp-intro { top: 64px; left: 10px; right: 10px; transform: none; width: auto; min-width: 0; padding: 12px 40px 12px 14px; } .sp-intro p { font-size: 13px; } .sp-info.ver { width: auto; max-height: 70vh; } }

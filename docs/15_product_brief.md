@@ -1,6 +1,22 @@
-# MIRA — product brief (v5, 15 Nov 2026)
+# MIRA — product brief (v6, 15 Nov 2026)
 
 *NASA Space Apps 2026 · challenge "Planet X and SPHEREx" · working document for reviewers*
+
+## 0. Who it is for, and why it matters
+
+NASA's SPHEREx cost about US$488 million (NASA/JPL press kit) and its images are public, but one image is a 65 MB
+scientific file that only specialists can read. MIRA's first job is to open it to everyone; its second, to give
+those who want to go deeper real instruments. In order of audience size:
+
+| Who | What they get | Evidence that it matters |
+|---|---|---|
+| Anyone curious, on a phone | A map of the Sun's neighbourhood; each star a card in plain words with two real NASA pictures that show it moving | About 6 billion people are online (ITU, Facts and Figures 2025); the site needs no install, account or server |
+| Students and teachers | A real-data lab without a telescope: measure a star's motion and check it against Gaia | ε Indi B: 4.70 against Gaia's 4.68″ per year, on NASA's own images |
+| Citizen scientists | Confirmed movers nobody has named, with pictures and answer buttons (prototype) | NASA's Backyard Worlds: Planet 9: 150,000 volunteers helped find about 3,000 brown dwarfs by spotting moving dots in WISE images (NASA/JPL, 13 Jan 2021) |
+| Researchers | The Lab's instruments on raw exposures for any field; a verified catalogue; exports | Blind control run: 92% of known movers found, no false alarm among 5,757 still stars |
+
+The interface follows that order: the **map** is the first screen and shows results as pictures and cards; the
+**Lab** and the **Catalogue** table are the deep-analysis pages, one click from every card.
 
 ## 1. One question
 
@@ -25,6 +41,7 @@ on an HPC cluster. Every instrument serves the chain *find → measure → ident
 
 | Instrument | Question it answers | Output |
 |---|---|---|
+| Map (first screen) | What is out there, and what moved? | 3D neighbourhood of the Sun with the confirmed movers marked; a card per object with two real pictures (1999, 2010) and its path; answer buttons for the unnamed ones |
 | Finder (sky chart + verified catalogue) | Where should I point? | target or field |
 | Epoch imager | What does this field look like through time? | three NASA pictures of the same field on one time bar: 2MASS (~1999), WISE (2010), one deep SPHEREx image per visit (2025–26); playback control |
 | Motion detector | Which sources in this field moved? | table: motion, significance, known/unknown; vectors on the image |
@@ -109,7 +126,7 @@ The catalogue the app shows is the **verified** one, with the counts above state
 - Verification is restart-safe and incremental (`web/scripts/verify_census.mts`), so each release re-tests open claims.
 - User data stays in the browser (cases, notes), exportable as JSON/CSV/FITS; nothing is uploaded.
 
-## 6. Who it is for, and money
+## 6. Who pays
 
 Free public tool (NASA data, near-zero marginal cost: the browser reads NASA's bucket). Institutions pay for what
 they already buy elsewhere at a price: measurements on their own terms. Grants first (open-science programmes with a
