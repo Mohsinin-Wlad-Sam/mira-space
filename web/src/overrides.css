@@ -1,10 +1,22 @@
 /* Small fixes to the observatory (/explore/) kept in their own file, loaded from explore/index.html,
    so they never collide with ongoing edits to style.css, shell.css or blink/*.css. */
 
-/* The Lab page scrolls on short screens, but shows no scrollbar (its content usually overflows by a few pixels only). */
-#blinkpage {
-  scrollbar-width: none;
+/* No visible scrollbars anywhere in the observatory: the Lab, the Sky map's highlights and place card, the
+   Catalogue, every panel. Everything still scrolls with the wheel, trackpad, touch and keys. !important because
+   some panels ask for a thin scrollbar on purpose (e.g. .mx-body in shell.css), and those rules would win. */
+* {
+  scrollbar-width: none !important;
 }
-#blinkpage::-webkit-scrollbar {
-  display: none;
+*::-webkit-scrollbar {
+  display: none !important;
+}
+
+/* "Method" in the More menu while the Method page is open: an older rule for the header pill (#aboutbtn.on in
+   style.css) paints it solid white, and the menu's white title and caption then vanish on it. In the menu it is
+   marked like the menu's own highlight instead, with a bar for the page that is open. */
+.more-menu #aboutbtn.on {
+  background: rgb(240 240 250 / 0.1);
+  border-color: transparent;
+  color: var(--white);
+  box-shadow: inset 2px 0 0 var(--white);
 }
