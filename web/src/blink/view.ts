@@ -23,7 +23,7 @@ export type BlinkTarget = Target & { plx?: number; otype?: string; sptype?: stri
 /** what "Save to logbook" hands over */
 export type Snapshot = { target: BlinkTarget; center: [number, number]; size: number; frames: number; covered: number; lastMjd: number; thumb: string; url: string;
   answers: Record<"move" | "change" | "made", { chip: string; text: string }> | null };
-export type BlinkOpts = { embed?: boolean; toast?: (m: string) => void; onState?: (p: URLSearchParams) => void; onAtlas?: (ra: number, dec: number) => void; onSave?: (s: Snapshot) => void };
+export type BlinkOpts = { /** ask the assistant to explain what an instrument shows */ onExplain?: (question: string) => void; embed?: boolean; toast?: (m: string) => void; onState?: (p: URLSearchParams) => void; onAtlas?: (ra: number, dec: number) => void; onSave?: (s: Snapshot) => void };
 type Mode = "evolve" | "time" | "lambda" | "stack" | "rgb" | "diff";
 type Tab = "changes" | "motion" | "spectrum" | "light" | "limits" | "frames" | "export";
 const TABS: [Tab, string, string][] = [["changes", "Motion detector", "Which sources in this field moved or changed"], ["motion", "Astrometer", "Position against time: proper motion, parallax, distance"],
@@ -128,6 +128,7 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
           <button data-v="mask" title="Paint the pixels NASA flags as unreliable in this exposure (M)">NASA flags</button>
           <button class="more" id="bk-morebtn" aria-expanded="false">More</button>
         </div>
+        <div class="bk-det6" id="bk-det6" hidden></div>
         <div class="bk-more" id="bk-more" hidden>
           <div class="bk-row"><span class="eyebrow">Order frames by</span><div class="seg" id="bk-order"><button data-o="time">Time</button><button data-o="lambda" title="From blue to red light: the movie becomes the object's spectrum">Colour</button></div></div>
           <div class="bk-row"><span class="eyebrow">Detectors</span><div class="bk-dets" id="bk-dets" title="Which of SPHEREx's six detectors to use (shift-click: only this one)">${DETECTORS.map((d) => `<button data-d="${d.det}" style="--c:${detColor(d.det)}" title="Detector ${d.det}: ${d.lo}–${d.hi} µm"><i></i>${d.lo.toFixed(d.lo < 1 ? 2 : 1)}–${d.hi.toFixed(1)}</button>`).join("")}</div></div>
@@ -141,7 +142,7 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
       </section>
       <aside class="bk-side">
         <div class="bk-srcbar" id="bk-readouts"></div>
-        <div class="bk-tabs" id="bk-tabs" role="tablist">${TABS.map(([k, t, tip]) => `<button role="tab" data-t="${k}" title="${tip}">${t}</button>`).join("")}<button class="bk-help" id="bk-help" title="Show or hide the explanations" aria-label="Show or hide the explanations">?</button></div>
+        <div class="bk-tabs" id="bk-tabs" role="tablist">${TABS.map(([k, t, tip]) => `<button role="tab" data-t="${k}" title="${tip}">${t}</button>`).join("")}${opts.onExplain ? `<button class="bk-explain" id="bk-explain" title="Ask the assistant to explain this panel in everyday words">Explain it to me</button>` : ""}<button class="bk-help" id="bk-help" title="Show or hide the explanations" aria-label="Show or hide the explanations">?</button></div>
         <div class="bk-panel" id="bk-panel"></div>
       </aside>
     </div>
@@ -523,6 +524,24 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
     const key = `${mode}|${detsKey()}|${view.track}|${frames.length}|${excluded.size}`;
     if (key !== itemsKey) { const curKey = items[idx]?.key; items = buildItems(); itemsKey = key; const k = items.findIndex((i) => i.key === curKey); idx = k >= 0 ? k : Math.min(idx, Math.max(0, items.length - 1)); }
     paint(); syncControls(); tick(); if (building) renderData();
+    clearTimeout(det6Timer); det6Timer = window.setTimeout(renderDet6, building ? 1200 : 150);       // the six co-adds follow, without holding the picture up
+  }
+  /** SPHEREx has six detector arrays, each for one stretch of wavelengths. All the exposures of one detector are added
+   *  into one deeper picture (noise falls as the square root of their number): six pictures of the field, from 0.75 to
+   *  5 µm. A cold object shows up only in the last ones. Clicking one uses that detector alone in the main picture. */
+  let det6Key = "", det6Timer = 0;
+  function renderDet6() {
+    const el = $("#bk-det6"), fs = live(); if (building || fs.length < 6) { el.hidden = true; det6Key = ""; return; }
+    const key = `${fs.length}|${excluded.size}|${N}|${[...dets].join("")}`; if (key === det6Key) return; det6Key = key; el.hidden = false;
+    el.innerHTML = `<div class="eyebrow">Six detectors, each added up on its own · 0.75 to 5 µm · click one to use it alone</div><div class="bk-det6row">${DETECTORS.map((d) => { const n = fs.filter((f) => f.det === d.det).length;
+      return `<button data-d="${d.det}" class="${dets.size === 1 && dets.has(d.det) ? "on" : ""}" title="Detector ${d.det}: ${n} exposures at ${d.lo}–${d.hi} µm added together${n > 1 ? `; noise about ${Math.sqrt(n).toFixed(1)} times lower than in one exposure` : ""}"><canvas width="${N}" height="${N}"></canvas><b style="color:${detColor(d.det)}">${d.lo.toFixed(d.lo < 1 ? 2 : 1)}–${d.hi.toFixed(1)} µm</b><small>${n} exp.</small></button>`; }).join("")}</div>`;
+    el.querySelectorAll<HTMLButtonElement>("button[data-d]").forEach((b) => {
+      const d = +b.dataset.d!, L = fs.filter((f) => f.det === d), cvs = b.querySelector("canvas") as HTMLCanvasElement, c2 = cvs.getContext("2d")!;
+      if (L.length) { const img = robustStack(L.map((f) => f.img), N * N), [lo, hi] = levels(img, view.pct), id = new ImageData(N, N), px = id.data;
+        for (let k = 0; k < N * N; k++) { const v = Number.isFinite(img[k]) ? 255 * asinhT(img[k], lo, hi) : 16; px[k * 4] = px[k * 4 + 1] = px[k * 4 + 2] = v; px[k * 4 + 3] = 255; }
+        c2.putImageData(id, 0, 0); } else { c2.fillStyle = "#0a0a0e"; c2.fillRect(0, 0, N, N); }
+      b.onclick = () => { dets = dets.size === 1 && dets.has(d) ? new Set(DETECTORS.map((q) => q.det)) : new Set([d]); idx = 0; det6Key = ""; refresh(); analyze(); detectSoon(); };
+    });
   }
   function tick() {
     clearTimeout(timer); cancelAnimationFrame(evo.raf);
@@ -934,6 +953,11 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
   $("#bk-morebtn").onclick = () => { const m = $("#bk-more"); m.hidden = !m.hidden; $("#bk-morebtn").setAttribute("aria-expanded", String(!m.hidden)); $("#bk-morebtn").classList.toggle("on", !m.hidden); };
   ($("#bk-cmap") as HTMLSelectElement).onchange = (e) => { view.cmap = (e.target as HTMLSelectElement).value; paint(); syncControls(); };
   host.querySelectorAll<HTMLButtonElement>("#bk-tabs button[data-t]").forEach((b) => (b.onclick = () => { tab = b.dataset.t as Tab; syncControls(); renderReadouts(); renderPanel(); paint(); }));
+  const ASK: Record<Tab, string> = { changes: "Explain in everyday words what the Motion detector found in this field: what moved, how we know, and what the other rows mean.",
+    motion: "Explain the Astrometer's result for the selected source in everyday words: how fast it moves, how far away it is, and how sure that is.",
+    spectrum: "Explain the Spectrograph's result for the selected source in everyday words: what its light says it is.", light: "Explain the Photometer's result in everyday words: did its brightness change, and how do we know?",
+    limits: "Explain the Detection limits in everyday words: what could still hide in this field, and what could not.", frames: "Explain what this list of exposures is and what NASA's flags mean.", export: "Explain what I can take away from this panel and what each file is for." };
+  const exb = host.querySelector("#bk-explain") as HTMLElement | null; if (exb) exb.onclick = () => opts.onExplain!(ASK[tab]);
   $("#bk-help").onclick = () => { explain = !explain; try { localStorage.setItem("mira.explain", explain ? "1" : "0"); } catch { /* private mode */ } syncControls(); };
   const sv = host.querySelector<HTMLButtonElement>("#bk-save");
   if (sv) sv.onclick = () => { if (!frames.length) return; opts.onSave?.(snapshot()); sv.textContent = "Saved ✓"; setTimeout(() => (sv.textContent = "Save as a case"), 1800); };

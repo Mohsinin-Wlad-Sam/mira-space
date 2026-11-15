@@ -28,13 +28,45 @@ No server, no sign-up, no telescope time: the browser reads NASA's archive direc
 few dollars a month. The motivating problem is Planet X: an unknown cold body near the Sun shows itself only by
 moving against the stars. The same tools serve any star, brown dwarf or variable source.
 
+## Questions we expect
+
+- **Who is it for?** Everyone first. The front door is a map with pictures and plain words, and an assistant that
+  explains any card or panel on request; students measure a star themselves; researchers get instruments and a
+  verified catalogue. The order of the screens follows that order.
+- **Is it only a visualisation?** No. The pictures are the way in; behind them the Lab produces numbers with errors
+  (a motion, a parallax, a spectrum, a detection limit), checked against ESA's Gaia, and the catalogue is the result
+  of re-measuring 202,528 claims on raw exposures. What a researcher saves is the pipeline, not the plotting.
+- **Does it need a powerful computer or a cluster?** No. A visitor needs a browser: a card's pictures are a few
+  megabytes, a Lab field 30–60 MB read from NASA in 10–20 s, and the measuring takes a fraction of a second, on a
+  laptop or a phone. Hosting is plain files. A university cluster was used once, to search sixteen years of WISE
+  data and to re-check 202,528 claims in 50 minutes. The same check runs on a laptop at about one object per
+  second (measured: 24 objects in 25 s, 6 s of CPU; the rest is network), so a thousand candidates take under
+  twenty minutes.
+- **Is it easy to understand?** Each result is first a sentence ("it crosses the width of the full Moon every 575
+  years"), then a picture, then the number; every mark on a picture has a legend; "Explain it to me" is on every
+  card and every Lab panel.
+
+## The challenge's tips, one by one
+
+| Tip | Where it is done |
+|---|---|
+| Easy to update with new data releases | Pixels are never copied: the browser reads NASA's archive. One script rebuilds the small exposure index after a release (`deploy/update_spherex.sh`); the whole-sky map reads NASA's SPHEREx all-sky cube live; `census/build_sky_backdrop.py` refreshes the 3D map's sky |
+| The 102 bands, creatively; co-add per detector | Lab: six pictures under the image, one per detector array, each the sum of all its exposures; Colour view; whole-sky map: a slider through all 102 wavelengths; 3D map: SPHEREx sky in three colours |
+| Spectra on the fly | Lab → Spectrograph, for any source of the field, with molecular bands and automatic methane detection |
+| Add or subtract images taken at different times | Lab → Evolution (adds each visit's exposures; one time bar with 2MASS and WISE) and Difference (later visit minus first); any exposure can be left out |
+| Choose the field of view | Lab: 3.3′, 6.6′, 9.8′, 13.1′, with the download size shown first |
+| Overlay Gaia or WISE | Lab toggles (Gaia at each date, WISE 2010); Astrometer and Photometer plots; Gaia over real tiles in the closer look |
+| Coordinates in the URL; embeddable | `/explore/?ra=…&dec=…&fov=…`, `?target=name`, `&embed=1`; maps: `#universe=<id>`, `#sky=<id>` |
+| Metadata such as contamination flags | Lab: NASA's per-pixel flags applied to every source, paintable on the image, listed per exposure |
+| Astropy and Aladin | Survey, index and verification built with Astropy and the browser engine checked against it; the closer look uses CDS's Aladin Lite on real HiPS tiles |
+
 *MIRA was called **SKYLENS** during development; older docs, HPC paths (`~/skylens`) and some identifiers keep that name.*
 
 ## What it is
 
 | Section | What you do there | Built from |
 |---|---|---|
-| **Map** (`/explore/`, first screen) | The Sun's neighbourhood in 3D, out to the oldest light. Confirmed movers are marked; a click flies to one and opens its card: plain-language kind, distance, three real pictures (2MASS ~1999, WISE 2010, and SPHEREx's own, read from NASA's archive on demand) on a slider with its measured path, what was checked on SPHEREx, and, for the unnamed ones, three answer buttons to take part. | 3D catalogue from the survey (`census/export_space.py`), joined to the verified catalogue; pictures from IRSA's HiPS tiles of 2MASS and WISE |
+| **Map** (`/explore/`, first screen) | Two maps of the same findings. **Around the Sun (3D):** the Sun's neighbourhood out to the oldest light; the sky behind it is NASA's own SPHEREx all-sky picture (three of its 102 colours). **The whole sky:** a flat map that pans and zooms like any map; three NASA all-sky pictures fade into one another by year (2MASS ~1999, WISE 2010, SPHEREx 2025–26) and a slider goes through SPHEREx's 102 wavelengths, read live from NASA; any place can be sent to the Lab or looked at closely with Aladin. On both, a confirmed mover opens a film-style card tied to it by a target ring and a line: plain-language kind, distance, three real pictures (2MASS, WISE, SPHEREx) that play once and can be scrubbed, what was checked on SPHEREx, "Explain it to me", and, where the object is in no reference database, three answer buttons. | 3D catalogue from the survey (`census/export_space.py`) joined to the verified catalogue; SPHEREx all-sky cube, 2MASS and WISE HiPS tiles from IRSA (`census/build_sky_backdrop.py`, `web/src/skymap.ts`, `web/src/blink/hips.ts`); Aladin Lite (CDS) |
 | **Lab** (`/explore/#lab`) | Deep analysis. One field, six instruments: **Evolution** (one time bar you steer through three NASA pictures of the same field: 2MASS ~1999, WISE 2010, then one deep SPHEREx image per visit, so a mover walks across the frame), **Motion detector** (every source: moved / brighter / fainter / new / steady, with significance and its Gaia identity), **Astrometer** (position against time, proper motion, parallax), **Spectrograph** (0.75–5 µm spectrum, molecular bands, methane), **Photometer** (brightness against 1999 and 2010, and visit to visit), **Detection limits** (which planet or brown dwarf the field's depth would reveal). Plus every exposure with NASA's flags, and exports (CSV, FITS cube, Python, link, embed). | SPHEREx Level-2 exposures read by HTTP Range from `s3://nasa-irsa-spherex`; Gaia DR3, AllWISE, 2MASS from CDS mirrors |
 | **Catalogue** (`#catalogue`) | The survey, verified: filter and sort the confirmed movers, see them on a reduced proper-motion diagram and an all-sky chart, read the evidence for each, open it in the Lab | 39.9 billion WISE detections linked on a cluster, each claim re-measured on raw SPHEREx exposures |
 | **Cases** (`#cases`) | Your saved measurements, notes, target lists, exports; the survey's candidates with their verification | browser storage only |

@@ -44,8 +44,11 @@ No install, no account, no server.
 1. *The problem.* SPHEREx re-images the sky every six months in 102 infrared bands; nobody can look at it all.
    Existing blink tools stop at WISE. And SPHEREx is hard to blink: its pixels are 6″, it rolls between visits, and
    every exposure sees a different colour, so a constant star flickers and the eye cannot tell a mover from noise.
-2. *What we built.* **The map** (first screen): the Sun's neighbourhood in 3D, out to the oldest light, with the
-   confirmed movers marked. A click flies to a star and opens its card: what it is in plain words, its distance,
+2. *What we built.* **The map** (first screen), in two modes that share everything: *Around the Sun*, the Sun's
+   neighbourhood in 3D out to the oldest light, whose sky is NASA's own SPHEREx all-sky picture; and *The whole
+   sky*, a flat map that pans and zooms like any map, where three NASA all-sky pictures fade into one another by
+   year (2MASS, WISE, SPHEREx) and a slider goes through SPHEREx's 102 wavelengths, read live from NASA. The
+   confirmed movers are marked on both. A click opens a film-style card tied to the object by a target ring: what it is in plain words, its distance,
    how long it takes to cross a full Moon's width of sky, and three real pictures (2MASS about 1999, WISE 2010, and SPHEREx's own, read from NASA's archive on demand) on a
    slider with its measured path to today. **The Lab** (deep analysis, one click from every card): RA/Dec or a
    name in; out comes (a) **Evolution**, a time bar the user steers through three NASA pictures of the field
@@ -79,7 +82,19 @@ No install, no account, no server.
    slower ones rest on the 2010 and 1999 positions. Planet Nine as proposed is below SPHEREx's depth: the limits
    panel says what each field excludes. Catalogue rows are confirmed motions, not discoveries.
 
-**NASA data:** SPHEREx Level-2 spectral images (NASA/IPAC IRSA, public cloud bucket); unWISE time-domain catalogue,
+**Questions we expect, and our answers**
+
+- *Too niche?* The first screen is for everyone: pictures, plain sentences, an assistant that explains on request.
+  Researchers are the fourth audience, not the first.
+- *Only a visualisation?* The pictures are the way in. Behind them are measurements with errors, checked against
+  Gaia, and a catalogue made by re-measuring 202,528 claims on raw exposures.
+- *Does it need a cluster?* No. A visitor needs a browser (a Lab field is 30–60 MB and 10–20 s; the measuring
+  takes a fraction of a second on a laptop or phone). The cluster was used once for the survey; the verification
+  itself runs on a laptop at about one object per second.
+- *Explainable?* Sentence first, then picture, then number; a legend for every mark; "Explain it to me" on every
+  card and every Lab panel.
+
+**NASA data:** SPHEREx Level-2 spectral images and the SPHEREx all-sky cube (NASA/IPAC IRSA); unWISE time-domain catalogue,
 AllWISE, CatWISE2020 (NASA WISE/NEOWISE); 2MASS; JPL Horizons, NASA Exoplanet Archive (3D view).
 
 **Space agency partner data:** ESA Gaia DR3 (reference frame, validation, identities, distances); ESA Hipparcos;
