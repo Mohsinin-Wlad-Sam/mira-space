@@ -268,12 +268,13 @@ export async function openSky(host: HTMLElement, o: SkyOpts): Promise<SkyHandle>
         marks.push({ x, y, r: Math.max(12, r + 5), go: () => openBody(b.key) }); }
       for (const b of bodies) { const [x, y] = toScreen(b.gl, b.gb); if (x < 0 || y < 0 || x > cw || y > ch) continue; label(b.name.toUpperCase(), x, y, b.kind === "planet" ? 7 : 10, "#fff", "700 11px Barlow, system-ui, sans-serif", true); } }
     if (mine) for (const c of compass) { const [x, y] = toScreen(c.l, c.b); if (x > 0 && y > 0 && x < cw && y < ch) { if (c.n === "overhead") { g.strokeStyle = "#7df0a6"; g.lineWidth = 1.3; g.beginPath(); g.moveTo(x - 6, y); g.lineTo(x + 6, y); g.moveTo(x, y - 6); g.lineTo(x, y + 6); g.stroke(); } label(c.n === "overhead" ? "straight overhead" : c.n, x, y, c.n === "overhead" ? 7 : 0, "#7df0a6", "700 11px Barlow, system-ui, sans-serif", true); } }
-    // the famous ones and the landmarks
+    // the famous ones and the landmarks (not under the header)
+    const top = document.body.classList.contains("embed") ? 0 : 62;
     if (st.show.marks) {
-      PINS.forEach((p, i) => { const [x, y] = toScreen(PINGAL[i][0], PINGAL[i][1]); if (x < 0 || y < 0 || x > cw || y > ch) return;
+      PINS.forEach((p, i) => { const [x, y] = toScreen(PINGAL[i][0], PINGAL[i][1]); if (x < 0 || y < top || x > cw || y > ch) return;
         g.strokeStyle = "#fff"; g.lineWidth = 1.3; g.beginPath(); g.moveTo(x, y - 6); g.lineTo(x + 6, y); g.lineTo(x, y + 6); g.lineTo(x - 6, y); g.closePath(); g.stroke();
         label(p.name, x, y, 7, "rgba(255,255,255,.95)", "600 11.5px Barlow, system-ui, sans-serif"); marks.push({ x, y, r: 12, go: () => openPin(p) }); });
-      LAND.forEach(([name, ra, dec], i) => { const [x, y] = toScreen(LANDGAL[i][0], LANDGAL[i][1]); if (x < 0 || y < 0 || x > cw || y > ch) return;
+      LAND.forEach(([name, ra, dec], i) => { const [x, y] = toScreen(LANDGAL[i][0], LANDGAL[i][1]); if (x < 0 || y < top || x > cw || y > ch) return;
         g.strokeStyle = "rgba(240,240,250,.55)"; g.lineWidth = 1; g.beginPath(); g.arc(x, y, 3.5, 0, 7); g.stroke();
         if (label(name, x, y, 5, "rgba(240,240,250,.72)", "500 11px Barlow, system-ui, sans-serif")) marks.push({ x, y, r: 10, go: () => openPlace(ra, dec, name, "A landmark of the sky. Here it is as three NASA surveys saw it.") }); });
       if (wanderers && s > 3.2) { const [x, y] = toScreen(ECL[10][0], ECL[10][1]); if (x > 0 && y > 0 && x < cw && y < ch) label("ecliptic · the planets' road", x, y, 3, "rgba(255,210,122,.75)", "500 10.5px Barlow, system-ui, sans-serif"); }

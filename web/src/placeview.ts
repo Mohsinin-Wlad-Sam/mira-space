@@ -28,7 +28,7 @@ export function mountPlaceView(host: HTMLElement, p: { ra: number; dec: number }
     { yr: 1999.5, stop: "≈ 1999 · 2MASS", cap: "About 1999 · picture by the 2MASS survey, 2.2 µm", img: null, kind: "tm", state: "wait" },
     { yr: 2010.5, stop: "2010 · WISE", cap: "2010 · picture by NASA's WISE, 4.6 µm", img: null, kind: "wise", state: "wait" },
     { yr: 2025.6, stop: "2025–26 · SPHEREx", cap: "Reading SPHEREx's exposures of this place from NASA's archive…", img: null, kind: "sx", state: "wait" }];
-  let v = 0, raf = 0, playing = false, dead = false, last = 0, hold = 0, sx: "idle" | "loading" | "done" = "idle", got = 0;
+  let v = 0, raf = 0, playing = false, dead = false, last = 0, hold = 0, sx: "idle" | "loading" | "done" = "idle", got = 0, sxProg = "";
   const small = document.createElement("canvas"); small.width = small.height = N;
   function renderStops() {
     stops.innerHTML = pics.map((q, i) => `<button data-i="${i}">${q.stop}</button>`).join("");
@@ -51,7 +51,8 @@ export function mountPlaceView(host: HTMLElement, p: { ra: number; dec: number }
     const fail = (why: string) => { if (dead) return; sx = "done"; pics = pics.map((q) => (q.kind === "sx" ? { ...q, state: "none" as const, cap: why } : q)); draw(); };
     try {
       const Ns = 2 * Math.ceil((field / PIX_ARCSEC + 4) / 2);
-      const b = await build({ ra: p.ra, dec: p.dec }, { size: Ns, maxFrames: 12, concurrency: 4, signal: ac.signal });
+      const tick = (done: number, total: number) => { sxProg = ` ${done} of ${total}`; draw(); };
+      const b = await build({ ra: p.ra, dec: p.dec }, { size: Ns, maxFrames: 12, concurrency: 6, signal: ac.signal, onFrame: (_f, done, total) => tick(done, total), onSkip: tick });
       if (dead) return;
       const by = new Map<number, Frame[]>(); b.frames.forEach((f) => (by.get(f.visit) ?? by.set(f.visit, []).get(f.visit)!).push(f));
       const visits = [...by.entries()].sort((a, q) => a[0] - q[0]).map(([, L]) => L).filter((L) => L.length >= 2);
@@ -83,7 +84,7 @@ export function mountPlaceView(host: HTMLElement, p: { ra: number; dec: number }
     const near = pics[Math.round(v)], yr = pics[i].yr + (pics[j].yr - pics[i].yr) * (v - i), exact = Math.abs(v - Math.round(v)) < 0.02;
     yrEl.textContent = yr > 2025 ? monthOf(yr) : String(Math.floor(yr + 1e-6));
     cap.textContent = !exact ? `Between ${pics[i].stop.split(" · ")[0].replace("≈ ", "")} and ${pics[j].stop.split(" · ")[0]}`
-      : near.state === "none" ? near.cap : near.img ? near.cap : near.kind === "sx" && sx === "idle" ? "SPHEREx's pictures are read when you go past 2010" : got < 2 || near.kind === "sx" ? "Reading the picture from NASA's archive…" : `${near.stop.split(" · ")[0]} · no picture could be read for this date`;
+      : near.state === "none" ? near.cap : near.img ? near.cap + (sx === "loading" && near.kind === "wise" ? ` · now reading SPHEREx's exposures of this place from NASA's archive${sxProg}…` : "") : near.kind === "sx" && sx === "idle" ? "SPHEREx's pictures are read when you go past 2010" : near.kind === "sx" ? `Reading SPHEREx's exposures of this place from NASA's archive${sxProg}…` : got < 2 ? "Reading the picture from NASA's archive…" : `${near.stop.split(" · ")[0]} · no picture could be read for this date`;
     range.value = String(Math.round((v / Math.max(1, pics.length - 1)) * 1000));
     stops.querySelectorAll<HTMLButtonElement>("button").forEach((b) => b.classList.toggle("on", exact && +b.dataset.i! === Math.round(v)));
     playBtn.textContent = playing ? "❚❚" : "▶";
