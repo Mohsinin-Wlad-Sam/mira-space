@@ -114,15 +114,16 @@ export function coverSizes(image: SiteImage): string {
 }
 
 export const images = {
-  // every picture below was recorded from MIRA itself, on NASA data: nothing here is a stock photograph
-  hero: { local: '/deck/shot_title.jpg', src: '', width: 1600, height: 900, alt: 'The whole sky as NASA’s SPHEREx sees it, on MIRA’s Sky map', author: 'MIRA, on NASA data', page: '/docs/#credits' },
-  motion: { local: '/land/sky.jpg', src: '', width: 1920, height: 804, alt: 'The Milky Way across the whole sky in SPHEREx’s infrared colours', author: 'MIRA, on NASA data', page: '/docs/#credits' },
-  survey: { local: '/land/field.jpg', src: '', width: 1042, height: 804, alt: 'Epsilon Indi B in a SPHEREx picture, with the path it followed since 1999', author: 'MIRA, on NASA data', page: '/docs/#credits', position: '62% 50%' },
-  bands: { local: '/land/spectrum.jpg', src: '', width: 1920, height: 804, alt: 'The SPHEREx spectrum of Epsilon Indi B drawn by MIRA’s Spectrograph', author: 'MIRA, on NASA data', page: '/docs/#credits', position: '12% 50%' },
-  evidence: { local: '/land/count.jpg', src: '', width: 1920, height: 804, alt: 'The whole sky with the 17,604 stars MIRA caught moving', author: 'MIRA, on NASA data', page: '/docs/#credits', position: '0% 50%' },
-  galaxy: { local: '/land/movers.jpg', src: '', width: 1920, height: 804, alt: 'The sky with every star MIRA caught moving marked in orange', author: 'MIRA, on NASA data', page: '/docs/#credits' },
-  stats: { local: '/land/movers.jpg', src: '', width: 1920, height: 804, alt: 'The sky with every star MIRA caught moving marked in orange', author: 'MIRA, on NASA data', page: '/docs/#credits' },
-  starfield: { local: '/deck/shot_scout.jpg', src: '', width: 1360, height: 850, alt: 'The places the sky model marked, on MIRA’s Sky map', author: 'MIRA, on NASA data', page: '/docs/#credits', position: '0% 50%' },
+  // Unsplash photographs (free licence; credited in the footer). Pictures recorded from MIRA itself live in
+  // web/public/land/ and web/public/deck/: set `local` on an entry to use one instead.
+  hero: { src: 'photo-1464802686167-b939a6910659', width: 5005, height: 3417, alt: 'The Milky Way glowing in blue and purple across a dense field of stars', author: 'Jeremy Thomas', page: 'https://unsplash.com/photos/E0AHdsENmDg' },
+  survey: { src: 'photo-1446776811953-b23d57bd21aa', width: 4928, height: 3280, alt: 'A satellite in orbit above the clouds and oceans of Earth', author: 'NASA', page: 'https://unsplash.com/photos/yZygONrUBe8' },
+  bands: { src: 'photo-1462332420958-a05d1e002413', width: 5200, height: 2500, alt: 'A colourful nebula of glowing gas and dust lit by young stars', author: 'NASA', page: 'https://unsplash.com/photos/-hI5dX2ObAs', position: '30% 50%' },
+  motion: { src: 'photo-1504966981333-1ac8809be1ca', width: 4272, height: 2848, alt: 'Long-exposure star trails circling the sky above dark water', author: 'Reign Abarintos', page: 'https://unsplash.com/photos/-cKXtsJWU-I' },
+  evidence: { src: 'photo-1727034393564-dc7b0275686d', width: 2951, height: 3934, alt: 'An observatory dome beneath a star-filled night sky', author: 'Ahmed Atef', page: 'https://unsplash.com/photos/b7lnMZqv1YE', position: '50% 70%' },
+  stats: { src: 'photo-1451187580459-43490279c0fa', width: 4256, height: 2832, alt: 'Earth at night seen from orbit, with the glow of the horizon', author: 'NASA', page: 'https://unsplash.com/photos/Q1p7bh3SHj8' },
+  galaxy: { src: 'photo-1543722530-d2c3201371e7', width: 5412, height: 3594, alt: 'The Andromeda Galaxy surrounded by a dense field of stars', author: 'Guillermo Ferla', page: 'https://unsplash.com/photos/Oze6U2m1oYU' },
+  starfield: { src: 'photo-1475274047050-1d0c0975c63e', width: 5456, height: 3632, alt: 'A deep, dark sky scattered with countless faint stars', author: 'Paul Lichtblau', page: 'https://unsplash.com/photos/qVotvbsuM_c' },
 } satisfies Record<string, SiteImage>
 
 // One credit per photographer (links to their first photo used here).

@@ -1,0 +1,11 @@
+/* Small fixes to the landing page, kept in their own file (imported last by main.tsx) so they never collide with
+   ongoing edits to index.css or the component styles. */
+
+/* No visible scrollbar on the page; it still scrolls (smoothly, through Lenis) with the wheel, trackpad, touch and keys. */
+html {
+  scrollbar-width: none;
+}
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  display: none;
+}

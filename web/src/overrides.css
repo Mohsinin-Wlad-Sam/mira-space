@@ -1,0 +1,10 @@
+/* Small fixes to the observatory (/explore/) kept in their own file, loaded from explore/index.html,
+   so they never collide with ongoing edits to style.css, shell.css or blink/*.css. */
+
+/* The Lab page scrolls on short screens, but shows no scrollbar (its content usually overflows by a few pixels only). */
+#blinkpage {
+  scrollbar-width: none;
+}
+#blinkpage::-webkit-scrollbar {
+  display: none;
+}

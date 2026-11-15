@@ -1,0 +1,17 @@
+/* Small fixes to the documentation page (/docs/), kept in their own file and loaded from docs/index.html, so they
+   never collide with ongoing edits to that page's own styles. */
+
+/* No visible scrollbars on the page or on the sidebar; both still scroll with the wheel, trackpad, touch and keys. */
+html {
+  scrollbar-width: none;
+}
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  display: none;
+}
+#toc {
+  scrollbar-width: none;
+}
+#toc::-webkit-scrollbar {
+  display: none;
+}
