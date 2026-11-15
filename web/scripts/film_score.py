@@ -56,7 +56,15 @@ def add(sig, at, gain_db): k0 = int(at * SR); k1 = min(n, k0 + len(sig)); fx[k0:
 def tone_drop(f0, f1, dur, tau, second=0.0):
     tt = np.arange(int(dur * SR)) / SR; f = f1 + (f0 - f1) * np.exp(-tt / (dur * 0.25)); ph = 2 * np.pi * np.cumsum(f) / SR
     return (np.sin(ph) + second * np.sin(2 * ph)) * np.exp(-tt / tau) * np.minimum(1, tt / 0.015)
-if CUT == 3:
+if CUT == 4:
+    # the fourth cut: almost nothing but the music. Glass passing in front of the lens, a soft click when the time bar
+    # seats and at each stop of the years, the plotter drawing the spectrum
+    def swish(dur, fc): tt = np.arange(int(dur * SR)) / SR; return lowpass(rng.standard_normal(len(tt)), fc) * np.sin(np.pi * tt / dur) ** 2
+    for k in range(6): add(swish(0.5, 2600 - 250 * k), 3.05 + 0.488 * k, -33)
+    det = lambda: lowpass(rng.standard_normal(int(0.03 * SR)), 1600) * np.exp(-np.arange(int(0.03 * SR)) / (0.006 * SR))
+    for q in (10.5, 13.1, 14.3, 15.6): add(det(), q, -24)
+    add(swish(1.5, 2200), 16.95, -36)
+elif CUT == 3:
     # the third cut: a pulse and a ping in the dark, clicks as the files fall, detents as the Lab is built, ticks as the
     # years run, two chimes when an instrument answers, a breath into the finale, a low note under the name
     add(tone_drop(44, 32, 2.8, 1.0, 0.5), 0.05, -11)
@@ -89,7 +97,7 @@ else:
     
 
 mix = dry + wet + fx[:, None]
-mix *= np.interp(t, [0, 0.05, DUR - (1.1 if CUT == 3 else 0.9), DUR - (0.2 if CUT == 3 else 0.03), DUR], [0, 1, 1, 0, 0])[:, None]
+mix *= np.interp(t, [0, 0.05, DUR - (1.1 if CUT >= 3 else 0.9), DUR - (0.2 if CUT >= 3 else 0.03), DUR], [0, 1, 1, 0, 0])[:, None]
 # loudness: the orchestra's part at about -15 dBFS RMS, peaks held under -1 dBFS by a soft knee
 loud = np.sqrt(np.mean(mix[int(T_HIT * SR):m] ** 2)); mix *= 10 ** (-15 / 20) / loud
 pk = 10 ** (-1 / 20); knee = 0.7 * pk; over = np.abs(mix) > knee
@@ -97,5 +105,6 @@ mix[over] = np.sign(mix[over]) * (knee + (pk - knee) * np.tanh((np.abs(mix[over]
 with wave.open(out, "wb") as f:
     f.setnchannels(2); f.setsampwidth(2); f.setframerate(SR); f.writeframes((np.clip(mix, -1, 1) * 32767).astype("<i2").tobytes())
 db = lambda v: 20 * np.log10(np.sqrt(np.mean(v ** 2)) + 1e-9)
+if CUT == 4: print("loudness (dBFS RMS):", {k: round(db(mix[int(a * SR):int(b * SR)]), 1) for k, (a, b) in {"0-6.6": (0, 6.6), "6.6-12.9": (6.6, 12.9), "12.9-22": (12.9, 22), "22.4-26.3": (22.4, 26.3), "26.3-28": (26.3, 28), "28-29": (28, DUR)}.items()}, "peak", round(20 * np.log10(np.abs(mix).max()), 1)); sys.exit(0)
 if CUT == 3: print("loudness (dBFS RMS):", {k: round(db(mix[int(a * SR):int(b * SR)]), 1) for k, (a, b) in {"0-2": (0, 2), "2-5.5": (2, 5.5), "5.5-11": (5.5, 11), "11-21.5": (11, 21.5), "21.5-26.5": (21.5, 26.5), "26.5-29": (26.5, DUR)}.items()}, "peak", round(20 * np.log10(np.abs(mix).max()), 1)); sys.exit(0)
 print("loudness by part (dBFS RMS):", {k: round(db(mix[int(a * SR):int(b * SR)]), 1) for k, (a, b) in {"0-6": (0, 6), "6-12.5": (6, 12.5), "12.5-18.6": (12.5, T_HIT), "18.6-26": (T_HIT, T_END), "26-30": (T_END, DUR)}.items()}, "peak", round(20 * np.log10(np.abs(mix).max()), 1))

@@ -809,7 +809,7 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
     if (tab === "spectrum") {
       const per = [1, 2, 3, 4, 5, 6].map((d) => { const v = A.P.filter((p) => p.det === d), c2 = v.filter((p) => !p.flagged), q = DETECTORS[d - 1];
         return [`<i class="sw" style="background:${detColor(d)}"></i>D${d}`, `${q.lo.toFixed(2)}–${q.hi.toFixed(2)}`, String(v.length), c2.length ? median(c2.map((p) => p.flux)).toPrecision(3) : "–", c2.length ? median(c2.map((p) => p.snr)).toFixed(0) : "–", String(v.length - c2.length)]; });
-      el.innerHTML = `<h3 class="bk-h">Spectrum of the selected source, 0.75–5 µm</h3>${reading(say(answers?.made))}<div class="bk-plot-host"></div>
+      el.innerHTML = `<h3 class="bk-h">Spectrum of the selected source, 0.75–5 <span style="text-transform:none">µm</span></h3>${reading(say(answers?.made))}<div class="bk-plot-host"></div>
         <div class="bk-bar2"><span class="mono">${A.P.length} exposures, one point each · ${A.nFlagged} flagged by NASA</span><span><button class="link" id="bk-log">${logSpec ? "linear scale" : "logarithmic scale"}</button><button class="link" id="bk-csv">CSV</button></span></div>
         ${tbl(["detector", "range (µm)", "exposures", "median flux (mJy)", "median S/N", "flagged"], per, "num")}
         <p class="bk-cap">Each point is one 2-minute exposure: SPHEREx's filter changes wavelength across each detector, so every exposure samples the source at a different wavelength. PSF-weighted photometry (Gaussian of the exposure's FWHM), local sky from a 5–8 px annulus. Shaded bands: molecular absorptions. Diamonds: catalogue fluxes of the same source. Click a point to open that exposure.</p>`;
