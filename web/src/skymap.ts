@@ -10,6 +10,7 @@
 // measured in the Lab, or looked at closely with CDS's Aladin.
 // The map is drawn here, from plain pictures, in Galactic coordinates (the Milky Way runs along the middle).
 import { hpxFaceXY } from "./blink/hips";
+import { drawTiles, TILESETS, type MapView } from "./hipsmap";
 import { ang2pixNest } from "./blink/engine";
 import { parseCoords, resolveName, CHALLENGE } from "./blink/catalogs";
 import { KIND_PLAIN, isOpenCase, loadVerified, moonYears, mountMoverCard, moverName, votes, type Ver } from "./movercard";
@@ -57,13 +58,13 @@ export async function openSky(host: HTMLElement, o: SkyOpts): Promise<SkyHandle>
           ${hl("planets", "#ffd27a", "Planets, live", "Where the Sun, the Moon and the planets are right now")}
           ${hl("spherex", "#5be3ff", "SPHEREx, day by day", "Its survey filling the sky on the real dates, up to NASA's newest public images")}
           ${hl("story", "#f0f0fa", "27 years in 25 seconds", "Three NASA surveys of the whole sky: 1999, 2010, today")}
-          ${hl("colours", "#c58cff", "102 colours", "The sky at each wavelength SPHEREx sees")}
+          ${hl("colours", "#c58cff", "What the sky is made of", "Starlight, carbon dust, hydrogen: read off SPHEREx's 102 colours")}
           ${hl("all", "#ff9d4d", "Stars caught moving", "<b id='skn1'>…</b> confirmed on SPHEREx images")}
           ${hl("nogaia", "#ff5d6c", "Not in Gaia", "<b id='skn2'>…</b> missing from Europe's star catalogue")}
           ${hl("open", "#7df0a6", "Help look at one", "<b id='skn3'>…</b> are in no reference database")}
         </div>
         <div class="mx-sub" id="sksub" hidden></div>
-        <div class="mx-chips" id="skshow" aria-label="What the map shows"><button data-l="movers" class="on">Moving stars</button><button data-l="planets" class="on">Planets</button><button data-l="marks" class="on">Landmarks</button></div>
+        <div class="mx-chips" id="skshow" aria-label="What the map shows"><button data-l="movers" class="on">Moving stars</button><button data-l="planets" class="on">Planets</button><button data-l="marks" class="on">Landmarks</button></div><p class="mx-note" id="sklod" hidden></p>
       </div>
     </aside>
     <div class="mx-dock" id="skdock">
@@ -81,18 +82,18 @@ export async function openSky(host: HTMLElement, o: SkyOpts): Promise<SkyHandle>
       <div><button class="btn sm solid" id="skintro1">See a star move</button><button class="btn sm ghost" id="skintro2">Where are the planets?</button><button class="btn sm ghost" id="skintro3">Play 27 years</button></div>
     </div>
     <div class="sp-hint show" id="skhint">Drag to move · scroll or pinch to zoom · click a point, a planet or any place</div>
-    <div class="sk-coords mono" id="skcoords"></div>
+    <div class="sk-coords mono" id="skcoords"></div><div class="sk-tile mono" id="sktile"></div>
     <div class="sk-menu hud" id="skmenu" hidden></div>
     <div class="sp-info" id="skinfo"></div>`;
   const $ = <T extends HTMLElement>(s: string) => host.querySelector(s) as T, cv = $<HTMLCanvasElement>(".sk-cv"), g = cv.getContext("2d")!;
   const view = { l: 0, b: 0, z: 1 };
-  const st = { u: 3, end: 3, wave: -1, chip: "all", panel: "", sel: -1, body: "", place: null as null | { ra: number; dec: number }, playing: false, raf: 0, dirty: true, paused: false, last: 0, show: { movers: true, planets: true, marks: true } as Record<string, boolean> };
+  const st = { u: 3, end: 3, wave: -1, layer: "", chip: "all", panel: "", sel: -1, body: "", place: null as null | { ra: number; dec: number }, playing: false, raf: 0, dirty: true, paused: false, last: 0, show: { movers: true, planets: true, marks: true } as Record<string, boolean> };
   let cw = 0, ch = 0, V: Ver | null = null, GL = new Float32Array(0), GB = new Float32Array(0), PX = new Float32Array(0), PY = new Float32Array(0), CELL = new Uint16Array(0), shown: number[] = [], destroyCard: (() => void) | null = null;
   let nowY = yearOf(), YS = 2025.31, cov: Cov | null = null, cellOf: Uint16Array | null = null, firstEnd = new Float32Array(0), prog = { pct: 1, visits: 0 }, bodies: (SkyBody & { gl: number; gb: number })[] = [], bodiesKey = NaN;
   const scale = () => (cw / 360) * view.z;
   const toScreen = (l: number, b: number): [number, number] => [cw / 2 - wrap(l - view.l) * scale(), ch / 2 - (b - view.b) * scale()];
   const toSky = (x: number, y: number): [number, number] => [(((view.l - (x - cw / 2) / scale()) % 360) + 360) % 360, view.b - (y - ch / 2) / scale()];
-  const clampView = () => { view.z = Math.min(40, Math.max(1, cw ? (2 * ch) / cw : 1, view.z)); const half = ch / 2 / scale(); view.b = half >= 90 ? 0 : Math.max(-90 + half, Math.min(90 - half, view.b)); view.l = ((view.l % 360) + 360) % 360; };
+  const clampView = () => { view.z = Math.min(900, Math.max(1, cw ? (2 * ch) / cw : 1, view.z)); const half = ch / 2 / scale(); view.b = half >= 90 ? 0 : Math.max(-90 + half, Math.min(90 - half, view.b)); view.l = ((view.l % 360) + 360) % 360; };
   // ---- the time bar: four equal stretches of very different lengths, so that each has room
   const yearAt = (u: number) => (u <= 1 ? Y0 + (Y1 - Y0) * u : u <= 2 ? Y1 + (YS - Y1) * (u - 1) : u <= 3 ? YS + (nowY - YS) * (u - 2) : nowY + (u - 3));
   const uAt = (yr: number) => (yr <= Y1 ? (yr - Y0) / (Y1 - Y0) : yr <= YS ? 1 + (yr - Y1) / (YS - Y1) : yr <= nowY ? 2 + (yr - YS) / (nowY - YS) : 3 + (yr - nowY));
@@ -144,8 +145,18 @@ export async function openSky(host: HTMLElement, o: SkyOpts): Promise<SkyHandle>
   const hue = (um: number): [number, number, number] => { const u = Math.min(1, Math.max(0, (um - 0.75) / 4.25)), h = (220 - 220 * u) / 60, c = 0.75, x = c * (1 - Math.abs((h % 2) - 1)), m = 0.25;
     const [r, gg, b] = h < 1 ? [c, x, 0] : h < 2 ? [x, c, 0] : h < 3 ? [0, c, x] : [0, x, c]; return [r + m, gg + m, b + m]; };
   const busy = (t: string) => { const b = host.querySelector("#skbusy"); if (b) b.textContent = t; };
-  async function loadFrame(k: number) {
-    if (frames.has(k) || loading.has(k)) return; loading.add(k); busy("reading NASA's archive…");
+  // frames built ahead of time by census/sx_layers.py are used when the site carries them: the slider then answers at once
+  let localFrames: boolean | null = null;
+  function localFrame(k: number): Promise<boolean> {
+    return new Promise((res) => { const im = new Image(); im.onload = () => { const out = document.createElement("canvas"); out.width = im.width; out.height = im.height; const og = out.getContext("2d")!, [tr, tg, tb] = hue(LAM[k] ?? 2);
+      og.drawImage(im, 0, 0); og.globalCompositeOperation = "multiply"; og.fillStyle = `rgb(${Math.round(255 * tr)},${Math.round(255 * tg)},${Math.round(255 * tb)})`; og.fillRect(0, 0, out.width, out.height);
+      frames.set(k, out); if (frames.size > 48) frames.delete(frames.keys().next().value!); res(true); }; im.onerror = () => res(false); im.src = `${o.base}space/sx/frames/${k}.jpg`; });
+  }
+  async function loadFrame(k: number, quiet = false) {
+    if (k < 0 || k > 101 || k === 50 || k === 51 || frames.has(k) || loading.has(k)) return; loading.add(k);
+    if (localFrames !== false) { const ok = await localFrame(k); if (localFrames === null) localFrames = ok; if (ok) { loading.delete(k); if (!quiet) { sync(); for (const d of [1, -1, 2, -2, 3, -3]) loadFrame(k + d, true); } else st.dirty = true; return; } }
+    if (quiet) { loading.delete(k); return; }
+    busy("reading NASA's archive…");
     try {
       const r = await fetch(`${SX}/Norder3/Allsky${k ? "_" + k : ""}.png`); if (!r.ok) throw new Error("no frame");
       const bmp = await createImageBitmap(await r.blob()), src = document.createElement("canvas"); src.width = bmp.width; src.height = bmp.height; const sg = src.getContext("2d", { willReadFrequently: true })!; sg.drawImage(bmp, 0, 0);
@@ -159,6 +170,40 @@ export async function openSky(host: HTMLElement, o: SkyOpts): Promise<SkyHandle>
     loading.delete(k); if (!loading.size) busy(""); sync();
   }
   fetch(`${SX}/properties`).then((r) => r.text()).then((t) => { const m = t.match(/data_cube_crval3_arr\s*=\s*([^\n]+)/); if (m) LAM = m[1].trim().split(/\s+/).map(Number); sync(); }).catch(() => {});
+
+  // ---- what the sky is made of: pictures computed from SPHEREx's 102 wavelengths (census/sx_layers.py), and the
+  //      spectrum of the patch of sky under the pointer, from the same cube at 1.5 degrees
+  const LAYERS: Record<string, { t: string; tint: string; era: string; say: string }> = {
+    mix: { t: "All three", tint: "", era: "carbon dust · starlight · hydrogen", say: "Red: carbon dust glowing at 3.3 µm. Green: starlight at 1.0–1.3 µm. Blue: hot hydrogen gas at 4.05 µm, where young stars light their clouds." },
+    stars: { t: "Starlight", tint: "#fff1dc", era: "starlight · 1.0–1.3 µm", say: "The light of the Galaxy's stars. At these wavelengths dust is nearly transparent, so the whole disc and the central bulge show through." },
+    pah: { t: "Carbon dust", tint: "#ffb066", era: "carbon dust · 3.3 µm band", say: "Large carbon molecules (PAH) glow at 3.3 µm when starlight hits them. Here the light on either side of that band is subtracted, so only the glow is left: the dust clouds where stars form." },
+    hydrogen: { t: "Hydrogen", tint: "#9fb8ff", era: "hot hydrogen · 4.05 µm line", say: "Hydrogen gas heated by young, hot stars shines in one narrow line at 4.05 µm. Subtracting the neighbouring wavelengths leaves the nebulae: bubbles and shells around newborn stars." },
+    warm: { t: "4.7–5 µm", tint: "#ff8a70", era: "cool stars and warm dust · 4.7–5.0 µm", say: "The reddest light SPHEREx sees: cool giant stars and warm dust, crowding toward the centre of the Galaxy." } };
+  const layerImg = new Map<string, HTMLImageElement | null>();
+  function loadLayer(k: string) { if (layerImg.has(k)) return; layerImg.set(k, null); const im = new Image(); im.onload = () => { layerImg.set(k, im); sync(); }; im.onerror = () => { layerImg.delete(k); if (st.layer === k) { st.layer = ""; o.toast?.("That picture is not on this server"); sync(); } }; im.src = `${o.base}space/sx/layer_${k}.jpg`; }
+  type Spec = { w: number; h: number; n: number; lam: number[]; d: Uint8Array };
+  let spec: Spec | null = null, specP: Promise<void> | null = null, specAt: [number, number] | null = null, specPin = false;
+  const loadSpec = () => (specP ??= Promise.all([fetch(`${o.base}space/sx/spectra.json`).then((r) => r.json()), fetch(`${o.base}space/sx/spectra.bin`).then((r) => r.arrayBuffer())]).then(([j, b]) => { spec = { w: j.w, h: j.h, n: j.n, lam: j.lam, d: new Uint8Array(b) }; subKey = ""; renderSub(); }).catch(() => { specP = null; }));
+  /** brightness (MJy/sr, as decoded from NASA's 8-bit previews) at each wavelength for the 1.5-degree patch around (l, b) */
+  function specOf(l: number, b: number): number[] | null { if (!spec) return null; const x = Math.min(spec.w - 1, Math.max(0, Math.floor(((((l % 360) + 360) % 360) / 360) * spec.w))), y = Math.min(spec.h - 1, Math.max(0, Math.floor(((90 - b) / 180) * spec.h))), o2 = (y * spec.w + x) * spec.n;
+    return Array.from({ length: spec.n }, (_, q) => 0.02 * (Math.exp(spec!.d[o2 + q] / 32) - 1)); }
+  function drawSpec() {
+    const c = host.querySelector<HTMLCanvasElement>("#skspec"), cap = host.querySelector<HTMLElement>("#skspeccap"); if (!c || !cap || !spec) return;
+    const dpr = Math.min(devicePixelRatio || 1, 2), W = (c.width = Math.max(40, c.clientWidth * dpr)), H = (c.height = 118 * dpr), q = c.getContext("2d")!; q.clearRect(0, 0, W, H);
+    const v = specAt ? specOf(specAt[0], specAt[1]) : null, padL = 6 * dpr, padB = 16 * dpr, X = (um: number) => padL + ((um - 0.7) / 4.4) * (W - 2 * padL);
+    q.font = `${9.5 * dpr}px "JetBrains Mono", monospace`; q.fillStyle = "rgba(240,240,250,.5)"; q.textBaseline = "alphabetic";
+    for (const um of [1, 2, 3, 4, 5]) { q.fillRect(X(um), H - padB, dpr, 4 * dpr); const t = `${um}`; q.fillText(t, X(um) - q.measureText(t).width / 2, H - 2 * dpr); } q.fillText("µm", W - 20 * dpr, H - 2 * dpr);
+    for (const [um, col] of [[3.293, "rgba(255,176,102,.5)"], [4.052, "rgba(159,184,255,.5)"]] as [number, string][]) { q.fillStyle = col; q.fillRect(X(um) - dpr, 4 * dpr, 2 * dpr, H - padB - 4 * dpr); }
+    if (!v) { cap.textContent = "Move over the map: the spectrum of the sky under the pointer appears here."; return; }
+    const top = Math.max(0.05, ...v) * 1.12, Y = (f: number) => H - padB - (f / top) * (H - padB - 8 * dpr);
+    q.lineWidth = 1.6 * dpr; q.strokeStyle = "#fff"; q.beginPath(); let pen = false; v.forEach((f, k) => { const um = spec!.lam[k], x = X(um), y = Y(f); if (pen && Math.abs(um - spec!.lam[k - 1]) < 0.2) q.lineTo(x, y); else q.moveTo(x, y); pen = true; }); q.stroke();
+    v.forEach((f, k) => { q.fillStyle = `rgb(${hue(spec!.lam[k]).map((u2) => Math.round(u2 * 255)).join(",")})`; q.fillRect(X(spec!.lam[k]) - dpr, Y(f) - dpr, 2 * dpr, 2 * dpr); });
+    const at = (um: number) => { let bk = 0; spec!.lam.forEach((w, k) => { if (Math.abs(w - um) < Math.abs(spec!.lam[bk] - um)) bk = k; }); return v[bk]; }, mean = (a: number, b: number) => { const s2 = v.filter((_, k) => spec!.lam[k] >= a && spec!.lam[k] <= b); return s2.reduce((p2, c2) => p2 + c2, 0) / Math.max(1, s2.length); };
+    const star = mean(1.0, 1.3), cont = (mean(2.95, 3.13) + mean(3.46, 3.68)) / 2, pah = at(3.293) - cont, hy = at(4.052) - (at(3.97) + at(4.148)) / 2, peak = Math.max(...v);
+    const words = peak < 0.06 ? "Almost empty sky: fainter than the faintest step of NASA's preview pictures." : peak >= 39 ? "Brighter than the preview pictures can show (they stop at 40)."
+      : [star > 2 * Math.max(cont, 0.03) ? "mostly starlight" : cont > 1.5 * star ? "mostly warm dust and cool stars" : "starlight and dust", pah > 0.25 * Math.max(cont, 0.05) && pah > 0.08 ? `carbon dust glowing (3.3 µm band ${Math.round((100 * pah) / Math.max(cont, 0.05))}% above its surroundings)` : "", hy > 0.2 * Math.max(cont, 0.05) && hy > 0.08 ? "hot hydrogen gas (4.05 µm line)" : ""].filter(Boolean).join(" · ");
+    const [ra, dec] = toEq(specAt![0], specAt![1]); cap.innerHTML = `<b>${specPin ? "Pinned · " : ""}${hms(ra, dec)}</b> ${words}${words.endsWith(".") ? "" : "."} <span>Peak ${peak.toFixed(peak < 1 ? 2 : 1)} MJy/sr.</span>`;
+  }
 
   // ---- my sky now: with the visitor's position (asked for, kept in this page, sent nowhere) the part of the sky
   //      below their horizon is shaded, and each wanderer is said to be up or to rise at about such an hour
@@ -234,7 +279,7 @@ export async function openSky(host: HTMLElement, o: SkyOpts): Promise<SkyHandle>
     .map((t) => { const dt = nowY - t.epoch, dec = t.dec0 + (t.pmdec * dt) / 3600, ra = t.ra0 + (t.pmra * dt) / 3600 / Math.cos(t.dec0 * D), mid = (Y0 + nowY) / 2 - t.epoch;
       return { name: t.name, sub: t.sub, key: t.key, ra, dec, pm: Math.hypot(t.pmra, t.pmdec), ra0: t.ra0 + (t.pmra * mid) / 3600 / Math.cos(t.dec0 * D), dec0: t.dec0 + (t.pmdec * mid) / 3600 }; });
   const PINGAL = PINS.map((p) => toGal(p.ra, p.dec)), LANDGAL = LAND.map(([, ra, dec]) => toGal(ra, dec));
-  let marks: { x: number; y: number; r: number; go: () => void }[] = [];
+  let marks: { x: number; y: number; r: number; go: () => void }[] = [], lodText = "", tileNote = "", tileShown = "";
 
   // ---- drawing
   function layer(img: HTMLImageElement | HTMLCanvasElement | null | undefined, alpha: number) {
@@ -264,6 +309,7 @@ export async function openSky(host: HTMLElement, o: SkyOpts): Promise<SkyHandle>
     st.dirty = false; g.fillStyle = "#000"; g.fillRect(0, 0, cw, ch); g.imageSmoothingEnabled = true; g.imageSmoothingQuality = "high";
     const u = st.u, yr = yearAt(u), day = dayOf(yr), s = scale(); boxes = []; marks = [];
     if (st.wave >= 0) { const f = frames.get(st.wave); layer(pano.spherex, f ? 0.25 : 1); layer(f, 1); }
+    else if (st.layer) { const im = layerImg.get(st.layer), L2 = LAYERS[st.layer]; layer(pano.spherex, im ? 0.12 : 1); if (im) { layer(im, 1); if (L2.tint) { g.globalCompositeOperation = "multiply"; g.fillStyle = L2.tint; g.fillRect(0, 0, cw, ch); g.globalCompositeOperation = "source-over"; } } }
     else if (u <= 1) { layer(pano["2mass"], 1); layer(pano.wise, ease(u)); }
     else if (u <= 2) layer(pano.wise, 1);
     else if (u < 3 && cov && cellOf) { reveal(day);
@@ -271,6 +317,13 @@ export async function openSky(host: HTMLElement, o: SkyOpts): Promise<SkyHandle>
       if (scanOn) { g.globalCompositeOperation = "screen"; layer(scanCv, 0.34); g.globalCompositeOperation = "source-over"; } }
     else if (u < 3) { layer(pano.wise, 1); layer(pano.spherex, ease(u - 2)); }
     else layer(pano.spherex, 1);
+    // zoomed in, the surveys' own tiles replace the panorama: markers then sit on the real stars
+    tileNote = "";
+    if (s >= 30 && st.wave < 0 && !st.layer && u <= 2) {       // (SPHEREx's own all-sky tiles have gaps wavelength by wavelength: its era keeps the panorama, and the Lab shows its full exposures)
+      const mv2: MapView = { cw, ch, scale: s, toSky: (x, y) => { const [l, b] = toSky(x, y); return Math.abs(b) > 90 ? null : toEq(l, b); }, toScreen: (ra, dec) => toScreen(...toGal(ra, dec)) }, a = ease((s - 30) / 14), again = () => (st.dirty = true);
+      const sets: [keyof typeof TILESETS, number][] = u <= 0.02 ? [["tm", 1]] : u < 0.98 ? [["tm", 1], ["wise", ease(u)]] : [["wise", 1]];
+      for (const [k2, w] of sets) { const r = drawTiles(g, TILESETS[k2], mv2, a * w, again); if (r.have < r.need) tileNote = "reading NASA's archive…"; }
+    }
     // my sky now: what is below the visitor's horizon is shaded
     const mine = !!me && isLive() && st.wave < 0;
     if (mine) { horizon(yr); layer(horizCv, 1); g.lineWidth = 1.2; g.strokeStyle = "rgba(125,240,166,.7)"; path(horizLine, 0, horizLine.length - 1); }
@@ -279,13 +332,18 @@ export async function openSky(host: HTMLElement, o: SkyOpts): Promise<SkyHandle>
     if (wanderers) { g.setLineDash([2, 6]); g.lineWidth = 1; g.strokeStyle = "rgba(255,210,122,.42)"; path(ECL, 0, ECL.length - 1); g.setLineDash([]); }
     // the confirmed movers in view: unseen before WISE, faint through the WISE years, lit when SPHEREx reached them
     const mv = u < 1 ? 0 : u < 2 ? ease(u - 1) : 1;
-    if (V && st.show.movers && mv > 0) { const r = Math.max(0.75, Math.min(4, 0.2 + 0.11 * s)), dense = st.chip === "all" && s < 12, sel = st.sel, wait = u < 3 && cov && CELL.length === GL.length; shown = [];
-      for (let k = 0; k < GL.length; k++) { if (Math.abs(V.glat[k]) < 10 && k !== sel) continue;                       // the crowded plane is left out, as in the Catalogue
+    // with the whole sky in view only the fastest movers are drawn; the others appear as the map is zoomed in.
+    // A picture of what the sky is made of is shown without them.
+    const made = st.layer !== "" || st.wave >= 0, pmMin = st.chip !== "all" ? 0 : s < 6 ? 1 : s < 10 ? 0.7 : s < 18 ? 0.5 : s < 30 ? 0.4 : s < 48 ? 0.3 : 0;
+    if (V && st.show.movers && mv > 0) { const r = Math.max(pmMin >= 0.5 ? 1.5 : 1, Math.min(4, 0.2 + 0.11 * s)), dense = false, sel = st.sel, wait = u < 3 && cov && CELL.length === GL.length; shown = [];
+      for (let k = 0; k < GL.length; k++) { if (k !== sel && (made || V.pm[k] < pmMin || Math.abs(V.glat[k]) < 10)) continue;                       // the crowded plane is left out, as in the Catalogue
         const nog = V.known[k] !== 1, open = isOpenCase(V, k); if ((st.chip === "nogaia" && !nog) || (st.chip === "open" && !open)) continue;
         const [gl, gb] = posAt(k, yr), x = cw / 2 - wrap(gl - view.l) * s, y = ch / 2 - (gb - view.b) * s; PX[k] = x; PY[k] = y; if (x < -4 || y < -4 || x > cw + 4 || y > ch + 4) continue;
         shown.push(k); const lit = !wait || (u >= 2 && day >= firstEnd[CELL[k]]);         // grey while only WISE had seen it move, in colour once SPHEREx had imaged the place
         g.fillStyle = !lit ? "#a89a8c" : open ? "#7df0a6" : nog ? "#ff5d6c" : "#ff9d4d"; g.globalAlpha = mv * (!lit ? 0.55 : dense && !nog ? Math.min(0.75, 0.3 + 0.045 * s) : dense ? 0.85 : 1); g.fillRect(x - r, y - r, 2 * r, 2 * r); }
       g.globalAlpha = 1; } else shown = [];
+    if (tileNote !== tileShown) { tileShown = tileNote; const e3 = host.querySelector<HTMLElement>("#sktile"); if (e3) e3.textContent = tileNote; }
+    const lod = made || !st.show.movers ? "" : pmMin ? `Showing the ${shown.length.toLocaleString("en-US")} fastest in view. Zoom in for the rest.` : ""; if (lod !== lodText) { lodText = lod; const e2 = host.querySelector<HTMLElement>("#sklod"); if (e2) { e2.textContent = lod; e2.hidden = !lod; } }
     // the wanderers, with their names
     if (wanderers) { ephem();
       for (const b of bodies) { const tr = trails[b.key]; if (!tr) continue; const mid = PAST / STEP; g.lineWidth = 1.4; g.strokeStyle = b.col; g.globalAlpha = 0.55; path(tr, 0, mid); g.globalAlpha = 0.5; g.setLineDash([1.5, 4]); path(tr, mid, tr.length - 1); g.setLineDash([]); g.globalAlpha = 1; }
@@ -299,7 +357,8 @@ export async function openSky(host: HTMLElement, o: SkyOpts): Promise<SkyHandle>
     // the famous ones and the landmarks (not under the header)
     const top = document.body.classList.contains("embed") ? 0 : 62;
     if (st.show.marks) {
-      PINS.forEach((p, i) => { const [x, y] = toScreen(PINGAL[i][0], PINGAL[i][1]); if (x < 0 || y < top || x > cw || y > ch) return;
+      PINS.forEach((p, i) => { const q = p as any, at = s >= 30 && (q.pmra || q.pmdec) ? toGal(q.ra0 + (q.pmra * (yr - q.epoch)) / 3600 / Math.max(0.05, Math.cos(q.dec0 * D)), q.dec0 + (q.pmdec * (yr - q.epoch)) / 3600) : PINGAL[i];      // zoomed in, a pin stands where the object was on the date shown
+        const [x, y] = toScreen(at[0], at[1]); if (x < 0 || y < top || x > cw || y > ch) return;
         g.strokeStyle = "#fff"; g.lineWidth = 1.3; g.beginPath(); g.moveTo(x, y - 6); g.lineTo(x + 6, y); g.lineTo(x, y + 6); g.lineTo(x - 6, y); g.closePath(); g.stroke();
         label(p.name, x, y, 7, "rgba(255,255,255,.95)", "600 11.5px Barlow, system-ui, sans-serif"); marks.push({ x, y, r: 12, go: () => openPin(p) }); });
       LAND.forEach(([name, ra, dec], i) => { const [x, y] = toScreen(LANDGAL[i][0], LANDGAL[i][1]); if (x < 0 || y < top || x > cw || y > ch) return;
@@ -336,19 +395,25 @@ export async function openSky(host: HTMLElement, o: SkyOpts): Promise<SkyHandle>
         <p class="mx-note">${cov.exposures.toLocaleString()} public exposures, ${cov.first} to ${cov.last}. The picture (NASA's finished mosaic) appears where SPHEREx had observed by each date, in patches 1.8° wide; the blue band is where it had just arrived. Every place is revisited about every six months. A moving star turns from grey to colour once SPHEREx had imaged its place. <a class="link" href="${o.base}data/sphx2/coverage.json" download="spherex_coverage_dates.json">The dates, as a file</a></p>`
         : `<p class="mx-note">The dates of SPHEREx's exposures could not be read just now.</p>`;
       const run = host.querySelector("#skrun") as HTMLElement | null; if (run) run.onclick = () => playTo(2, 3); }
-    else if (st.panel === "colours") { const key = `c${st.wave}|${LAM.length}`; if (key === subKey) return; subKey = key; const lam = LAM[st.wave];
-      el.innerHTML = `<div class="mx-h">SPHEREx sees 102 colours · pick one</div><div class="sk-row"><input type="range" id="skw" min="0" max="101" value="${st.wave >= 0 ? st.wave : 60}" aria-label="SPHEREx wavelength"><b class="mono" id="skwl">${st.wave >= 0 && lam ? lam.toFixed(2) + " µm" : "–"}</b></div>
-        <div class="sk-row"><button class="link" id="skrgb" ${st.wave >= 0 ? "" : "hidden"}>back to the three-colour picture</button><span class="sk-busy" id="skbusy"></span></div>
-        <p class="mx-note">Each position of the slider is one of the 102 wavelengths (0.75 to 5 µm), read from NASA's all-sky cube as you move the slider. Around 3.3 µm the dust of the Milky Way lights up.</p>`;
-      $<HTMLInputElement>("#skw").oninput = (e) => { st.playing = false; let k = +(e.target as HTMLInputElement).value; if (k === 50) k = 49; if (k === 51) k = 52; st.u = 3; st.wave = k; clearTimeout(waveT); waveT = window.setTimeout(() => loadFrame(k), 160); const l2 = LAM[k]; $("#skwl").textContent = l2 ? `${l2.toFixed(2)} µm` : "…"; ($("#skrgb") as HTMLElement).hidden = false; subKey = `c${k}|${LAM.length}`; sync(); };      // frames 50 and 51 of the cube are blank
-      $("#skrgb").onclick = () => { st.wave = -1; sync(); }; }
+    else if (st.panel === "colours") { const key = `c${st.wave}|${LAM.length}|${st.layer}|${!!spec}`; if (key === subKey) return; subKey = key; const lam = LAM[st.wave]; loadSpec();
+      el.innerHTML = `<div class="mx-h">Only SPHEREx sees the whole sky in 102 colours</div>
+        <div class="mx-chips sk-layers"><button data-ly="" class="${!st.layer && st.wave < 0 ? "on" : ""}">Picture</button>${Object.entries(LAYERS).map(([k, L2]) => `<button data-ly="${k}" class="${st.layer === k ? "on" : ""}">${L2.t}</button>`).join("")}</div>
+        <p class="mx-note" id="sklysay">${st.layer ? LAYERS[st.layer].say : "Choose what to bring out. Each picture is computed from NASA's SPHEREx all-sky cube by adding or subtracting wavelengths."}</p>
+        <div class="mx-h">One wavelength at a time</div><div class="sk-row"><input type="range" id="skw" min="0" max="101" value="${st.wave >= 0 ? st.wave : 62}" aria-label="SPHEREx wavelength"><b class="mono" id="skwl">${st.wave >= 0 && lam ? lam.toFixed(2) + " µm" : "–"}</b></div>
+        <div class="sk-row"><span class="sk-busy" id="skbusy"></span></div>
+        <div class="mx-h">Spectrum of the sky under the pointer</div><canvas id="skspec" class="sk-spec"></canvas><p class="mx-note sk-speccap" id="skspeccap"></p>
+        <p class="mx-note">Orange line: the carbon-dust band at 3.3 µm. Blue line: hydrogen at 4.05 µm. Each point is the median of a patch 1.5° wide, decoded from NASA's 8-bit preview of the cube: good for what is there, not for precise amounts. Click the map to pin a patch; the Lab's Spectrograph measures single objects on the full exposures.</p>`;
+      $<HTMLInputElement>("#skw").oninput = (e) => { st.playing = false; let k = +(e.target as HTMLInputElement).value; if (k === 50) k = 49; if (k === 51) k = 52; st.u = 3; st.wave = k; st.layer = ""; clearTimeout(waveT); if (localFrames) loadFrame(k); else waveT = window.setTimeout(() => loadFrame(k), 160); const l2 = LAM[k]; $("#skwl").textContent = l2 ? `${l2.toFixed(2)} µm` : "…";
+        el.querySelectorAll<HTMLElement>("[data-ly]").forEach((b) => b.classList.remove("on")); subKey = `c${k}|${LAM.length}||${!!spec}`; sync(); };      // frames 50 and 51 of the cube are blank
+      el.querySelectorAll<HTMLButtonElement>("[data-ly]").forEach((b) => (b.onclick = () => { st.playing = false; st.wave = -1; st.layer = b.dataset.ly!; if (st.layer) { st.u = 3; loadLayer(st.layer); } sync(); }));
+      drawSpec(); }
   }
   function sync() {
     const u = st.u, yr = yearAt(u), live = isLive();
     $<HTMLInputElement>("#skt").value = String(Math.round(u * 1000)); $("#skplay").textContent = st.playing ? "❚❚" : "▶";
     $("#skdate").textContent = u < 2 ? String(Math.floor(yr)) : dayText(yr);
     if (u > 2 && u < 3 && cov && cellOf) reveal(dayOf(yr));
-    $("#skera").textContent = st.wave >= 0 ? `SPHEREx at ${LAM[st.wave] ? LAM[st.wave].toFixed(2) : "…"} µm${frames.has(st.wave) ? "" : " · loading"}`
+    $("#skera").textContent = st.layer && st.wave < 0 ? `SPHEREx · ${LAYERS[st.layer].era}${layerImg.get(st.layer) ? "" : " · loading"}` : st.wave >= 0 ? `SPHEREx at ${LAM[st.wave] ? LAM[st.wave].toFixed(2) : "…"} µm${frames.has(st.wave) ? "" : " · loading"}`
       : live ? "now · planets live" : u > 3 ? "ahead · the planets' road" : u <= 0.02 ? "2MASS · near-infrared" : u < 0.98 ? "from 2MASS to WISE" : u <= 1.02 ? "WISE · mid-infrared" : u < 2 ? "WISE years · movers caught" : !cov ? "SPHEREx" : prog.pct < 0.999 ? `SPHEREx · ${Math.round(prog.pct * 100)}% of the sky` : `SPHEREx · sky seen ${prog.visits.toFixed(1)}×`;
     $("#sknow").classList.toggle("on", live); $("#skmine").classList.toggle("on", !!me && live);
     host.querySelectorAll<HTMLButtonElement>(".mx-ticks button").forEach((b) => b.classList.toggle("on", Math.abs(+b.dataset.u! - u) < 0.02));
@@ -357,7 +422,7 @@ export async function openSky(host: HTMLElement, o: SkyOpts): Promise<SkyHandle>
     renderSub(); if (st.body) renderBody();
     st.dirty = true;
   }
-  function playTo(from: number | null, to: number) { st.wave = -1; if (from !== null) st.u = from; st.end = to; st.playing = true; st.last = performance.now(); sync(); }
+  function playTo(from: number | null, to: number) { st.wave = -1; st.layer = ""; if (from !== null) st.u = from; st.end = to; st.playing = true; st.last = performance.now(); sync(); }
   function loop(now: number) {
     if (st.paused) return;
     if (st.playing) { const dt = Math.min(0.1, (now - st.last) / 1000); st.last = now; let u = st.u + dt * RATE[Math.min(3, Math.floor(st.u + 1e-9))]; if (u >= st.end) { u = st.end; st.playing = false; } st.u = u; sync(); }
@@ -442,17 +507,17 @@ export async function openSky(host: HTMLElement, o: SkyOpts): Promise<SkyHandle>
   cv.addEventListener("pointerdown", (e) => { cv.setPointerCapture(e.pointerId); pts.set(e.pointerId, [e.offsetX, e.offsetY]); moved = 0; pinch = 0; closeMenu(); });
   cv.addEventListener("pointermove", (e) => {
     const p = pts.get(e.pointerId);
-    if (!p) { const [l, b] = toSky(e.offsetX, e.offsetY); if (Math.abs(b) <= 90) { const [ra, dec] = toEq(l, b); $("#skcoords").textContent = `${hms(ra, dec)}  ·  Galactic ${l.toFixed(1)}° ${b >= 0 ? "+" : "−"}${Math.abs(b).toFixed(1)}°`; } cv.style.cursor = hitMark(e.offsetX, e.offsetY) || hit(e.offsetX, e.offsetY) >= 0 ? "pointer" : "grab"; return; }
+    if (!p) { const [l, b] = toSky(e.offsetX, e.offsetY); if (st.panel === "colours" && !specPin && Math.abs(b) <= 90) { specAt = [l, b]; drawSpec(); } if (Math.abs(b) <= 90) { const [ra, dec] = toEq(l, b); $("#skcoords").textContent = `${hms(ra, dec)}  ·  Galactic ${l.toFixed(1)}° ${b >= 0 ? "+" : "−"}${Math.abs(b).toFixed(1)}°`; } cv.style.cursor = hitMark(e.offsetX, e.offsetY) || hit(e.offsetX, e.offsetY) >= 0 ? "pointer" : "grab"; return; }
     if (pts.size === 2) { const [a, b2] = [...pts.entries()].map(([id, q]) => (id === e.pointerId ? [e.offsetX, e.offsetY] : q)), d = Math.hypot(a[0] - b2[0], a[1] - b2[1]); if (pinch) zoomAt((a[0] + b2[0]) / 2, (a[1] + b2[1]) / 2, d / pinch); pinch = d; moved = 9; }
     else { const dx = e.offsetX - p[0], dy = e.offsetY - p[1]; moved += Math.abs(dx) + Math.abs(dy); view.l += dx / scale(); view.b += dy / scale(); clampView(); st.dirty = true; }
     pts.set(e.pointerId, [e.offsetX, e.offsetY]);
   });
-  const up = (e: PointerEvent) => { if (!pts.has(e.pointerId)) return; pts.delete(e.pointerId); if (moved < 5 && e.type === "pointerup") { const m = hitMark(e.offsetX, e.offsetY), k = m ? -1 : hit(e.offsetX, e.offsetY); if (m) m(); else if (k >= 0) select(k); else if (st.sel >= 0 || st.body || st.place) closeCard(); else menuAt(e.offsetX, e.offsetY); } };
+  const up = (e: PointerEvent) => { if (!pts.has(e.pointerId)) return; pts.delete(e.pointerId); if (moved < 5 && e.type === "pointerup") { const m = hitMark(e.offsetX, e.offsetY), k = m ? -1 : hit(e.offsetX, e.offsetY); if (m) m(); else if (k >= 0) select(k); else if (st.sel >= 0 || st.body || st.place) closeCard(); else if (st.panel === "colours" && spec) { const [l, b] = toSky(e.offsetX, e.offsetY); if (Math.abs(b) <= 90) { specPin = !(specPin && specAt && Math.hypot(wrap(specAt[0] - l), specAt[1] - b) < 2); specAt = [l, b]; drawSpec(); st.dirty = true; } } else menuAt(e.offsetX, e.offsetY); } };
   cv.addEventListener("pointerup", up); cv.addEventListener("pointercancel", up);
   function zoomAt(x: number, y: number, f: number) { const [l, b] = toSky(x, y); view.z *= f; clampView(); const [l2, b2] = toSky(x, y); view.l += wrap(l - l2); view.b += b - b2; clampView(); st.dirty = true; }
   cv.addEventListener("wheel", (e) => { e.preventDefault(); closeMenu(); zoomAt(e.offsetX, e.offsetY, Math.exp(-e.deltaY * 0.0015)); }, { passive: false });
   // ---- controls
-  const jump = (u: number) => { st.playing = false; st.wave = -1; if (Math.abs(u - 3) < 1e-6) nowY = yearOf(); st.u = u; sync(); };
+  const jump = (u: number) => { st.playing = false; st.wave = -1; st.layer = ""; if (Math.abs(u - 3) < 1e-6) nowY = yearOf(); st.u = u; sync(); };
   $<HTMLInputElement>("#skt").oninput = (e) => { let u = +(e.target as HTMLInputElement).value / 1000; for (const q of [0, 1, 2, 3, 4]) if (Math.abs(u - q) < 0.025) u = q; jump(u); };
   $("#skplay").onclick = () => { if (st.playing) { st.playing = false; sync(); } else if (st.u >= 3 && st.u < 3.999) playTo(st.u > 3.001 ? null : 0, st.u > 3.001 ? 4 : 3); else playTo(st.u >= 2.999 ? 0 : null, 3); };
   $("#sknow").onclick = () => jump(3); $("#skmine").onclick = askWhere;
@@ -460,9 +525,9 @@ export async function openSky(host: HTMLElement, o: SkyOpts): Promise<SkyHandle>
   const whole = () => { closeCard(); view.l = 0; view.b = 0; view.z = 1; clampView(); };          // the whole sky in view, for the stories told on it
   function show(what: string): boolean {
     hideIntro();
-    if (what === "planets" || what === "spherex" || what === "colours") { const open = st.panel !== what; st.panel = open ? what : ""; if (what !== "colours" && st.wave >= 0) st.wave = -1;
+    if (what === "planets" || what === "spherex" || what === "colours") { const open = st.panel !== what; st.panel = open ? what : ""; if (what !== "colours") { st.wave = -1; st.layer = ""; }
       if (open && what !== "spherex") { rail.classList.remove("shut"); fold.setAttribute("aria-expanded", "true"); }       // its panel must be in sight (on a phone the list starts folded)
-      if (open && what === "planets") { st.show.planets = true; if (st.u < 2) jump(3); } if (open && what === "spherex") { whole(); playTo(2, 3); } if (!open && what === "colours") st.wave = -1; sync(); return true; }
+      if (open && what === "planets") { st.show.planets = true; if (st.u < 2) jump(3); } if (open && what === "spherex") { whole(); playTo(2, 3); } if (!open && what === "colours") { st.wave = -1; st.layer = ""; specPin = false; } if (open && what === "colours" && !st.layer && st.wave < 0) { st.layer = "mix"; st.u = 3; loadLayer("mix"); } sync(); return true; }
     if (what === "story") { st.panel = ""; whole(); playTo(0, 3); return true; }
     if (what === "all" || what === "nogaia" || what === "open") { st.show.movers = true; st.panel = ""; st.wave = -1; if (what === "open" && st.chip === "open") { nextCase(); return true; } st.chip = what; if (st.u < 2) jump(3); sync(); if (what === "open") nextCase(); return true; }
     return false;

@@ -190,3 +190,9 @@ body.embed #ui .sp-info, body.embed #ui .sp-info.ver { top: 46px; max-height: ca
 .sg-adv label { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: rgb(240 240 250 / .85); } .sg-adv input { accent-color: #f0f0fa; }
 #ui .sg-adv input[type=checkbox] { flex: none; width: 15px; height: 15px; min-width: 0; padding: 0; margin: 0; appearance: auto; -webkit-appearance: checkbox; background: none; border: 0; }
 #ui .sg-adv label { white-space: nowrap; } #ui .sg-adv select { text-transform: none; letter-spacing: 0; width: auto; }
+
+/* ---- Sky: what the sky is made of ---- */
+.sk-spec { display: block; width: 100%; height: 118px; margin: 2px 0 4px; background: rgb(240 240 250 / .04); border-radius: 6px; }
+.mx-sub .sk-speccap { min-height: 34px; } .mx-sub .sk-speccap b { color: var(--white); font-weight: 600; } .mx-sub .sk-speccap span { color: var(--faint); }
+.mx-sub .sk-layers { margin: 2px 0 6px; }
+.sk-tile { position: absolute; right: 24px; bottom: 44px; z-index: 6; font-size: 10px; letter-spacing: .06em; color: #ff9d4d; pointer-events: none; text-shadow: 0 1px 3px #000; }
