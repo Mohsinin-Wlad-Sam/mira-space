@@ -87,7 +87,7 @@ export async function openSky(host: HTMLElement, o: SkyOpts): Promise<SkyHandle>
     <div class="sp-info" id="skinfo"></div>`;
   const $ = <T extends HTMLElement>(s: string) => host.querySelector(s) as T, cv = $<HTMLCanvasElement>(".sk-cv"), g = cv.getContext("2d")!;
   const view = { l: 0, b: 0, z: 1 };
-  const st = { u: 3, end: 3, wave: -1, layer: "", chip: "all", panel: "", sel: -1, body: "", place: null as null | { ra: number; dec: number }, playing: false, raf: 0, dirty: true, paused: false, last: 0, show: { movers: true, planets: true, marks: true } as Record<string, boolean> };
+  const st = { u: 3, end: 3, wave: -1, layer: "", depth: false, chip: "all", panel: "", sel: -1, body: "", place: null as null | { ra: number; dec: number }, playing: false, raf: 0, dirty: true, paused: false, last: 0, show: { movers: true, planets: true, marks: true } as Record<string, boolean> };
   let cw = 0, ch = 0, V: Ver | null = null, GL = new Float32Array(0), GB = new Float32Array(0), PX = new Float32Array(0), PY = new Float32Array(0), CELL = new Uint16Array(0), shown: number[] = [], destroyCard: (() => void) | null = null;
   let nowY = yearOf(), YS = 2025.31, cov: Cov | null = null, cellOf: Uint16Array | null = null, firstEnd = new Float32Array(0), prog = { pct: 1, visits: 0 }, bodies: (SkyBody & { gl: number; gb: number })[] = [], bodiesKey = NaN;
   const scale = () => (cw / 360) * view.z;
@@ -124,6 +124,20 @@ export async function openSky(host: HTMLElement, o: SkyOpts): Promise<SkyHandle>
       for (let q = 0; q < v.length; q += 2) { if (day >= v[q + 1]) vis++; if (day >= v[q] - 1 && day <= v[q] + 4) { S[c] = 1; scanOn = true; } } }
     prog = { pct: seenN / n, visits: vis / n }; revFull = seenN === n && A.every((q) => q >= 1); paint(maskCv, A, [255, 255, 255]); paint(scanCv, S, [91, 227, 255]);
     const rg = revCv.getContext("2d")!; rg.globalCompositeOperation = "copy"; rg.drawImage(pano.spherex, 0, 0, RW, RW / 2); rg.globalCompositeOperation = "destination-in"; rg.imageSmoothingEnabled = true; rg.drawImage(maskCv, 0, 0, RW, RW / 2); rg.globalCompositeOperation = "source-over";
+  }
+  const DEPTH: [number, number, number][] = [[0, 0, 0], [44, 82, 140], [47, 140, 156], [87, 179, 106], [205, 205, 84], [240, 154, 62], [255, 93, 108]];
+  const depthCv = mk(MW, MH); let depthKey = -1;
+  function depth(day: number) {
+    const key = Math.round(day / 2); if (key === depthKey || !cov || !cellOf) return; depthKey = key;
+    const n = cov.visits.length, C = new Uint8Array(n); for (let c = 0; c < n; c++) { const v = cov.visits[c]; let k = 0; for (let q = 1; q < v.length; q += 2) if (day >= v[q]) k++; C[c] = Math.min(6, k); }
+    const cx = depthCv.getContext("2d")!, id = cx.createImageData(MW, MH), d = id.data; for (let i = 0; i < MW * MH; i++) { const k = C[cellOf[i]], col = DEPTH[k]; d[i * 4] = col[0]; d[i * 4 + 1] = col[1]; d[i * 4 + 2] = col[2]; d[i * 4 + 3] = k ? 205 : 0; } cx.putImageData(id, 0, 0);
+  }
+  /** when SPHEREx imaged the patch around (l, b), and about when it comes back */
+  function visitsAt(l: number, b: number): string {
+    if (!cov || !cellOf) return ""; const x = Math.min(MW - 1, Math.max(0, Math.floor(((((l % 360) + 360) % 360) / 360) * MW))), y = Math.min(MH - 1, Math.max(0, Math.floor(((90 - b) / 180) * MH))), v = cov.visits[cellOf[y * MW + x]];
+    const iso = (d2: number) => new Date((cov!.mjd0 + d2 - 40587) * 86400000).toISOString().slice(0, 10), n = v.length / 2; if (!n) return "This patch has no public SPHEREx exposure yet.";
+    const gap = n > 1 ? (v[v.length - 2] - v[0]) / (n - 1) : 182, next = new Date((cov.mjd0 + v[v.length - 2] + gap - 40587) * 86400000).toLocaleDateString("en-GB", { month: "long", year: "numeric", timeZone: "UTC" });
+    return `This patch: imaged ${n} time${n > 1 ? "s" : ""}, first ${iso(v[0])}, last ${iso(v[v.length - 2])} to ${iso(v[v.length - 1])}. Next visit expected about ${next} (it has come back every ${Math.round(gap)} days).`;
   }
   fetch(`${o.base}data/sphx2/coverage.json`).then((r) => (r.ok ? r.json() : null)).then((c: Cov | null) => {
     if (!c?.visits?.length) return; const nside = Math.round(Math.sqrt(c.visits.length / 12)), map = new Uint16Array(MW * MH);
@@ -317,6 +331,7 @@ export async function openSky(host: HTMLElement, o: SkyOpts): Promise<SkyHandle>
       if (scanOn) { g.globalCompositeOperation = "screen"; layer(scanCv, 0.34); g.globalCompositeOperation = "source-over"; } }
     else if (u < 3) { layer(pano.wise, 1); layer(pano.spherex, ease(u - 2)); }
     else layer(pano.spherex, 1);
+    if (st.depth && cov && cellOf && st.wave < 0 && !st.layer && u >= 2) { depth(u >= 3 ? 1e9 : day); layer(depthCv, 0.78); }       // survey depth: finished visits per patch
     // zoomed in, the surveys' own tiles replace the panorama: markers then sit on the real stars
     tileNote = "";
     if (s >= 30 && st.wave < 0 && !st.layer && u <= 2) {       // (SPHEREx's own all-sky tiles have gaps wavelength by wavelength: its era keeps the panorama, and the Lab shows its full exposures)
@@ -388,13 +403,15 @@ export async function openSky(host: HTMLElement, o: SkyOpts): Promise<SkyHandle>
       $("#skme").onclick = askWhere;
       el.querySelectorAll<HTMLButtonElement>("[data-b]").forEach((b) => (b.onclick = () => openBody(b.dataset.b!, true)));
       $("#skyear").onclick = () => playTo(3, 4); }
-    else if (st.panel === "spherex") { const key = `s${Math.round(prog.pct * 1000)}|${Math.round(st.u * 400)}|${!!cov}`; if (key === subKey) return; subKey = key;
+    else if (st.panel === "spherex") { const key = `s${Math.round(prog.pct * 1000)}|${Math.round(st.u * 400)}|${!!cov}|${st.depth}`; if (key === subKey) return; subKey = key;
       const pct = st.u >= 3 ? 1 : st.u <= 2 ? 0 : prog.pct, vis = st.u >= 3 && cov ? cov.visits.reduce((q, v) => q + v.length / 2, 0) / cov.visits.length : st.u <= 2 ? 0 : prog.visits;
       el.innerHTML = cov ? `<div class="mx-stat"><b>${Math.round(pct * 100)}%</b><span>of the sky imaged at least once by ${dayText(Math.min(yr, nowY))} · ${vis.toFixed(1)} finished visits per place</span></div><div class="mx-bar"><i style="width:${(pct * 100).toFixed(1)}%"></i></div>
-        <div class="mx-acts"><button class="btn sm ghost" id="skrun" title="From SPHEREx's first survey exposures to the newest public ones">▶ Play the survey</button></div>
+        <div class="mx-acts"><button class="btn sm ghost" id="skrun" title="From SPHEREx's first survey exposures to the newest public ones">▶ Play the survey</button><button class="btn sm ghost${st.depth ? " on" : ""}" id="skdepth" title="Colour each patch of sky by how many times SPHEREx has finished imaging it">Survey depth</button></div>
+        ${st.depth ? `<div class="sk-depth">${DEPTH.slice(1).map((c2, k) => `<span><i style="background:rgb(${c2.join(",")})"></i>${k + 1}${k === 5 ? "+" : ""}</span>`).join("")}<em>visits</em></div>` : ""}<p class="mx-note" id="skhere">Move over the map to read when SPHEREx imaged a place, and about when it comes back.</p>
         <p class="mx-note">${cov.exposures.toLocaleString()} public exposures, ${cov.first} to ${cov.last}. The picture (NASA's finished mosaic) appears where SPHEREx had observed by each date, in patches 1.8° wide; the blue band is where it had just arrived. Every place is revisited about every six months. A moving star turns from grey to colour once SPHEREx had imaged its place. <a class="link" href="${o.base}data/sphx2/coverage.json" download="spherex_coverage_dates.json">The dates, as a file</a></p>`
         : `<p class="mx-note">The dates of SPHEREx's exposures could not be read just now.</p>`;
-      const run = host.querySelector("#skrun") as HTMLElement | null; if (run) run.onclick = () => playTo(2, 3); }
+      const run = host.querySelector("#skrun") as HTMLElement | null; if (run) run.onclick = () => playTo(2, 3);
+      const dp = host.querySelector("#skdepth") as HTMLElement | null; if (dp) dp.onclick = () => { st.depth = !st.depth; if (st.depth && st.u < 2) st.u = 3; sync(); }; }
     else if (st.panel === "colours") { const key = `c${st.wave}|${LAM.length}|${st.layer}|${!!spec}`; if (key === subKey) return; subKey = key; const lam = LAM[st.wave]; loadSpec();
       el.innerHTML = `<div class="mx-h">Only SPHEREx sees the whole sky in 102 colours</div>
         <div class="mx-chips sk-layers"><button data-ly="" class="${!st.layer && st.wave < 0 ? "on" : ""}">Picture</button>${Object.entries(LAYERS).map(([k, L2]) => `<button data-ly="${k}" class="${st.layer === k ? "on" : ""}">${L2.t}</button>`).join("")}</div>
@@ -507,7 +524,8 @@ export async function openSky(host: HTMLElement, o: SkyOpts): Promise<SkyHandle>
   cv.addEventListener("pointerdown", (e) => { cv.setPointerCapture(e.pointerId); pts.set(e.pointerId, [e.offsetX, e.offsetY]); moved = 0; pinch = 0; closeMenu(); });
   cv.addEventListener("pointermove", (e) => {
     const p = pts.get(e.pointerId);
-    if (!p) { const [l, b] = toSky(e.offsetX, e.offsetY); if (st.panel === "colours" && !specPin && Math.abs(b) <= 90) { specAt = [l, b]; drawSpec(); } if (Math.abs(b) <= 90) { const [ra, dec] = toEq(l, b); $("#skcoords").textContent = `${hms(ra, dec)}  ·  Galactic ${l.toFixed(1)}° ${b >= 0 ? "+" : "−"}${Math.abs(b).toFixed(1)}°`; } cv.style.cursor = hitMark(e.offsetX, e.offsetY) || hit(e.offsetX, e.offsetY) >= 0 ? "pointer" : "grab"; return; }
+    if (!p) { const [l, b] = toSky(e.offsetX, e.offsetY); if (st.panel === "colours" && !specPin && Math.abs(b) <= 90) { specAt = [l, b]; drawSpec(); }
+      if (st.panel === "spherex" && Math.abs(b) <= 90) { const h2 = host.querySelector<HTMLElement>("#skhere"); if (h2) h2.textContent = visitsAt(l, b); } if (Math.abs(b) <= 90) { const [ra, dec] = toEq(l, b); $("#skcoords").textContent = `${hms(ra, dec)}  ·  Galactic ${l.toFixed(1)}° ${b >= 0 ? "+" : "−"}${Math.abs(b).toFixed(1)}°`; } cv.style.cursor = hitMark(e.offsetX, e.offsetY) || hit(e.offsetX, e.offsetY) >= 0 ? "pointer" : "grab"; return; }
     if (pts.size === 2) { const [a, b2] = [...pts.entries()].map(([id, q]) => (id === e.pointerId ? [e.offsetX, e.offsetY] : q)), d = Math.hypot(a[0] - b2[0], a[1] - b2[1]); if (pinch) zoomAt((a[0] + b2[0]) / 2, (a[1] + b2[1]) / 2, d / pinch); pinch = d; moved = 9; }
     else { const dx = e.offsetX - p[0], dy = e.offsetY - p[1]; moved += Math.abs(dx) + Math.abs(dy); view.l += dx / scale(); view.b += dy / scale(); clampView(); st.dirty = true; }
     pts.set(e.pointerId, [e.offsetX, e.offsetY]);

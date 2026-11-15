@@ -71,6 +71,8 @@ footer { max-width: 1180px; margin: 0 auto; padding: 24px; border-top: .8px soli
 <li><b>One wavelength at a time.</b> The slider steps through the 102 wavelengths. The pictures are prepared ahead, so a step takes a fraction of a second.</li>
 <li><b>Spectrum under the pointer.</b> As you move over the map, the plot shows the spectrum of the 1.5° patch under the pointer, and says in words what it is made of. Click to pin a patch.</li></ul>
 <p class="note"><b>How far to trust it.</b> These are built by <code>census/sx_layers.py</code> from the 8-bit preview frames of NASA's SPHEREx DR1 all-sky cube, decoded with the stretch stated in the cube's own description. They show what is where. Amounts are indicative: faint dust appears in coarse steps, and the brightest parts of the Galactic plane are clipped at 40 MJy/sr. For calibrated numbers on one object, use the Lab's Spectrograph, which reads the full exposures.</p>
+<h3>Survey depth and next visit <span class="tag">for mission teams</span></h3>
+<p>Open <b>SPHEREx, day by day</b> and switch on <b>Survey depth</b>: every 1.8° patch is coloured by how many times SPHEREx has finished imaging it by the date shown. Move over the map to read, for the patch under the pointer, the dates of its visits and about when the next one is due (from the interval between its own past visits).</p>
 <h3>Markers</h3>
 <p>With the whole sky in view only the fastest movers are drawn; the rest appear as you zoom in. Zoomed in, a marker stands where its star was on the date shown, and for 1999 and 2010 the map draws the surveys' own sharp tiles from NASA's archive, so you can see the marker sit on the star. Click a marker for its card; click empty sky to watch that place through time, or to measure it in the Lab.</p>
 
@@ -89,10 +91,10 @@ footer { max-width: 1180px; margin: 0 auto; padding: 24px; border-top: .8px soli
 <tr><td><b>Photometer</b></td><td>Did its brightness change</td><td>Since 1999 against the catalogues; between SPHEREx visits only at matched wavelengths.</td></tr>
 <tr><td><b>Detection limits</b></td><td>What could still hide here</td><td>The depth actually reached in this field against model bodies, from a second Jupiter to Planet Nine as proposed.</td></tr>
 <tr><td><b>Exposures</b></td><td>Which data, with which flags</td><td>Every exposure with NASA's flags at the target; untick one to leave it out.</td></tr>
-<tr><td><b>Export</b></td><td>Take it away</td><td>CSV tables, a registered FITS cube, PNG, movie, link, embed code, an Astropy snippet that reproduces the reading.</td></tr>
+<tr><td><b>Export</b></td><td>Take it away</td><td>A one-page <b>field report</b> to print or save as PDF (the picture, the answers, the table of sources, the data used, the method and its limits); CSV tables, a registered FITS cube, PNG, movie, link, embed code, an Astropy snippet that reproduces the reading.</td></tr>
 <tr><td><b>Watchlist</b> <span class="tag">researcher</span></td><td>The same chain for a list of targets</td><td>Up to 25 names or positions per run, one table, CSV or JSON.</td></tr>
 <tr><td><b>Sky world model</b> <span class="tag">researcher</span></td><td>A network's forecast of the field, and what it did not expect</td><td>See <a href="#worldmodel">below</a>.</td></tr></table>
-<p>A field you have opened is kept in your browser, so opening it again is instant. The exposures themselves are read live from NASA's archive: a first reading takes 10 to 40 seconds, and the picture fills in while it arrives.</p>
+<p>NASA's five test targets open at once: the site carries a prepared copy of each (rebuilt after every data release). Any other field is read live from NASA's archive, which takes 10 to 40 seconds the first time while the picture fills in, and is then kept in your browser, so opening it again is instant.</p>
 
 <h2 id="search">Search</h2>
 <p>Results appear as you type, from the planets, NASA's five test targets, landmarks, the 17,604 confirmed movers (by name, Gaia number or kind), 1,125 bright stars, 4,834 stars with planets, and MIRA's own tools and pages. It forgives spelling (“barnad”, “jupitr”, “epsilon indi” all work). If you do not know a name, open the filters and search by kind, motion and distance: for example every T dwarf within 65 light-years. Anything else is looked up in the CDS star databases when you press Enter.</p>
@@ -148,10 +150,11 @@ footer { max-width: 1180px; margin: 0 auto; padding: 24px; border-top: .8px soli
 <tr><td><code>/data/sphx2/&lt;pixel&gt;.json</code></td><td>The exposure index: which SPHEREx exposures cover a patch.</td></tr>
 <tr><td><code>/space/sx/spectra.json</code>, <code>spectra.bin</code></td><td>The median spectrum of every 1.5° patch of sky: 240 × 120 patches × 100 wavelengths, one byte each; <code>value = 0.02 · (exp(code / 32) − 1)</code> MJy/sr.</td></tr>
 <tr><td><code>/space/sx/layer_*.jpg</code>, <code>frames/&lt;k&gt;.jpg</code></td><td>The composition pictures and one panorama per wavelength (Galactic, longitude 0 at the left edge).</td></tr>
-<tr><td><code>/data/wm/model.json</code>, <code>model.bin</code></td><td>The world model: layer table, test results, float32 weights.</td></tr></table>
+<tr><td><code>/data/wm/model.json</code>, <code>model.bin</code></td><td>The world model: layer table, test results, float32 weights.</td></tr>
+<tr><td><code>/data/lab/index.json</code>, <code>f*.bin</code></td><td>Prepared copies of the test fields (gzip; format in <code>web/src/blink/fieldpack.ts</code>).</td></tr></table>
 
 <h2 id="update">New data releases</h2>
-<p>One script, <code>deploy/update_spherex.sh</code>, rebuilds the exposure index, the coverage dates and the composition pictures from NASA's archive. The site itself reads exposures live, so a new release shows in the Lab as soon as the index is rebuilt.</p>
+<p>One script, <code>deploy/update_spherex.sh</code>, rebuilds the exposure index, the coverage dates and the composition pictures from NASA's archive. The site itself reads exposures live, so a new release shows in the Lab as soon as the index is rebuilt. <code>web/scripts/prebake_fields.mjs</code> then prepares the five test fields again.</p>
 
 <h2 id="plans">Plans</h2>
 <p class="note"><b>Prototype.</b> Everything is free today, including the researcher tools (switch them on in the Lab's tool list). The plans below are how we would offer MIRA; no price has been tested with a customer yet.</p>
@@ -166,7 +169,7 @@ footer { max-width: 1180px; margin: 0 auto; padding: 24px; border-top: .8px soli
 <ul><li><b>Data.</b> NASA SPHEREx (Level-2 exposures and the DR1 all-sky cube) from NASA/IPAC IRSA; 2MASS and WISE/AllWISE (NASA/IPAC, UMass, UCLA, JPL); ESA Gaia DR3; SIMBAD, VizieR and Aladin (CDS, Strasbourg); NASA Exoplanet Archive; NASA JPL Horizons (for checks) and JPL's approximate planetary elements.</li>
 <li><b>Software.</b> Astropy, astropy-healpix, NumPy, SciPy, PyTorch (pipeline and training); three.js, Aladin Lite, Vite, React (site).</li>
 <li><b>Type.</b> Barlow and JetBrains Mono (SIL Open Font License).</li>
-<li><b>Demo film.</b> Music and footage are credited on the film's end card and in <code>docs/17_credits.md</code>.</li>
+<li><b>Demo film</b> (<a href="/film/">/film/</a>, press Space). Music: “Impact Prelude” by Kevin MacLeod (incompetech.com), Creative Commons BY 4.0. Spacecraft animation: NASA/JPL-Caltech. Everything else is recorded from this site. Full list: <code>docs/17_credits.md</code>.</li>
 <li><b>AI tools.</b> Code and text were written with AI assistance; every use is logged in <code>docs/07_si_usage_log.md</code>. No picture on the site is AI-generated except the world model's forecasts, which are labelled.</li>
 <li><b>Team Mohsinin Wlad Dario</b> · NASA Space Apps Challenge 2026, Ben Guerir · Mohammed Ouabdrrahmane, Hamza Ba-mohammed, Hiba Nemry, Aya Driouche, Abdelmonaim Bounite.</li></ul>
 </main>

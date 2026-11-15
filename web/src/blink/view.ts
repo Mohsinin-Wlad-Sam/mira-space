@@ -218,7 +218,7 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
     opened = true; target = { ...t }; probe = { dx: 0, dy: 0, follow: true };
     N = o.size && SIZES.includes(o.size) ? o.size : N; maxFrames = o.frames ?? maxFrames;
     dets = new Set([1, 2, 3, 4, 5, 6]); view.track = false; mode = o.mode ?? "evolve"; order = "time";
-    tab = o.tab ?? "changes"; if (isTab(tool)) tool = tab; excluded.clear(); evo.range = "1999"; evo.rate = 5;
+    tab = o.tab ?? "changes"; if (isTab(tool)) tab = tool;       // a tool that is open (or asked for in the address) stays open on the new field excluded.clear(); evo.range = "1999"; evo.rate = 5;
     if (t.key === "wise-0855") dets = new Set([5, 6]);   // only visible at 4–5 µm
     start();
   }
@@ -902,6 +902,8 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
       <div class="bk-actions"><button class="btn sm" id="bk-fits" title="The registered frames as a FITS cube with WCS, plus a table of the exposures">Registered cube (FITS)</button><button class="btn sm ghost" data-x="spectrum">Spectrum</button><button class="btn sm ghost" data-x="light">Light curve</button>
         <button class="btn sm ghost" data-x="motion">Astrometry</button><button class="btn sm ghost" data-x="changes" title="The Motion detector's table: every measured source of the field">Field sources</button><button class="btn sm ghost" data-x="frames">Exposures</button></div>
       <p class="bk-cap show">CSV tables carry their units in the column names; the FITS cube is in MJy/sr, north up, ${N} × ${N} px at 6.15″, one plane per exposure in use (${used.length}).</p>
+      <div class="eyebrow sec">Report</div><div class="bk-actions"><button class="btn sm" id="bk-report" title="One page with the picture, the answers, the table of sources, the data used and the method: print it or save it as a PDF">Field report (print or PDF)</button></div>
+      <p class="bk-cap show">Everything a colleague needs to check this reading: the picture, what was measured, on which exposures, with which catalogues, and the limits.</p>
       <div class="eyebrow sec">Pictures</div><div class="bk-actions"><button class="btn sm ghost" id="bk-png">This frame (PNG)</button><button class="btn sm ghost" id="bk-webm">Movie (WebM)</button></div>
       <div class="eyebrow sec">Link to this observation</div><div class="bk-copy"><input readonly value="${esc(url)}" id="bk-url"><button class="btn sm" data-copy="bk-url">Copy</button></div>
       <div class="eyebrow sec">Embed</div><div class="bk-copy"><input readonly value="${esc(iframe)}" id="bk-emb"><button class="btn sm" data-copy="bk-emb">Copy</button></div>
@@ -916,6 +918,7 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
     el.querySelectorAll<HTMLButtonElement>("[data-x]").forEach((b) => (b.onclick = () => { if (b.dataset.x === "spectrum") { downloadCsv(); return; } const keep = tab; tab = b.dataset.x as Tab; renderPanel(); ($("#bk-panel").querySelector("#bk-csv") as HTMLElement | null)?.click(); tab = keep; renderPanel(); }));
     $("#bk-fits").onclick = () => { if (used.length) save(fitsCube(used, N, center, target.name ?? sexa(center[0], center[1])), `${fileStem()}_cube.fits`); };
     $("#bk-png").onclick = () => cv.toBlob((b) => b && save(b, `${fileStem()}.png`));
+    $("#bk-report").onclick = fieldReport;
     $("#bk-webm").onclick = recordMovie;
     const at = host.querySelector<HTMLElement>("#bk-atlas"); if (at) at.onclick = () => opts.onAtlas?.(center[0], center[1]);
   }
@@ -925,6 +928,28 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
   let wmMod: Promise<typeof import("./worldmodel")> | null = null, wlMod: Promise<typeof import("./watchlist")> | null = null;
   function renderWm() { const el = $("#bk-wm"); (wmMod ??= import("./worldmodel")).then((m) => { if (tool === "wm") m.renderWorldModel(el, labApi()); }).catch(() => { el.innerHTML = `<div class="bk-empty">The world model could not be loaded.</div>`; }); }
   function renderWatch() { const el = $("#bk-watch"); (wlMod ??= import("./watchlist")).then((m) => { if (tool === "watch") m.renderWatchlist(el, labApi()); }).catch(() => { el.innerHTML = `<div class="bk-empty">The watchlist could not be loaded.</div>`; }); }
+  /** the field on one printable page: the picture, the answers, the sources, the data and the method */
+  function fieldReport() {
+    const w = window.open("", "_blank"); if (!w) { toast("Allow pop-ups for this site to open the report"); return; }
+    const R = report, used = live(), nv = used.length ? used[used.length - 1].visit + 1 : 0, name = target.name ?? sexa(center[0], center[1]), A2 = astro(); let pic = ""; try { pic = cv.toDataURL("image/png"); } catch { /* no picture */ }
+    const rows = R ? R.rows.slice(0, 16).map((q) => { const v = verdict(q), m = q.pm && q.pm.base > 5 ? q.pm : null, g = gaiaPm(q), d = q.dW2 ?? q.dW1;
+      return `<tr><td>${q.n}${q.isTarget ? " ★" : ""}</td><td>${v.chip}</td><td>${esc(identity(q))}</td><td>${m ? `${m.tot.toFixed(3)} ± ${Math.hypot(m.etot, R.cal.pmRms ?? 0.03).toFixed(3)}` : "–"}</td><td>${g === null ? "–" : g.toFixed(3)}</td><td>${d ? `${d.ratio.toFixed(2)}×` : "–"}</td></tr>`; }).join("") : "";
+    const fact = (k: string, a?: Answer) => (a ? `<div><b>${k}</b>${a.chip}${/^[—…]$/.test(a.big) ? "" : ` · ${esc(a.big)}${a.unit ? ` ${esc(a.unit)}` : ""}`} · ${esc(a.label)}<br><span>${a.text}</span></div>` : "");
+    w.document.write(`<!doctype html><html lang="en"><head><meta charset="utf-8"><title>MIRA field report · ${esc(name)}</title><style>
+      body{font:13.5px/1.5 "Barlow",system-ui,sans-serif;color:#111;margin:32px auto;max-width:860px;padding:0 24px} h1{font-size:30px;margin:2px 0 4px;text-transform:uppercase;letter-spacing:.02em} h2{font-size:12px;letter-spacing:.14em;text-transform:uppercase;margin:22px 0 6px;padding-top:12px;border-top:1px solid #bbb}
+      .e{font:11px ui-monospace,Menlo,monospace;letter-spacing:.12em;text-transform:uppercase;color:#666} .top{display:grid;grid-template-columns:300px 1fr;gap:24px;align-items:start} img{width:300px;image-rendering:pixelated;border:1px solid #999} .facts div{margin:0 0 9px} .facts div>b:first-child{display:block;font:10px ui-monospace,Menlo,monospace;letter-spacing:.14em;text-transform:uppercase;color:#666} .facts span{color:#444}
+      table{width:100%;border-collapse:collapse;font:11.5px ui-monospace,Menlo,monospace} th,td{text-align:left;padding:4px 8px 4px 0;border-bottom:1px solid #ddd;vertical-align:top} th{font-weight:400;color:#666} p{margin:0 0 8px} .s{color:#555;font-size:12px} @media print{body{margin:0 auto} .no{display:none}}
+      </style></head><body><div class="e">MIRA · field report · ${new Date().toISOString().slice(0, 16).replace("T", " ")} UTC</div><h1>${esc(name)}</h1>
+      <p class="s">${sexa(center[0], center[1])} · ${center[0].toFixed(5)}° ${center[1] >= 0 ? "+" : ""}${center[1].toFixed(5)}° ICRS · field ${((N * PIX_ARCSEC) / 60).toFixed(1)}′${hasPm() ? ` · catalogue motion ${fmtPm(target.pmra ?? 0)}, ${fmtPm(target.pmdec ?? 0)} ″/yr (${esc(target.source ?? "catalogue")})` : ""}</p>
+      <div class="top"><div>${pic ? `<img src="${pic}" alt="The field">` : ""}<p class="s">The picture on screen when the report was made. North up, east left.</p></div>
+      <div class="facts">${R ? `<div><b>What moved here</b>${R.counts.moved} of ${R.counts.measured} sources moved; ${R.counts.brighter + R.counts.fainter} changed brightness by more than 30% since 2010; ${R.counts.fresh} absent from the older surveys.</div>` : ""}
+        <div><b>Motion of the selected source</b>${A2.html}</div>${fact("Its light", answers?.made)}${fact("Brightness between visits", answers?.change)}</div></div>
+      ${rows ? `<h2>Sources of the field (first ${Math.min(16, R!.rows.length)} of ${R!.rows.length}; ★ = the target)</h2><table><thead><tr><th>#</th><th>result</th><th>identity</th><th>motion (″/yr)</th><th>Gaia (″/yr)</th><th>now ÷ 2010</th></tr></thead><tbody>${rows}</tbody></table>` : ""}
+      <h2>Data used</h2><p>${used.length} SPHEREx Level-2 exposures in ${nv} visit${nv === 1 ? "" : "s"}${frames.length ? `, ${mjdToDate(frames[0].mjd)} to ${mjdToDate(frames[frames.length - 1].mjd)}` : ""}${excluded.size ? ` (${excluded.size} excluded by the user)` : ""}; ${plan?.covered ?? "?"} exposures cover the place${meta ? `; archive indexed through ${meta.last}` : ""}. Read from NASA/IPAC IRSA. Pictures of 1999 (2MASS, 2.2 µm) and 2010 (WISE, 4.6 µm) from the HiPS copies at IRSA. Catalogues: Gaia DR3${cat.gaia.length ? ` (${cat.gaia.length} stars)` : " (not reachable)"}, AllWISE${cat.wise.length ? ` (${cat.wise.length})` : " (not reachable)"}, 2MASS${cat.tm.length ? ` (${cat.tm.length})` : " (not reachable)"}, through CDS VizieR.${R ? ` Reference frame: ${R.cal.nRef} Gaia stars${R.cal.astroRms ? `, ${R.cal.astroRms.toFixed(2)}″ scatter per visit` : ""}${R.cal.pmRms ? `; motions of Gaia stars recovered to ${R.cal.pmRms.toFixed(3)}″/yr` : ""}${R.limits.pm ? `; smallest motion detectable here ${R.limits.pm.toFixed(2)}″/yr` : ""}.` : ""} NASA's pixel flags ${masksAll ? "applied" : "not yet applied"}.</p>
+      <h2>Method and limits</h2><p>Sources above 5σ on the combined exposures; one position per visit, tied to Gaia by the field's own stars; counterparts in AllWISE (2010) and 2MASS (about 1999); a straight-line fit through all dates. “Moved” needs 5σ against the scatter with which Gaia stars are recovered in this same field. Saturated, blended and edge sources are listed but not judged. A SPHEREx pixel is 6.15″. Blind test of the detector: 92% of known movers found, no false alarm among 5,951 still stars, median motion error 0.011″/yr.</p>
+      <p class="s">Reproduce: <a href="${esc(shareUrl())}">${esc(shareUrl())}</a></p><p class="no"><button onclick="print()">Print or save as PDF</button></p></body></html>`);
+    w.document.close();
+  }
   const fileStem = () => `mira_${(target.name ?? `${center[0].toFixed(4)}_${center[1].toFixed(4)}`).replace(/[^\w.+-]+/g, "_")}`;
   function save(b: Blob, name: string) { const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); }
   function downloadCsv() {

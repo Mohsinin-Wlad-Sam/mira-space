@@ -10,20 +10,25 @@ refreshed. Outside figures are sourced in section "Why it matters" below.
 **Project name:** MIRA — the sky is not still
 
 **High-level summary (≈190 words)**
-NASA's SPHEREx is photographing the whole sky in 102 infrared colours, and every image is public. But one image is
-a 65-megabyte scientific file made for specialists' software. MIRA makes them something anyone can use, in two maps
-that share one frame. **Sky** shows the whole sky with the planets where they are right now, shades what is below
-your own horizon, and runs one time bar back to 1999 through three NASA surveys; SPHEREx's picture fills in on the
-dates it was really taken. **Space** is a model of the Sun's neighbourhood where the planets move on their orbits
-and every point is a real star; the 12,329 orange ones (those of the 17,604 confirmed movers that have a distance)
-were caught moving and confirmed, one by one, on SPHEREx images. Click one: three real NASA pictures (2MASS about
-1999, WISE 2010, SPHEREx today) show it at three places along its measured path. For 635 confirmed movers with no
-Gaia source and no entry in SIMBAD, astronomy's reference database, a prototype lets visitors record what they see,
-with no account, following NASA's Backyard Worlds, where 150,000 volunteers helped find about 3,000 brown dwarfs.
-One click deeper is the Lab the challenge asks for: type any position, watch that field through time, and measure
-what moved, how fast and what it is. No install, no account, no server.
+NASA's SPHEREx photographs the whole sky every six months in 102 colours of infrared light, and every image is
+public. But one image is a 65-megabyte scientific file made for specialists. MIRA turns them into something anyone
+can use, in the browser. The **Sky** map puts 27 years of NASA's all-sky pictures on one time bar (2MASS 1999, WISE
+2010, SPHEREx filling in on its real dates), shows the planets where they are tonight over your own horizon, and
+uses what only SPHEREx has: pictures of what the sky is made of (starlight, carbon dust, hydrogen) and the spectrum
+of any patch under the pointer. **Space** is a 3D model of the Sun's neighbourhood where planets and stars move.
+The **Lab** is the tool the challenge asks for: point at any place, play it through time like a little video, and
+get four answers: what moved, how fast, what its light says, did it change. Tools open only when asked for; NASA's
+five test targets open at once. Behind it is a catalogue of 17,604 moving stars, each re-measured on raw SPHEREx
+exposures, and a small sky world model, trained on our university's GPUs, that runs in the browser. No install, no
+account, no server.
 
-**Link to project / demo:** ⟨hosted URL⟩ · repo: github.com/Mohsinin-Wlad-Sam/assrar-dawla
+**Link to project demo (choose one; both exist):**
+- 30-second film: `media/mira_film_30s.mp4` in the repository (1080p, 60 frames a second, 29.9 s, English captions on
+  screen). Upload it to YouTube or Drive with public access and paste that link. It can be rendered again with
+  `web/scripts/render_film.mjs`.
+- Seven slides: the deck at `⟨hosted URL⟩/deck/` (the product runs inside the slides), or its PDF `media/MIRA_deck.pdf`.
+
+**Link to final project:** ⟨hosted URL⟩ · documentation ⟨hosted URL⟩/docs/ · repository github.com/Mohsinin-Wlad-Sam/assrar-dawla (must be public)
 
 **Project details**
 
@@ -120,42 +125,45 @@ stay in their browser and export as files.
 Meisner et al. (2023, unWISE time-domain); Marocco et al. (2021, CatWISE2020); Gaia Collaboration (2023, DR3);
 Skrutskie et al. (2006, 2MASS); Brown & Batygin (2021); Luhman (2013, 2014).
 
-**Use of AI tools:** `docs/07_si_usage_log.md` — AI coding assistants were used for development and review, and a
-language model runs the in-product assistant. Every scientific number shown is produced by our own code on NASA
-data and checked against independent references; the assistant is told to use only those numbers.
+**Use of Super Intelligence (SI) tools (text for the form):**
+Yes. AI coding assistants (Claude Code; Codex and Antigravity as reviewers) wrote and reviewed most of the code,
+text and layout under the team's direction; every use is logged in `docs/07_si_usage_log.md` with what was checked
+afterwards. A language model (K2 Horizon) runs the in-product assistant: it explains and operates the page and is
+restricted to numbers the instruments computed. A small neural network trained by the team (the "sky world model")
+draws forecast pictures of a field: these are AI-generated and carry a visible "AI-generated · prediction" label in
+the Lab, in the deck and in the film. No other picture, video or audio is AI-generated: the sky pictures are NASA
+data, the film's music is "Impact Prelude" by Kevin MacLeod (CC BY 4.0) and its opening shot is NASA/JPL-Caltech's
+own animation. The idea, the scientific choices and the validation are the team's.
 
-## 7 slides
+## 7 slides (built: `web/deck/index.html`, served at `/deck/`)
 
-1. **The sky is not still.** The Sky map, live: tonight's planets on the whole sky, "My sky now" switched on. One
-   line: "Planets move in days. Stars move in decades. MIRA shows both, on NASA's own pictures."
-2. **The problem, for everyone.** A US$488 million mission whose public images are made for specialists' software:
-   65 MB files, 102 colours, never the same wavelength twice.
-3. **Click a star, compare three pictures.** The card of a brown dwarf that is not in the Gaia optical catalogue:
-   2MASS 1999, WISE 2010 and SPHEREx 2025 on one slider, the object in the circle each time, "18 light-years from
-   the Sun".
-4. **Take part (prototype).** NASA's own precedent: 150,000 volunteers, about 3,000 brown dwarfs. In MIRA: 635
-   confirmed movers with no Gaia source and no SIMBAD entry, with pictures and three answer buttons, no account. A
-   classroom can do it; the pilot will tell us whether they do.
-4b. **27 years on one time bar.** The Sky map playing: 2MASS 1999 fading into WISE 2010, then SPHEREx's picture
-   filling in strip by strip on the dates it was taken, the movers lighting up as it reaches them; then the slider
-   through SPHEREx's 102 wavelengths (3.3 µm lights up the Milky Way's dust), each read from NASA's archive when asked for. And the Solar System
-   in Space, planets going round at ten days a second.
-5. **One click deeper: the Lab.** ε Indi B: press play, three NASA pictures of the field follow one another and the
-   brown dwarf walks along its dated track; "12 sources measured, 1 moved"; Astrometer (+3.99, −2.49″/yr against
-   Gaia's +3.98, −2.47), Spectrograph with the methane band. "Read from NASA's archives as you ask. No server."
-6. **Verified, not just claimed.** The funnel: 39.9 billion → 1.56 million → 202,528 → 17,604. Blind control run:
-   92% of known movers found without Gaia, no false alarm among 5,757 still stars. What failed the test is gone.
-7. **Built to last, for everyone.** Static, free, embeddable, phone-ready; one script per data release; an
-   assistant that explains and operates; who pays (grants for open science and education, work for archives and
-   universities); limits; team.
+Arrow keys or a clicker turn the slides; F goes full screen. Slides 1, 3 and 4 run the live product inside the slide.
 
-## 30-second video (storyboard)
+1. **Title.** MIRA · See the sky change. Team Mohsinin Wlad Dario, the five names, Ben Guerir, the challenge. Behind
+   it the Sky map plays its 27 years.
+2. **The challenge.** "The sky moves. Almost nobody can watch it." 102 colours; 1,628,230 exposures indexed; 27
+   years on one time bar; the composition picture only SPHEREx allows.
+3. **What we built.** The Sky map, live in the slide: search, time bar, planets, what the sky is made of, click any
+   place.
+4. **The Lab.** Live on Epsilon Indi B: point, play, four answers; the challenge's tips ticked one by one.
+5. **Validity.** The funnel 39.9 billion → 1.56 million → 202,528 → 17,604; blind test 92% / 0 false alarms;
+   0.011″/yr; 0.25″; 8′ against JPL Horizons; the world model's training curve and its real-star test.
+6. **Impact and plan.** Explorer (free), Researcher, Mission; US$150 a year to keep the site alive; honest status.
+7. **Next, and who we are.** Each data release re-runs the search; the model that flags what it did not expect;
+   exercises in three languages; the team with affiliations (photos go in `web/public/deck/team/<first name>.jpg`).
 
-| t | Picture | Caption / voice |
+## 30-second film (built: `web/film/index.html`, rendered to `media/mira_film_30s.mp4`)
+
+| t | Picture | Caption on screen |
 |---|---|---|
-| 0–5 s | The Sky map, live: the planets with their names, "My sky now" shading the horizon; then the time bar played from 1999, SPHEREx's picture filling in | "The sky is not still. Planets move in days; NASA has photographed all of it for 27 years, in files made for specialists." |
-| 5–12 s | Space: "Show me a star that moved": fly to a brown dwarf; its card; the slider dragged from 1999 to 2010, the dot following the circle | "Stars move in decades. MIRA lets anyone compare real NASA pictures and see one change place." |
-| 12–17 s | "Help look at one": an object with no SIMBAD entry, the three answer buttons and the tally | "Some are in no reference database. Anyone can take a first look, as 150,000 volunteers did for NASA." |
-| 17–23 s | "Deep analysis": ε Indi B in the Lab, play pressed, the track growing; the Motion detector's table; the Astrometer plot | "One click deeper, instruments measure any place in the sky: what moved, how fast, what it is." |
-| 23–26 s | Catalogue funnel and the blind-test line | "Every claim checked on NASA's raw images." |
-| 26–30 s | Logo + URL | "MIRA. Find what moves." |
+| 0–2.6 s | NASA/JPL-Caltech's animation of the SPHEREx spacecraft | Team Mohsinin Wlad Dario · NASA Space Apps Challenge 2026 — NASA's SPHEREx maps the whole sky in 102 colours |
+| 2.6–5.6 s | The Sky map: SPHEREx's survey filling the sky on its real dates | The challenge · Planet X and SPHEREx — Every place, every six months. Spot what moves. |
+| 5.6–8.5 s | 3D: Jupiter | MIRA · See the sky change. |
+| 8.5–14.2 s | 3D: the flight out to Epsilon Indi B, its card with three real pictures | From the planets to the stars — 17,604 stars caught moving |
+| 14.2–19.2 s | The Lab on Epsilon Indi B, 1999 to 2026 playing | Point at any place. Play 27 years. — 4.70″ a year. Measured. |
+| 19.2–23.2 s | The Sky map's composition picture, the spectrum following the pointer | Only SPHEREx sees this — What the sky is made of: carbon dust · starlight · hydrogen |
+| 23.2–27 s | The Lab's sky world model | A model that forecasts the sky, and flags what it did not expect: the search a ninth planet needs |
+| 27–30 s | End card | MIRA · See the sky change. · team · credits |
+
+Music: "Impact Prelude", Kevin MacLeod (incompetech.com), CC BY 4.0. Opening shot: NASA/JPL-Caltech. Everything
+else is recorded from the running site. Full credits: `docs/17_credits.md`.
