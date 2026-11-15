@@ -52,6 +52,8 @@ ol.steps { margin: 6px 0 14px; padding-left: 22px; } ol.steps li { margin: 7px 0
 .try select, .try input, .try button { height: 38px; padding: 0 12px; background: #000; color: var(--white); border: .8px solid rgb(240 240 250 / .28); border-radius: 6px; font-family: var(--mono); font-size: 12.5px; } .try input { flex: 1 1 280px; min-width: 0; }
 .try button { font-family: var(--body); font-weight: 700; font-size: 12px; letter-spacing: .12em; text-transform: uppercase; background: var(--white); color: #000; cursor: pointer; }
 .try-url { margin: 10px 0 6px; font-size: 11.5px; color: var(--dim); word-break: break-all; } .try pre { max-height: 340px; margin: 0; overflow: auto; }
+main { min-width: 0; } pre { overflow-x: auto; max-width: 100%; } td code, li code, p code { white-space: normal; overflow-wrap: anywhere; }
+@media (max-width: 900px) { table { display: block; overflow-x: auto; } .try input { flex-basis: 100%; } header nav { overflow-x: auto; } }
 </style>
 </head>
 <body>
@@ -163,11 +165,11 @@ media/                     the film and the deck as files</pre>
 <h2 id="five">NASA's five test targets</h2>
 <p>The challenge names five objects to test on. Each opens at once from a prepared copy.</p>
 <table><tr><th>Target</th><th>What to look at</th><th>MIRA's reading</th></tr>
-<tr><td><a href="/explore/?target=barnard"><b>Barnard's Star</b></a></td><td>The fastest star in the sky. Play the time bar: it crosses most of the field.</td><td>10.46 ± 0.05″ a year (Gaia: 10.39)</td></tr>
+<tr><td><a href="/explore/?target=barnard"><b>Barnard's Star</b></a></td><td>The fastest star in the sky. Play the time bar: it crosses most of the field.</td><td>10.46 ± 0.05″ a year (Gaia: 10.39), measured on the wings of its image because its core overflows the camera</td></tr>
 <tr><td><a href="/explore/?target=eps-indi-b"><b>Epsilon Indi B</b></a></td><td>A pair of brown dwarfs 12 light-years away. Open the Spectrograph: the gap at 3.3 µm is methane.</td><td>4.70 ± 0.02″ a year (Gaia: 4.68)</td></tr>
 <tr><td><a href="/explore/?target=wise-0855"><b>WISE 0855−0714</b></a></td><td>The coldest known brown dwarf, too faint for Gaia. It shows only at the longest wavelengths.</td><td>8.21 ± 0.05″ a year (Kirkpatrick et al. 2021: 8.15)</td></tr>
-<tr><td><a href="/explore/?target=rw-aur"><b>RW Aurigae</b></a></td><td>A young star that dims deeply at times, most likely behind dust of its own disc. Open the Photometer.</td><td>Brightness since 1999, and between SPHEREx visits</td></tr>
-<tr><td><a href="/explore/?target=r-dra"><b>R Draconis</b></a></td><td>A pulsating giant, very bright in the infrared. Switch on NASA's flags in the Layers tool, then look at its brightness from one visit to the next.</td><td>Brightness between visits at matched wavelengths</td></tr></table>
+<tr><td><a href="/explore/?target=rw-aur"><b>RW Aurigae</b></a></td><td>A young star that dims deeply at times, most likely behind dust of its own disc. Open the Photometer.</td><td>Variable: 1.9× brighter in September 2025 than in September 2026. It overflows the camera in most exposures, which the reading says</td></tr>
+<tr><td><a href="/explore/?target=r-dra"><b>R Draconis</b></a></td><td>A pulsating giant, very bright in the infrared. Switch on NASA's flags in the Layers tool, then look at its brightness from one visit to the next.</td><td>Variable: 10× brighter in September 2026 than a year before. It overflows the camera in every exposure, so its motion is not measured</td></tr></table>
 
 <h2 id="search">Search</h2>
 <p>Results appear as you type, from the planets, NASA's five test targets, landmarks, the 17,604 confirmed movers (by name, Gaia number or kind), 1,125 bright stars, 4,834 stars with planets, and MIRA's own tools and pages. It forgives spelling (“barnad”, “jupitr”, “epsilon indi” all work). If you do not know a name, open the filters and search by kind, motion and distance: for example every T dwarf within 65 light-years. Anything else is looked up in the CDS star databases when you press Enter.</p>
