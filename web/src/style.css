@@ -873,3 +873,10 @@ body.v-universe.embed .unimode { display: none !important; }
 
 .faq { display: grid; gap: 6px; margin: 4px 0 18px; } .faq details { border: .8px solid var(--line); border-radius: var(--radius); padding: 10px 14px; }
 .faq summary { cursor: pointer; font-family: var(--display, inherit); font-size: 16px; letter-spacing: .02em; text-transform: uppercase; } .faq p { margin: 8px 0 2px; font-size: 14px; line-height: 1.55; color: var(--dim); max-width: 78ch; }
+
+.unimode { white-space: nowrap; flex-wrap: nowrap; }
+@media (max-width: 760px) {
+  .unimode button span { display: none; }
+  .sk-panel { top: auto; bottom: 8px; max-height: 46vh; }
+  .sk-wave:not(.picked) .eyebrow { display: none; }
+}

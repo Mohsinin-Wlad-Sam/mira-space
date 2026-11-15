@@ -6,7 +6,7 @@
 // The map is drawn here, from plain pictures, in Galactic coordinates (the Milky Way runs along the middle).
 import { hpxFaceXY } from "./blink/hips";
 import { parseCoords, resolveName } from "./blink/catalogs";
-import { isOpenCase, loadVerified, moonYears, mountMoverCard, moverName, votes, type Ver } from "./movercard";
+import { KIND_PLAIN, isOpenCase, loadVerified, moonYears, mountMoverCard, moverName, votes, type Ver } from "./movercard";
 
 export type SkyOpts = { base: string; lowPower?: boolean; focus?: string;
   onObserve: (t: { ra: number; dec: number; pmra?: number; pmdec?: number; epoch?: number; name?: string; source?: string }) => void;
@@ -101,7 +101,7 @@ export async function openSky(host: HTMLElement, o: SkyOpts): Promise<SkyHandle>
     if (st.wave >= 0) { const f = frames.get(st.wave); layer(pano.spherex, f ? 0.25 : 1); layer(f, 1); }
     else { const i = Math.min(1, Math.floor(st.t)), u = ease(Math.min(1, Math.max(0, st.t - i))); layer(pano[MISSIONS[i].k], 1); layer(pano[MISSIONS[i + 1].k], u); }
     // the confirmed movers in view
-    if (V) { const s = scale(), r = Math.max(0.75, Math.min(4, 0.45 + 0.4 * view.z)), dense = st.chip === "all" && view.z < 3, sel = st.sel; shown = [];
+    if (V) { const s = scale(), r = Math.max(0.75, Math.min(4, 0.2 + 0.11 * s)), dense = st.chip === "all" && s < 12, sel = st.sel; shown = [];
       for (let k = 0; k < GL.length; k++) { if (Math.abs(V.glat[k]) < 10 && k !== sel) continue;                       // the crowded plane is left out, as in the Catalogue
         const nog = V.known[k] !== 1, open = isOpenCase(V, k); if ((st.chip === "nogaia" && !nog) || (st.chip === "open" && !open)) continue;
         const x = cw / 2 - wrap(GL[k] - view.l) * s, y = ch / 2 - (GB[k] - view.b) * s; if (x < -4 || y < -4 || x > cw + 4 || y > ch + 4) continue;
@@ -192,7 +192,10 @@ export async function openSky(host: HTMLElement, o: SkyOpts): Promise<SkyHandle>
       const [l, b] = toGal(r.ra, r.dec); select(-1); view.l = l; view.b = b; view.z = Math.max(view.z, 6); clampView(); st.dirty = true; draw(); const [x, y] = toScreen(l, b); menuAt(x, y); return true;
     },
     context() { const k = st.sel; return { showing: st.wave >= 0 ? `SPHEREx at ${LAM[st.wave]?.toFixed(2)} µm` : MISSIONS[Math.round(st.t)].name, centre_galactic: [+view.l.toFixed(1), +view.b.toFixed(1)], zoom: +view.z.toFixed(1),
-      selected: k >= 0 && V ? { name: moverName(V, k), motion_arcsec_per_year: V.pm[k], gaia: V.known[k] === 1 ? "Gaia lists the same motion" : V.known[k] === 0 ? "not listed in Gaia" : "Gaia lists a source here but not this motion" } : null }; },
+      selected: k >= 0 && V ? { name: moverName(V, k), kind: KIND_PLAIN[V.kind[k]] ?? V.kind[k], confirmed_mover: true, motion_arcsec_per_year: V.pm[k], years_to_cross_a_full_moon_width: Math.round(1800 / Math.max(V.pm[k], 1e-3)),
+        spherex_exposures_checked: V.n[k], arcsec_from_where_the_motion_predicts: V.dp[k], arcsec_from_where_it_would_be_if_still: V.ds[k], distance_note: "not shown on the flat sky map; the 3D map has it when it is known",
+        gaia: V.known[k] === 1 ? "Gaia lists the same motion" : V.known[k] === 0 ? "not listed in Gaia (the optical star catalogue); that alone does not say why" : "Gaia lists a source here but not this motion", has_a_database_entry: !!V.simbad[k],
+        can_take_part: isOpenCase(V, k), pictures: "three real pictures on a slider: 2MASS about 1999, WISE 2010, and SPHEREx's own, with its measured path" } : null }; },
   };
   sync(); st.raf = requestAnimationFrame(loop);
   return handle;

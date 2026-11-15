@@ -142,7 +142,7 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
       </section>
       <aside class="bk-side">
         <div class="bk-srcbar" id="bk-readouts"></div>
-        <div class="bk-tabs" id="bk-tabs" role="tablist">${TABS.map(([k, t, tip]) => `<button role="tab" data-t="${k}" title="${tip}">${t}</button>`).join("")}${opts.onExplain ? `<button class="bk-explain" id="bk-explain" title="Ask the assistant to explain this panel in everyday words">Explain it to me</button>` : ""}<button class="bk-help" id="bk-help" title="Show or hide the explanations" aria-label="Show or hide the explanations">?</button></div>
+        <div class="bk-tabs" id="bk-tabs" role="tablist">${TABS.map(([k, t, tip]) => `<button role="tab" data-t="${k}" title="${tip}">${t}</button>`).join("")}${opts.onExplain ? `<button class="bk-ask" id="bk-ask" title="Ask the assistant to explain this panel in everyday words">Explain it to me</button>` : ""}<button class="bk-help" id="bk-help" title="Show or hide the explanations" aria-label="Show or hide the explanations">?</button></div>
         <div class="bk-panel" id="bk-panel"></div>
       </aside>
     </div>
@@ -957,7 +957,7 @@ export function mountBlink(host: HTMLElement, opts: BlinkOpts = {}) {
     motion: "Explain the Astrometer's result for the selected source in everyday words: how fast it moves, how far away it is, and how sure that is.",
     spectrum: "Explain the Spectrograph's result for the selected source in everyday words: what its light says it is.", light: "Explain the Photometer's result in everyday words: did its brightness change, and how do we know?",
     limits: "Explain the Detection limits in everyday words: what could still hide in this field, and what could not.", frames: "Explain what this list of exposures is and what NASA's flags mean.", export: "Explain what I can take away from this panel and what each file is for." };
-  const exb = host.querySelector("#bk-explain") as HTMLElement | null; if (exb) exb.onclick = () => opts.onExplain!(ASK[tab]);
+  const exb = host.querySelector("#bk-ask") as HTMLElement | null; if (exb) exb.onclick = () => opts.onExplain!(ASK[tab]);
   $("#bk-help").onclick = () => { explain = !explain; try { localStorage.setItem("mira.explain", explain ? "1" : "0"); } catch { /* private mode */ } syncControls(); };
   const sv = host.querySelector<HTMLButtonElement>("#bk-save");
   if (sv) sv.onclick = () => { if (!frames.length) return; opts.onSave?.(snapshot()); sv.textContent = "Saved ✓"; setTimeout(() => (sv.textContent = "Save as a case"), 1800); };

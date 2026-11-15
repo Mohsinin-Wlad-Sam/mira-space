@@ -65,7 +65,7 @@ ui.innerHTML = `
 <section class="catpage" id="catpage"></section>
 <aside class="asst" id="asst" hidden></aside>
 
-<div class="unimode seg" id="unimode" role="tablist" aria-label="Two maps"><button data-m="3d" title="Around the Sun in 3D: every object at its distance">Around the Sun · 3D</button><button data-m="map" title="The whole sky as a flat map: three NASA surveys by year, SPHEREx's 102 colours, every confirmed mover">The whole sky</button></div>
+<div class="unimode seg" id="unimode" role="tablist" aria-label="Two maps"><button data-m="3d" title="Around the Sun in 3D: every object at its distance">Around the Sun<span> · 3D</span></button><button data-m="map" title="The whole sky as a flat map: three NASA surveys by year, SPHEREx's 102 colours, every confirmed mover"><span>The </span>whole sky</button></div>
 <section class="blinkpage" id="blinkpage"></section>
 <section class="logpage" id="logpage"></section>
 

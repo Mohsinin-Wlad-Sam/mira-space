@@ -83,8 +83,8 @@ export function mountPastView(host: HTMLElement, t: MoveTarget, o: { label?: str
     yrEl.textContent = String(Math.floor(y + 1e-6));
     const yearNow = Math.floor(yNow);
     cap.textContent = done < 2 && !A && !B ? "Reading the pictures from NASA's archive…" : !A && !B && !C ? "The pictures could not be read just now. The measured path is shown."
-      : Math.abs(y - Y_TM) < 0.3 ? (A ? "About 1999 · picture by the 2MASS survey, 2.2 µm" : "About 1999 · no picture could be read for this date")
-      : Math.abs(y - Y_WISE) < 0.3 ? (B ? "2010 · picture by NASA's WISE, 4.6 µm" : "2010 · no picture could be read for this date")
+      : Math.abs(y - Y_TM) < 0.3 ? (A ? "About 1999 · picture by the 2MASS survey, 2.2 µm" : done < SURVEYS.length ? "Reading the 1999 picture from NASA's archive…" : "About 1999 · no picture could be read for this date")
+      : Math.abs(y - Y_WISE) < 0.3 ? (B ? "2010 · picture by NASA's WISE, 4.6 µm" : done < SURVEYS.length ? "Reading the 2010 picture from NASA's archive…" : "2010 · no picture could be read for this date")
       : y < Y_WISE ? "Between the 1999 and 2010 pictures"
       : sx === "loading" ? "Reading SPHEREx's own picture of this place from NASA's archive…"
       : y > yNow - 0.3 ? (C ? `${yearNow} · picture by NASA's SPHEREx: ${sxN} exposures at 2.4–5 µm combined (its pixels are 6″ wide)` : `${yearNow} · no SPHEREx picture could be read just now · the circle is where its images confirmed the object`)

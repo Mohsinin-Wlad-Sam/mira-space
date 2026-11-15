@@ -59,6 +59,7 @@ export const viewer = {
   home: '/explore/',
   lab: '/explore/#lab',
   coldWorld: '/explore/#universe=6275-47643',
+  sky: '/explore/#sky',
   takePart: '/explore/#take-part',
   barnard: '/explore/?target=barnard',
   methane: '/explore/?target=eps-indi-b',
@@ -227,7 +228,9 @@ export const features: Feature[] = [
       'is public. But one image is a 65-megabyte scientific file made for specialists’ software. Mira turns them ' +
       'into a model of the space around the Sun where every point is a real star at its measured or estimated ' +
       'distance. Click one that was caught moving: three real NASA pictures, from 1999, 2010 and SPHEREx today, ' +
-      'show it at three places along its measured path. No install, no account, and it works on a phone.',
+      'show it at three places along its measured path. Or open the whole sky as a flat map and watch three ' +
+      'NASA surveys fade into one another by year, then slide through SPHEREx’s 102 colours. No install, no ' +
+      'account, and it works on a phone.',
     cta: { label: 'Open the map', href: viewer.home },
     image: images.motion,
   },
@@ -265,7 +268,8 @@ export const features: Feature[] = [
     title: 'Instruments, not screenshots',
     body:
       'Behind the map is a working Lab: a motion detector, an astrometer, a spectrograph, a photometer and ' +
-      'detection limits, reading SPHEREx exposures straight from NASA’s archive for any field of the sky. Tested ' +
+      'detection limits, reading SPHEREx exposures straight from NASA’s archive for any field of the sky, on a ' +
+      'laptop: no cluster, no install. Tested ' +
       'blind on 459 fields, the detector found 92% of known moving stars and raised no false alarm among 5,757 ' +
       'still ones.',
     cta: { label: 'Open the Lab', href: viewer.lab },
@@ -324,6 +328,7 @@ export const team: Feature = {
 
 export const footerLinks: NavLink[] = [
   { label: 'The map', href: viewer.home },
+  { label: 'The whole sky', href: viewer.sky },
   { label: 'The Lab', href: viewer.lab },
   { label: 'Catalogue', href: viewer.catalogue },
   { label: 'Challenge', href: links.challenge },
