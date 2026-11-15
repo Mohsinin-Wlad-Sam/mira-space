@@ -672,7 +672,7 @@ async function loadBasics() {
 function ensureAtlas() { return (atlasP ??= bootAtlas()); }
 void ensureAtlas;       // the first sky atlas is retired (nothing calls it any more); the whole-sky map is web/src/skymap.ts
 /** the verified catalogue is mounted once and keeps its filters and selection */
-async function ensureCatalogue() { if (!catalogue) { const m = await import("./catalogue"); catalogue ??= m.mountCatalogue($("#catpage"), { onObserve: (t) => observe(t as BlinkTarget), onMap: (id) => showUniverse("3d", id), toast }); } return catalogue; }
+async function ensureCatalogue() { if (!catalogue) { const m = await import("./catalogue"); catalogue ??= m.mountCatalogue($("#catpage"), { onObserve: (t) => observe(t as BlinkTarget), onMap: (id) => { history.replaceState(null, "", location.pathname + "#universe=" + encodeURIComponent(id)); showUniverse("3d", id); }, toast }); } return catalogue; }
 /** the 3D universe starts once and is then only paused and resumed, so the camera and the selection survive a visit to another section */
 function ensureSpace(): Promise<SpaceHandle | null> {
   return (spaceP ??= (async () => {

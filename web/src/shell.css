@@ -163,3 +163,6 @@ body.embed #ui .sp-info, body.embed #ui .sp-info.ver { top: 46px; max-height: ca
   body.asst-on #ui .sp-intro, body.asst-on #ui .sp-cap { left: calc((100vw - 400px) / 2); }
 }
 .mx-note .link { color: var(--dim); text-decoration: underline; }
+#ui .skymap .sp-hint { bottom: 88px; }
+/* a card that asks for an answer keeps its question in sight */
+#ui .sp-info.ver:has(.sp-vote) .pv-cv { width: min(100%, 248px); margin: 0 auto; } #ui .sp-info.ver:has(.sp-vote) .pv-note { display: none; }

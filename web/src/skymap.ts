@@ -55,7 +55,7 @@ export async function openSky(host: HTMLElement, o: SkyOpts): Promise<SkyHandle>
       <div class="mx-body">
         <div class="mx-list" id="skhl">
           ${hl("planets", "#ffd27a", "Planets, live", "Where the Sun, the Moon and the planets are right now")}
-          ${hl("spherex", "#5be3ff", "SPHEREx, live", "NASA's newest survey imaging the sky, week by week")}
+          ${hl("spherex", "#5be3ff", "SPHEREx, live", "Its survey filling the sky by date, up to NASA's newest public images")}
           ${hl("story", "#f0f0fa", "27 years in 25 seconds", "Three NASA surveys of the whole sky: 1999, 2010, today")}
           ${hl("colours", "#c58cff", "102 colours", "The sky at each wavelength SPHEREx sees")}
           ${hl("all", "#ff9d4d", "Stars caught moving", "<b id='skn1'>…</b> confirmed on SPHEREx images")}
@@ -73,6 +73,7 @@ export async function openSky(host: HTMLElement, o: SkyOpts): Promise<SkyHandle>
         <div class="mx-ticks"><button data-u="0">1999</button><button data-u="1">2010</button><button data-u="2">2025</button><button data-u="3">today</button><button data-u="4" title="Play the coming year: where the planets will go">+1 yr</button></div></div>
       <button class="mx-live on" id="sknow" title="Back to today: the newest picture, and the planets where they are right now"><i></i>Live</button>
     </div>
+    <div class="sp-hint show" id="skhint">Drag to move · scroll or pinch to zoom · click a point, a planet or any place</div>
     <div class="sk-coords mono" id="skcoords"></div>
     <div class="sk-menu hud" id="skmenu" hidden></div>
     <div class="sp-info" id="skinfo"></div>`;
@@ -242,13 +243,13 @@ export async function openSky(host: HTMLElement, o: SkyOpts): Promise<SkyHandle>
     const wanderers = st.show.planets && (!st.playing || u >= 2);
     if (wanderers) { g.setLineDash([2, 6]); g.lineWidth = 1; g.strokeStyle = "rgba(255,210,122,.42)"; path(ECL, 0, ECL.length - 1); g.setLineDash([]); }
     // the confirmed movers in view: unseen before WISE, faint through the WISE years, lit when SPHEREx reached them
-    const mv = u < 1 ? 0 : u < 2 ? 0.55 * ease(u - 1) : 1;
+    const mv = u < 1 ? 0 : u < 2 ? ease(u - 1) : 1;
     if (V && st.show.movers && mv > 0) { const r = Math.max(0.75, Math.min(4, 0.2 + 0.11 * s)), dense = st.chip === "all" && s < 12, sel = st.sel, wait = u < 3 && cov && CELL.length === GL.length; shown = [];
       for (let k = 0; k < GL.length; k++) { if (Math.abs(V.glat[k]) < 10 && k !== sel) continue;                       // the crowded plane is left out, as in the Catalogue
         const nog = V.known[k] !== 1, open = isOpenCase(V, k); if ((st.chip === "nogaia" && !nog) || (st.chip === "open" && !open)) continue;
         const x = cw / 2 - wrap(GL[k] - view.l) * s, y = ch / 2 - (GB[k] - view.b) * s; if (x < -4 || y < -4 || x > cw + 4 || y > ch + 4) continue;
-        shown.push(k); const lit = !wait || (u >= 2 && day >= firstEnd[CELL[k]]), rr = lit ? r : r * 0.75;
-        g.fillStyle = !lit ? "#9a7a5e" : open ? "#7df0a6" : nog ? "#ff5d6c" : "#ff9d4d"; g.globalAlpha = mv * (!lit ? 0.5 : dense && !nog ? 0.5 : dense ? 0.85 : 1); g.fillRect(x - rr, y - rr, 2 * rr, 2 * rr); }
+        shown.push(k); const lit = !wait || (u >= 2 && day >= firstEnd[CELL[k]]);         // grey while only WISE had seen it move, in colour once SPHEREx had imaged the place
+        g.fillStyle = !lit ? "#a89a8c" : open ? "#7df0a6" : nog ? "#ff5d6c" : "#ff9d4d"; g.globalAlpha = mv * (!lit ? 0.55 : dense && !nog ? 0.5 : dense ? 0.85 : 1); g.fillRect(x - r, y - r, 2 * r, 2 * r); }
       g.globalAlpha = 1; } else shown = [];
     // the wanderers, with their names
     if (wanderers) { ephem();
@@ -281,9 +282,10 @@ export async function openSky(host: HTMLElement, o: SkyOpts): Promise<SkyHandle>
     (sv.querySelector("polyline") as SVGPolylineElement).setAttribute("points", `${x + 13},${y} ${Math.max(x + 30, cx - 36)},${cy} ${cx},${cy}`);
   }
   // ---- the rail's lower half: what the chosen highlight needs
-  let subKey = "";
+  let subKey = "", subAt = 0;
   function renderSub() {
-    const el = $("#sksub"), yr = yearAt(st.u); el.hidden = !st.panel; $("#skrail").classList.toggle("sub", !!st.panel); if (!st.panel) { subKey = ""; el.innerHTML = ""; return; }
+    const el = $("#sksub"), yr = yearAt(st.u); if (st.playing && st.panel && subKey && performance.now() - subAt < 250) return;        // while time runs, four times a second is enough
+    subAt = performance.now(); el.hidden = !st.panel; $("#skrail").classList.toggle("sub", !!st.panel); if (!st.panel) { subKey = ""; el.innerHTML = ""; return; }
     if (st.panel === "planets") { ephem(); const mine = !!me && isLive(), key = `p${bodiesKey}|${mine}|${mine ? Math.round(yr * 365.25 * 288) : 0}`; if (key === subKey) return; subKey = key;
       el.innerHTML = `<div class="mx-h">${isLive() ? "Right now" : dayText(yr)}</div><div class="mx-rows">${bodies.map((b) => `<button data-b="${b.key}"><i style="background:${b.col}"></i><b>${b.name}</b><span>${mine ? myView(b, yr) : b.kind === "sun" ? "daytime side of the sky" : `${b.kind === "moon" ? whenSeen(b).eye.split(",")[0] : whenSeen(b).when.replace(/^in the /, "").replace(/, (before sunrise|after sunset)$/, "").replace(" to see these weeks", "")}${zodiac(b) ? ` · ${zodiac(b)}` : ""}`}</span></button>`).join("")}</div>
         <div class="mx-acts"><button class="btn sm ${me ? "solid" : "ghost"}" id="skme" title="Shade what is below your own horizon right now, and say which planets are up. Your position is used in this page only">${me ? "✓ My sky now" : "My sky now"}</button><button class="btn sm ghost" id="skyear" title="Let the date run through the next twelve months">▶ The coming year</button></div>
