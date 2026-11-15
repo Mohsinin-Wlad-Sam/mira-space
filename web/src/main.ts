@@ -1,5 +1,6 @@
 import "./style.css";
 import "./shell.css";
+import { ensureIndex, search, filtering, KINDS, type Hit, type Filters } from "./search";
 import { load, fmt, sexa, key, loadDetail, BASE, type Summary, type Target, type Obj } from "./data";
 import { drawSpectrum } from "./spectrum";
 import { spectrumStory, lightStory } from "./explain";
@@ -962,12 +963,38 @@ async function boot() {
   $("#viewbtn").onclick = () => ($("#drawer").classList.contains("open") ? $("#drawer").classList.remove("open") : renderDrawer());
   // one search for everything: a planet goes to the Sky, a star flies the map it is on, and anything the maps do
   // not hold (and any coordinates typed in the Lab) is shown as a place or measured
-  $("#search").onsubmit = (e) => { e.preventDefault(); const inp = $("#q") as HTMLInputElement, q = inp.value.trim(); if (!q) return; inp.value = ""; inp.blur(); searchGo(q); };
-  const sug = $("#suggest"), inp = $("#q") as HTMLInputElement;
-  sug.innerHTML = SUGGEST.map(([t, items]) => `<div class="sg-h">${t}</div><div class="sg-row">${items.map(([n, q]) => `<button type="button" data-q="${esc(q)}">${esc(n)}</button>`).join("")}</div>`).join("");
-  sug.querySelectorAll<HTMLButtonElement>("button").forEach((b) => (b.onmousedown = (e) => { e.preventDefault(); sug.hidden = true; inp.blur(); searchGo(b.dataset.q!); }));
-  inp.onfocus = () => { sug.hidden = !!inp.value; }; inp.oninput = () => { sug.hidden = !!inp.value; }; inp.onblur = () => setTimeout(() => (sug.hidden = true), 120);
-  inp.onkeydown = (e) => { if (e.key === "Escape") { sug.hidden = true; inp.blur(); } };
+  const sug = $("#suggest"), inp = $("#q") as HTMLInputElement, filt: Filters = { kind: "", pm: 0, dist: 0, nogaia: false };
+  let hits: Hit[] = [], cur = -1, adv = false, total = 0, indexed = false;
+  const pick = async (h: Hit) => { sug.hidden = true; inp.value = ""; inp.blur(); endTour();
+    if (h.go === "page") { if (h.q.startsWith("/")) { location.href = h.q; return; } history.replaceState(null, "", location.pathname + h.q); if (h.q === "#lab") setView("blink"); else if (h.q === "#catalogue") setView("cat"); else if (h.q === "#cases") setView("log"); else showUniverse(h.q === "#sky" ? "map" : "3d"); return; }
+    if (h.go === "tool") { await setView("blink"); if (blink.isOpen) blink.act({ instrument: h.q }); else blink.openFromParams(new URLSearchParams({ target: "eps-indi-b", tool: h.q })); return; }
+    if (h.go === "space") { await showUniverse("3d"); if (space?.focus(h.q)) return; }
+    searchGo(h.q); };
+  const raw = () => { const q = inp.value.trim(); if (!q) return; sug.hidden = true; inp.value = ""; inp.blur(); searchGo(q); };
+  const draw = () => {
+    const q = inp.value.trim(), on = filtering(filt), sel = (id: string, opts: [string, string][], v: string) => `<select id="${id}">${opts.map(([val, t]) => `<option value="${val}"${val === v ? " selected" : ""}>${t}</option>`).join("")}</select>`;
+    if (q || on) { const r = search(q, filt, on && !q ? 12 : 9); hits = r.hits; total = r.total; } else { hits = []; total = 0; }
+    if (cur >= hits.length) cur = hits.length - 1;
+    sug.innerHTML = (adv ? `<div class="sg-adv">${sel("sgkind", [["", "Any kind"], ...KINDS.map((k) => [k, k] as [string, string])], filt.kind)}${sel("sgpm", [["0", "Any motion"], ["0.5", "Faster than 0.5″ / yr"], ["1", "Faster than 1″ / yr"], ["2", "Faster than 2″ / yr"]], String(filt.pm))}${
+        sel("sgdist", [["0", "Any distance"], ["15", "Within 15 light-years"], ["30", "Within 30 light-years"], ["65", "Within 65 light-years"], ["100", "Within 100 light-years"]], String(filt.dist))}<label><input type="checkbox" id="sgng"${filt.nogaia ? " checked" : ""}> not in Gaia</label></div>` : "")
+      + (q || on ? (hits.length ? `${on ? `<div class="sg-h">${total.toLocaleString("en-US")} confirmed mover${total === 1 ? "" : "s"} match${total === 1 ? "es" : ""}${total > hits.length ? ` · the ${hits.length} fastest` : ""}</div>` : ""}<div class="sg-list">${hits.map((h, k) => `<button type="button" data-k="${k}" class="${k === cur ? "cur" : ""}"><b>${esc(h.name)}</b><em>${esc(h.kind)}</em><span>${esc(h.sub)}</span></button>`).join("")}</div>`
+          : `<div class="sg-none">${indexed ? `Nothing in MIRA's lists matches “${esc(q)}”.` : "Loading the lists…"}</div>`)
+        : SUGGEST.map(([t, list]) => `<div class="sg-h">${t}</div><div class="sg-row">${list.map(([n, qq]) => `<button type="button" data-q="${esc(qq)}">${esc(n)}</button>`).join("")}</div>`).join(""))
+      + `<div class="sg-foot"><button type="button" id="sgadv">${adv ? "Hide filters" : "Don't know the name? Search by kind, motion, distance"}</button>${q ? `<button type="button" id="sgany">Look “${esc(q.length > 22 ? q.slice(0, 21) + "…" : q)}” up in the star databases ↵</button>` : on ? `<button type="button" id="sgcat">Open the Catalogue</button>` : ""}</div>`;
+    sug.querySelectorAll<HTMLButtonElement>(".sg-list button").forEach((b) => (b.onmousedown = (e) => { e.preventDefault(); pick(hits[+b.dataset.k!]); }));
+    sug.querySelectorAll<HTMLButtonElement>(".sg-row button").forEach((b) => (b.onmousedown = (e) => { e.preventDefault(); sug.hidden = true; inp.blur(); searchGo(b.dataset.q!); }));
+    ($("#sgadv") as HTMLElement).onmousedown = (e) => { e.preventDefault(); adv = !adv; if (!adv) { filt.kind = ""; filt.pm = 0; filt.dist = 0; filt.nogaia = false; } draw(); };
+    const any = sug.querySelector<HTMLElement>("#sgany"); if (any) any.onmousedown = (e) => { e.preventDefault(); raw(); };
+    const catb = sug.querySelector<HTMLElement>("#sgcat"); if (catb) catb.onmousedown = async (e) => { e.preventDefault(); sug.hidden = true; history.replaceState(null, "", location.pathname + "#catalogue"); await setView("cat"); (await ensureCatalogue()).act({ min_motion: filt.pm || null }); };
+    if (adv) { ($("#sgkind") as HTMLSelectElement).onchange = (e) => { filt.kind = (e.target as HTMLSelectElement).value; draw(); }; ($("#sgpm") as HTMLSelectElement).onchange = (e) => { filt.pm = +(e.target as HTMLSelectElement).value; draw(); };
+      ($("#sgdist") as HTMLSelectElement).onchange = (e) => { filt.dist = +(e.target as HTMLSelectElement).value; draw(); }; ($("#sgng") as HTMLInputElement).onchange = (e) => { filt.nogaia = (e.target as HTMLInputElement).checked; draw(); }; }
+  };
+  const openSug = () => { sug.hidden = false; draw(); if (!indexed) ensureIndex(import.meta.env.BASE_URL).then(() => { indexed = true; if (!sug.hidden) draw(); }); };
+  $("#search").onsubmit = (e) => { e.preventDefault(); const q = inp.value.trim(); if (cur >= 0 && hits[cur]) pick(hits[cur]); else if (q && !parseCoords(q) && hits.length && hits[0].score >= 2.2) pick(hits[0]); else raw(); };
+  inp.onfocus = openSug; inp.oninput = () => { cur = -1; openSug(); };
+  inp.onkeydown = (e) => { if (e.key === "Escape") { sug.hidden = true; inp.blur(); } else if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); if (!hits.length) return; cur = e.key === "ArrowDown" ? (cur + 1) % hits.length : cur <= 0 ? hits.length - 1 : cur - 1; draw(); } };
+  document.addEventListener("pointerdown", (e) => { if (!(e.target as HTMLElement).closest("#search")) sug.hidden = true; });
+  addEventListener("keydown", (e) => { if (e.key === "/" && !/^(INPUT|TEXTAREA|SELECT)$/.test((e.target as HTMLElement).tagName)) { e.preventDefault(); inp.focus(); } });
   const h = hashParams();
   if (EMBED && (h.has("sky") || h.has("space") || h.has("universe"))) await route(true);              // a map on someone else's page
   else if (EMBED || query.has("ra") || query.has("target") || query.has("name")) { await setView("blink"); blink.openFromParams(query); }
