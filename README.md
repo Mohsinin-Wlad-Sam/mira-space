@@ -7,6 +7,9 @@ Mohammed Ouabdrrahmane, Hamza Ba-mohammed, Hiba Nemry, Aya Driouche, Abdelmonaim
 
 **Documentation** `/docs/` · **The film** (29 s) `media/mira_film_30s.mp4` (director page `/film/`) · submission pack `media/submission/` · credits in `docs/17_credits.md`
 
+<p align="center"><img src="media/demo_play_the_years.gif" width="720" alt="The Lab playing 27 years of NASA pictures of one field: the stars Gaia lists stay in place, Epsilon Indi B does not"></p>
+<p align="center"><sub>The Lab on Epsilon Indi B: NASA's pictures of 1999, 2010 and 2025 to 2026 on one time bar. The rings are Gaia's stars and stay where they are; the object in the middle moves 4.70″ a year.</sub></p>
+
 **Run it:** `cd web && npm ci && npm run dev` (Node 20+; the data the site reads, about 510 MB of small files, is in the repository under `web/public/data/`, so a clone runs as it is). **API:** `/api/v1` (cone search of the verified movers, SPHEREx exposures at a position, visit dates, the sky model's marks, batch cross-match; reference and console at `/docs/#api`).
 
 NASA's SPHEREx is photographing the whole sky in 102 infrared colours and every image is public, but one image is a

@@ -54,25 +54,38 @@ ol.steps { margin: 6px 0 14px; padding-left: 22px; } ol.steps li { margin: 7px 0
 .try-url { margin: 10px 0 6px; font-size: 11.5px; color: var(--dim); word-break: break-all; } .try pre { max-height: 340px; margin: 0; overflow: auto; }
 main { min-width: 0; } pre { overflow-x: auto; max-width: 100%; } td code, li code, p code { white-space: normal; overflow-wrap: anywhere; }
 @media (max-width: 900px) { table { display: block; overflow-x: auto; } .try input { flex-basis: 100%; } header nav { overflow-x: auto; } }
+
+/* pages: one part of the documentation at a time, with the way to the one before and the one after */
+section.pg { display: none; } section.pg.on { display: block; animation: pgin .32s cubic-bezier(.2, .7, .2, 1) both; } @keyframes pgin { from { opacity: 0; transform: translateY(6px); } }
+section.pg > h2:first-child { margin-top: 0; padding-top: 0; border-top: 0; font-size: clamp(38px, 4.6vw, 56px); line-height: 1; }
+body:not(.first) .intro { display: none; } .intro { margin-bottom: 44px; }
+.pager { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 64px 0 0; } .pager a { display: block; padding: 16px 18px; border: .8px solid var(--hair); border-radius: 10px; text-decoration: none; transition: border-color .15s, background .15s; } .pager a:hover { border-color: rgb(240 240 250 / .5); background: rgb(240 240 250 / .04); }
+.pager small { display: block; font-family: var(--mono); font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--faint); } .pager b { display: block; margin-top: 4px; font-family: var(--display); font-size: 21px; text-transform: uppercase; letter-spacing: .02em; } .pager .next { text-align: right; }
+figure { margin: 18px 0 26px; } figure img, figure video { display: block; width: 100%; height: auto; border: .8px solid var(--hair); border-radius: 10px; background: #050507; } figcaption { margin-top: 9px; font-size: 14px; color: var(--dim); } figcaption b { color: #fff; }
+.arch { display: block; width: 100%; height: auto; margin: 14px 0 22px; border: .8px solid var(--hair); border-radius: 12px; background: #050507; } .arch rect { fill: rgb(240 240 250 / .035); stroke: rgb(240 240 250 / .3); stroke-width: 1; } .arch .hi { stroke: var(--accent); fill: rgb(255 157 77 / .06); }
+.arch text { fill: var(--white); font-family: var(--body); font-size: 12.5px; } .arch .t { font-family: var(--display); font-weight: 700; font-size: 16px; letter-spacing: .04em; text-transform: uppercase; } .arch .s { fill: rgb(240 240 250 / .62); font-size: 11.5px; } .arch path { fill: none; stroke: rgb(240 240 250 / .5); stroke-width: 1.2; } .arch .lab { fill: rgb(240 240 250 / .62); font-family: var(--mono); font-size: 9.5px; letter-spacing: .08em; }
+.funnel td.n { text-align: right; padding-right: 0; }
 </style>
 </head>
 <body>
 <header><a class="logo" href="/">MIRA</a><nav><a href="/explore/#sky">Sky</a><a href="/explore/">Space</a><a href="/explore/#lab">Lab</a><a href="/explore/#catalogue">Catalogue</a><a href="#api">API</a><a href="https://github.com/Mohsinin-Wlad-Sam/assrar-dawla">GitHub</a></nav></header>
 <div class="wrap">
 <aside id="toc">
-  <div class="g">Get started</div><a href="#start">Overview</a><a href="#quick">Quick start</a><a href="#install">Install and run</a><a href="#layout">Project layout</a>
+  <div class="g">Get started</div><a href="#start">Overview</a><a href="#quick">Quick start</a><a href="#tour">See it run</a><a href="#install">Install and run</a><a href="#layout">Project layout</a><a href="#architecture">Architecture</a>
   <div class="g">Guides</div><a href="#sky">Sky map</a><a href="#space">Space map</a><a href="#lab">The Lab</a><a href="#five">NASA's five targets</a><a href="#search">Search</a><a href="#catalogue">Catalogue</a><a href="#assistant">Assistant</a>
-  <div class="g">Trust it</div><a href="#accuracy">Accuracy</a><a href="#limits">Known limits</a><a href="#worldmodel">World models</a><a href="#atlas">V-JEPA 2 atlas</a>
+  <div class="g">How it works</div><a href="#pipeline">Pipeline</a><a href="#accuracy">Accuracy</a><a href="#limits">Known limits</a><a href="#ai">AI in MIRA</a><a href="#worldmodel">World models</a><a href="#atlas">V-JEPA 2 atlas</a>
   <div class="g">Reference</div><a href="#api">API</a><a href="#link">Link and embed</a><a href="#data">Data files</a><a href="#config">Configuration</a>
   <div class="g">Operate</div><a href="#update">New data releases</a><a href="#deploy">Deploy</a>
   <div class="g">Project</div><a href="#plans">Plans</a><a href="#roadmap">Roadmap</a><a href="#contrib">Contributing</a><a href="#faq">FAQ</a><a href="#credits">Credits</a>
 </aside>
 <main>
+<div class="intro">
 <h1>Documentation</h1>
 <p class="lead">MIRA shows the sky changing: planets tonight, 27 years of NASA's all-sky pictures on one time bar, and stars caught changing place, each one measurable on NASA's SPHEREx exposures in your browser.</p>
 <a class="btn solid" href="/explore/#sky">Open the Sky</a><a class="btn" href="/explore/?target=eps-indi-b">Open the Lab on a star that moved</a>
-
-<h2 id="start">Start here</h2>
+</div>
+<section class="pg" id="start">
+<h2>Start here</h2>
 <p>There are four places, and one search box that reaches all of them.</p>
 <table><tr><th>Place</th><th>What you do there</th><th>For</th></tr>
 <tr><td><b>Sky</b></td><td>The whole sky on one time bar, 1999 to today and a year ahead. Planets live, your own horizon, SPHEREx's survey day by day, what the sky is made of.</td><td>everyone</td></tr>
@@ -80,8 +93,9 @@ main { min-width: 0; } pre { overflow-x: auto; max-width: 100%; } td code, li co
 <tr><td><b>Lab</b></td><td>Point at any place. See it through time in real pictures and get four answers: what moved, how fast, what its light says, did it change. Tools open when you ask for them.</td><td>curious people, students, researchers</td></tr>
 <tr><td><b>Catalogue</b></td><td>17,604 stars whose motion was re-measured on raw SPHEREx exposures, with the evidence for each.</td><td>researchers, volunteers</td></tr></table>
 <p>Press <kbd>/</kbd> anywhere to search. Press <b>Ask</b> to have the assistant explain what is on screen or operate it for you.</p>
-
-<h2 id="quick">Quick start</h2>
+</section>
+<section class="pg" id="quick">
+<h2>Quick start</h2>
 <p>Nothing to install. Three minutes:</p>
 <ol class="steps">
 <li><b>Open the Sky.</b> <a href="/explore/#sky">/explore/#sky</a>. Drag the time bar at the bottom from 1999 to today.</li>
@@ -90,8 +104,15 @@ main { min-width: 0; } pre { overflow-x: auto; max-width: 100%; } td code, li co
 <li><b>Search</b> with <kbd>/</kbd>, or press <b>Ask</b> and let the assistant explain what is on screen.</li>
 </ol>
 <p>Or start from a star that moved: <a href="/explore/?target=eps-indi-b">Epsilon Indi B</a>, <a href="/explore/?target=barnard">Barnard's Star</a>, <a href="/explore/?target=wise-0855">WISE 0855</a>.</p>
-
-<h2 id="install">Install and run</h2>
+</section>
+<section class="pg" id="tour">
+<h2>See it run</h2>
+<p class="lead">Short recordings of the running site, all on one object: Epsilon Indi B, a pair of brown dwarfs 12 light-years away. Nothing in them is drawn by hand; each is a page you can open yourself.</p>
+<figure><video src="/docimg/loop_years.mp4" poster="/docimg/loop_years.jpg" autoplay loop muted playsinline preload="metadata"></video><figcaption><b>Play the years.</b> The time bar runs from the 2MASS picture of 1999, through WISE in 2010, to SPHEREx's visits of 2025 and 2026. The blue rings are Gaia's stars: they stay where they are. The object in the middle does not, and the Lab reads its motion: 4.70″ a year (Gaia: 4.68). <a href="/explore/?target=eps-indi-b">Open this field</a></figcaption></figure><figure><video src="/docimg/loop_spectrum.mp4" poster="/docimg/loop_spectrum.jpg" autoplay loop muted playsinline preload="metadata"></video><figcaption><b>Read its light.</b> The Spectrograph puts every SPHEREx exposure of the object at the wavelength it was taken at: 72 points from 0.75 to 5 µm, coloured by detector. The gap at 3.3 µm is methane, which only survives in atmospheres colder than about 1,300 K. <a href="/explore/?target=eps-indi-b&amp;tool=spectrum">Open the spectrum</a></figcaption></figure><figure><video src="/docimg/loop_readings.mp4" poster="/docimg/loop_readings.jpg" autoplay loop muted playsinline preload="metadata"></video><figcaption><b>The readings.</b> What moved here, how fast, what its light says, whether it changed. Each card opens the tool that produced it. The fifth is an AI estimate of what the object is, marked as an estimate (see <a href="#ai">AI in MIRA</a>).</figcaption></figure><figure><video src="/docimg/loop_sky.mp4" poster="/docimg/loop_sky.jpg" autoplay loop muted playsinline preload="metadata"></video><figcaption><b>The whole sky.</b> The 17,604 stars the survey caught moving, each drawn along its motion, then the 635 that neither Gaia nor SIMBAD lists. <a href="/explore/#sky">Open the Sky map</a></figcaption></figure>
+<p>The 29-second film is cut from the same recordings: <a href="/film/mira_film_720.mp4">watch it</a>. How to make such a recording yourself is in <a href="#link">Link and embed</a>: add <code>&amp;embed=1</code> to any address to hide the header.</p>
+</section>
+<section class="pg" id="install">
+<h2>Install and run</h2>
 <p>MIRA is a static site built with Vite, plus one small Node process for the assistant and the API. You need Node 20 or newer.</p>
 <pre>git clone https://github.com/Mohsinin-Wlad-Sam/assrar-dawla.git
 cd assrar-dawla/web
@@ -103,8 +124,9 @@ npm run dev            # http://127.0.0.1:5173   landing /   app /explore/   doc
 <tr><td><b>Preview</b></td><td><code>npx vite preview --port 4173</code></td><td>Serves <code>dist/</code> with the assistant and the API, as in production.</td></tr>
 <tr><td><b>Assistant</b></td><td><code>web/.env.local</code></td><td>Optional. One line, <code>MIRA_LLM_KEY=…</code>, for an OpenAI-compatible endpoint. Never commit it. Without it the assistant says it is offline; everything else works.</td></tr>
 <tr><td><b>Checks</b></td><td><code>npx tsc --noEmit -p .</code></td><td>Also <code>web/scripts/test_ephem.mts</code> (planets against JPL Horizons) and <code>web/scripts/test_registration.py</code> (pictures against star coordinates).</td></tr></table>
-
-<h2 id="layout">Project layout</h2>
+</section>
+<section class="pg" id="layout">
+<h2>Project layout</h2>
 <pre>web/src/main.ts            the app's shell: header, views, search, assistant
 web/src/skymap.ts          the Sky map; hipsmap.ts draws real survey tiles when zoomed
 web/src/space.ts           the Universe (3D)
@@ -125,8 +147,59 @@ census/                    the pipeline run on the cluster: the survey, the veri
 deploy/                    Caddyfile, nginx.conf, Dockerfile, the server process, update_spherex.sh
 docs/                      written documents: business plan, deployment, AI-use log, credits
 media/                     the film as files, and the submission pack</pre>
-
-<h2 id="sky">Sky map</h2>
+</section>
+<section class="pg" id="architecture">
+<h2>Architecture</h2>
+<p class="lead">MIRA is a static site and one small optional process. The measuring happens in the visitor's browser, on pixels read straight from NASA's public archive; what needs a cluster is done ahead of time and published as small files.</p>
+<svg class="arch" viewBox="0 0 780 430" role="img" aria-label="Open archives feed the browser, which does the measuring; a small server answers the API; a cluster builds the data files ahead of time.">
+<defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" style="fill:rgb(240 240 250 / .6);stroke:none" /></marker></defs>
+<rect x="18" y="24" width="214" height="196" rx="10" /><text class="t" x="34" y="52">Open archives</text>
+<text x="34" y="80">NASA IRSA</text><text class="s" x="34" y="97">SPHEREx Level 2 exposures</text><text class="s" x="34" y="112">65 MB each, on a public bucket</text>
+<text x="34" y="140">NASA 2MASS, WISE</text><text class="s" x="34" y="157">all-sky pictures, 1999 and 2010</text>
+<text x="34" y="185">CDS</text><text class="s" x="34" y="202">Gaia DR3, AllWISE, 2MASS, SIMBAD</text>
+<rect class="hi" x="290" y="24" width="232" height="196" rx="10" /><text class="t" x="306" y="52">Your browser</text>
+<text x="306" y="80">Sky map · Space map · Catalogue</text>
+<text x="306" y="108">The Lab's instruments</text><text class="s" x="306" y="125">read · register · detect · fit · spectrum</text>
+<text x="306" y="153">The pocket sky model</text><text class="s" x="306" y="170">a small network, on the open field</text>
+<text class="s" x="306" y="202">TypeScript · nothing installed · no account</text>
+<rect x="580" y="24" width="182" height="196" rx="10" /><text class="t" x="596" y="52">Server process</text><text class="s" x="596" y="70">optional, one small machine</text>
+<text x="596" y="100">Data API</text><text class="s" x="596" y="117">/api/v1</text>
+<text x="596" y="145">Assistant proxy</text><text class="s" x="596" y="162">keeps the model's key</text><text class="s" x="596" y="177">off the page</text>
+<rect x="18" y="290" width="744" height="118" rx="10" /><text class="t" x="34" y="318">Built ahead, on a cluster</text>
+<text x="34" y="348">Exposure index</text><text class="s" x="34" y="365">1.6 million exposures</text><text class="s" x="34" y="380">one small file per patch</text>
+<text x="222" y="348">The survey</text><text class="s" x="222" y="365">39.9 billion detections</text><text class="s" x="222" y="380">linked into objects</text>
+<text x="410" y="348">Verification</text><text class="s" x="410" y="365">202,528 claims re-measured</text><text class="s" x="410" y="380">on raw exposures: 17,604 hold</text>
+<text x="606" y="348">AI models</text><text class="s" x="606" y="365">estimates · scout</text><text class="s" x="606" y="380">V-JEPA 2, fine-tuned</text>
+<path d="M232 122H286" marker-end="url(#ah)" /><text class="lab" x="236" y="114">PIXELS</text>
+<path d="M522 122H576" marker-end="url(#ah)" /><path d="M576 138H526" marker-end="url(#ah)" /><text class="lab" x="530" y="114">ASKS</text>
+<path d="M406 290V224" marker-end="url(#ah)" /><text class="lab" x="414" y="262">SMALL FILES UNDER /DATA</text>
+<path d="M671 290V224" marker-end="url(#ah)" />
+<path d="M125 220V286" marker-end="url(#ah)" /><text class="lab" x="133" y="262">READ ONCE</text>
+</svg>
+<h3>The four parts</h3>
+<table>
+<tr><th>Part</th><th>What it does</th><th>In the repository</th></tr>
+<tr><td><b>The site</b><br>in the browser</td><td>The Sky map, the Space map, the Lab, the catalogue and search. TypeScript, built by Vite into static files. No account, nothing to install.</td><td><code>web/src/</code>; pages in <code>web/explore/</code>, <code>web/docs/</code></td></tr>
+<tr><td><b>The instruments</b><br>inside the site</td><td>Read a field from NASA's exposures (under 1 MB of each 65 MB file), undo the compression of NASA's flag table, put every exposure on one north-up grid, find the sources, tie each visit to Gaia's stars, fit the motion, read the spectrum.</td><td><code>web/src/blink/</code>: <code>engine.ts</code>, <code>rice.ts</code>, <code>detect.ts</code>, <code>measure.ts</code></td></tr>
+<tr><td><b>The server process</b><br>optional</td><td>The data API (<code>/api/v1</code>), the assistant's proxy and the store of visitors' answers. Without it the site still works; the API console and the assistant say that they are not there.</td><td><code>web/server/api.mjs</code>, <code>deploy/assistant-proxy.mjs</code></td></tr>
+<tr><td><b>The survey</b><br>built ahead</td><td>The exposure index, the whole-sky search for motion, the re-measurement of every claim on raw exposures, and the AI models. What it produces are the files under <code>web/public/data/</code>.</td><td><code>census/</code>, <code>web/scripts/</code></td></tr>
+</table>
+<h3>What happens when you open a field</h3>
+<ol class="steps">
+<li><b>Which exposures?</b> The page reads one small index file for that patch of sky and keeps the SPHEREx exposures whose footprint holds the position.</li>
+<li><b>Read.</b> For each, it asks NASA's public bucket for the header, the rows of the detector that the field needs, and the matching rows of the flag table: under 1 MB of a 65 MB file.</li>
+<li><b>Register.</b> Every exposure is put on the same north-up grid, and every pixel is given its wavelength from the filter map of its detector.</li>
+<li><b>Look up.</b> Gaia DR3, AllWISE and 2MASS are asked for the stars of the field, and SIMBAD for their names (CDS services).</li>
+<li><b>Detect and fit.</b> Sources are found at every visit; each visit is tied to Gaia with the field's own stars; a straight line is fitted through each source's positions from 1999 to today.</li>
+<li><b>Show.</b> The readings, and behind each of them the tool that produced it. A field read once is kept in the browser, so it opens at once the next time.</li>
+</ol>
+<p>The survey uses the same code: <code>web/scripts/verify_census.mts</code> runs the Lab's detector on a cluster, without a screen, over every claim. The catalogue and the Lab cannot disagree, because they are one program.</p>
+<h3>Why it is built this way</h3>
+<ul><li><b>Little to keep up.</b> Pixels are never copied. A new SPHEREx release is one index rebuild (<a href="#update">New data releases</a>).</li><li><b>Cheap to serve.</b> A static site, and a process that answers from memory; the sizing is in <a href="#deploy">Deploy</a>.</li><li><b>Checkable.</b> Every number on screen comes from exposures that the visitor can list, switch off and download.</li></ul>
+</section>
+<section class="pg" id="sky">
+<h2>Sky map</h2>
+<figure><img src="/docimg/sky.jpg" alt="The Sky map" loading="lazy" /><figcaption><b>The Sky map.</b> The whole sky on one time bar, with the Sun, the Moon and the planets where they are now. A click on any place plays it as a little film.</figcaption></figure>
 <h3>The time bar</h3>
 <p>One bar carries four stretches: 1999 to 2010 (NASA's 2MASS survey fades into WISE), 2010 to 2025 (stars found moving appear in grey), 2025 to today (SPHEREx's picture is revealed patch by patch on the real dates of its exposures, and each moving star turns to colour once SPHEREx had imaged its place), and one year ahead (planets only). <b>Live</b> returns to now; <b>My sky</b> asks for your position, keeps it in the page, shades what is below your horizon and says what is up.</p>
 <h3>What the sky is made of <span class="tag">SPHEREx only</span></h3>
@@ -140,11 +213,14 @@ media/                     the film as files, and the submission pack</pre>
 <h3>Markers</h3>
 <p>With the whole sky in view only the fastest movers are drawn; the rest appear as you zoom in. Zoomed in, a marker stands where its star was on the date shown, and the map draws the surveys' own tiles from NASA's archive (2MASS for 1999, WISE for 2010, SPHEREx's all-sky cube at 4.6 µm for today), placed by their sky coordinates, so you can see the marker sit on the star. Click a marker for its card; click empty sky to watch that place through time, or to measure it in the Lab.</p>
 <p class="note"><b>Why the closest view shows squares.</b> SPHEREx's all-sky picture has pixels 13″ wide (its camera's are 6″). Enlarged beyond that, MIRA shows those pixels as they are instead of blurring them into detail that is not there, and stops zooming at 2.6″ per screen pixel, where no all-sky survey used here has more to show. For the full exposures of one place, open it in the Lab.</p>
-
-<h2 id="space">Space map</h2>
+</section>
+<section class="pg" id="space">
+<h2>Space map</h2>
 <p>A 3D map of the Sun's neighbourhood from ESA's Gaia distances. The strip above the time bar steps through scales, from the planets to the nearest stars and beyond. Time has two regimes: among the planets it runs in days (the planets move on their real orbits); among the stars it runs in millennia (each star moves along its measured motion). <b>Planets, live</b> flies to the Solar System and starts the clock.</p>
-
-<h2 id="lab">The Lab</h2>
+</section>
+<section class="pg" id="lab">
+<h2>The Lab</h2>
+<figure><img src="/docimg/lab.jpg" alt="The Lab" loading="lazy" /><figcaption><b>The Lab on Epsilon Indi B.</b> The picture in the centre, the tools on the left, the readings on the right, the time bar below. Blue rings are Gaia's stars; the cross is the object, with its measured motion.</figcaption></figure>
 <p>The Lab is a workspace laid out like an editing tool. The picture is in the centre and never moves. <b>Left:</b> a rail with one icon per tool; the button at its top shows the tools with their names, in groups (Picture, Measure, Researcher). <b>Right:</b> the inspector, which shows the four readings (what moved, how fast, what its light says, did it change) or the tool you opened. <b>Top:</b> the target, the view (Evolution, Exposures, Colour, Difference) and the field of view. <b>Bottom:</b> the timeline with its dated pictures, and a status line with the data in use and the position and value under the pointer.</p>
 <p><b>Working on the picture.</b> Scroll on it to enlarge it about the pointer (up to 8×), drag to move, double-click to reset: positions and values under the pointer stay exact. In the Picture tool, the brightness stretch brings out faint sources without touching the data. <kbd>Esc</kbd> hides the inspector; <b>PRO</b> at the foot of the rail adds the researcher tools (the fit, the limits, every exposure, exports, watchlists, the sky model); a link to one of them switches them on. A link to a field can carry the open tool (<code>&amp;tool=spectrum</code>).</p>
 <table><tr><th>Tool</th><th>What it answers</th><th>How</th></tr>
@@ -161,8 +237,10 @@ media/                     the film as files, and the submission pack</pre>
 <tr><td><b>Watchlist</b> <span class="tag">researcher</span></td><td>The same chain for a list of targets</td><td>Up to 25 names or positions per run, one table, CSV or JSON.</td></tr>
 <tr><td><b>Sky world model</b> <span class="tag">researcher</span></td><td>What a network says moved here, against what the Lab measured</td><td>One large picture with five steps (1999, 2010, the model's forecast, the real picture, the difference); a ring on each source the model marks; a table of the model's motion beside the Lab's and Gaia's. See <a href="#worldmodel">below</a>.</td></tr></table>
 <p>NASA's five test targets open at once: the site carries a prepared copy of each (rebuilt after every data release). Any other field is read live from NASA's archive, which takes 10 to 40 seconds the first time while the picture fills in, and is then kept in your browser, so opening it again is instant.</p>
-
-<h2 id="five">NASA's five test targets</h2>
+</section>
+<section class="pg" id="five">
+<h2>NASA's five test targets</h2>
+<figure><img src="/docimg/it_moved.jpg" alt="A star crossing its field" loading="lazy" /><figcaption><b>A star that moved.</b> Each of NASA's five targets opens in the Lab with one link; the table gives what the Lab reads on each.</figcaption></figure>
 <p>The challenge names five objects to test on. Each opens at once from a prepared copy.</p>
 <table><tr><th>Target</th><th>What to look at</th><th>MIRA's reading</th></tr>
 <tr><td><a href="/explore/?target=barnard"><b>Barnard's Star</b></a></td><td>The fastest star in the sky. Play the time bar: it crosses most of the field.</td><td>10.46 ± 0.05″ a year (Gaia: 10.39), measured on the wings of its image because its core overflows the camera</td></tr>
@@ -170,37 +248,95 @@ media/                     the film as files, and the submission pack</pre>
 <tr><td><a href="/explore/?target=wise-0855"><b>WISE 0855−0714</b></a></td><td>The coldest known brown dwarf, too faint for Gaia. It shows only at the longest wavelengths.</td><td>8.21 ± 0.05″ a year (Kirkpatrick et al. 2021: 8.15)</td></tr>
 <tr><td><a href="/explore/?target=rw-aur"><b>RW Aurigae</b></a></td><td>A young star that dims deeply at times, most likely behind dust of its own disc. Open the Photometer.</td><td>Variable: 1.9× brighter in September 2025 than in September 2026. It overflows the camera in most exposures, which the reading says</td></tr>
 <tr><td><a href="/explore/?target=r-dra"><b>R Draconis</b></a></td><td>A pulsating giant, very bright in the infrared. Switch on NASA's flags in the Layers tool, then look at its brightness from one visit to the next.</td><td>Variable: 10× brighter in September 2026 than a year before. It overflows the camera in every exposure, so its motion is not measured</td></tr></table>
-
-<h2 id="search">Search</h2>
+</section>
+<section class="pg" id="search">
+<h2>Search</h2>
 <p>Results appear as you type, from the planets, NASA's five test targets, landmarks, the 17,604 confirmed movers (by name, Gaia number or kind), 1,125 bright stars, 4,834 stars with planets, and MIRA's own tools and pages. It forgives spelling (“barnad”, “jupitr”, “epsilon indi” all work). If you do not know a name, open the filters and search by kind, motion and distance: for example every T dwarf within 65 light-years. Anything else is looked up in the CDS star databases when you press Enter.</p>
-
-<h2 id="catalogue">Catalogue</h2>
+</section>
+<section class="pg" id="catalogue">
+<h2>Catalogue</h2>
+<figure><img src="/docimg/movers.jpg" alt="Stars caught moving" loading="lazy" /><figcaption><b>The 17,604.</b> Every star the survey caught moving, on the Sky map; each opens a card with its evidence.</figcaption></figure>
 <p>From 39.9 billion WISE detections, 1.56 million candidate claims were made; 202,528 were re-measured on raw SPHEREx exposures; 17,604 motions were confirmed. 14,323 are known Gaia stars with a matching motion; 1,348 have no Gaia source at all. Each entry opens in the Lab with its evidence.</p>
-
-<h2 id="assistant">Assistant</h2>
+</section>
+<section class="pg" id="assistant">
+<h2>Assistant</h2>
 <p>The assistant reads what the page shows (never more) and can operate it: open a tool, fly to a star, play a date range. Its numbers are the instruments' numbers. It runs behind a small proxy, so no key is in the page.</p>
-
-<h2 id="accuracy">Accuracy</h2>
+</section>
+<section class="pg" id="pipeline">
+<h2>Pipeline</h2>
+<p class="lead">How 39.9 billion detections became 17,604 confirmed movers, what the AI models add, and what is run again at each data release.</p>
+<table class="funnel"><tr><th>Step</th><th style="text-align:right">Objects</th></tr>
+<tr><td>WISE and NEOWISE detections linked into objects (2010 to 2020)</td><td class="n">39.9 billion</td></tr>
+<tr><td>Claims of motion or change, from the survey alone</td><td class="n">1,564,553</td></tr>
+<tr><td>Re-measured on raw SPHEREx exposures</td><td class="n">202,528</td></tr>
+<tr><td>Motion above 0.3″ a year: confirmed, of those tested</td><td class="n">17,017 of 177,221</td></tr>
+<tr><td><b>Confirmed movers</b> (with a sample of slower ones)</td><td class="n"><b>17,604</b></td></tr>
+<tr><td>… with no Gaia source</td><td class="n">1,348</td></tr>
+<tr><td>… of those, not in SIMBAD either, and away from the Galactic plane</td><td class="n">635</td></tr>
+</table>
+<h3>1. Index NASA's exposures</h3>
+<p><code>census/sphx_index2.py</code> turns the archive's inventory of SPHEREx Level-2 exposures into one small file per patch of sky. 1,628,230 exposures are indexed, up to 5 October 2026. This is all the site needs to know which files hold a position.</p>
+<h3>2. Search the whole sky</h3>
+<p>Ten years of WISE and NEOWISE detections are linked into objects, tile by tile, on a cluster. An object whose positions line up along a track, or whose brightness changed, becomes a claim. There are 1.56 million of them, and most are wrong: blends, artefacts, crowded fields.</p>
+<h3>3. Re-measure every claim on raw exposures</h3>
+<p>A claim is not a result. 202,528 claims were put through the Lab's own detector on NASA's raw SPHEREx exposures (<code>web/scripts/verify_census.mts</code>, about 50 minutes on three cluster nodes). Of the claims of motion above 0.3″ a year, 9.6% held. 43% were not detected at all, and 40% turned out to be an unrelated source nearby.</p>
+<h3>4. Check against Gaia</h3>
+<p>Away from the Galactic plane, 88% of the confirmed movers are known Gaia stars with the same motion (13,210 of 15,065): an independent check of the method. The rule for "moved" is written in the header of <code>census/verify_merge.py</code>. What the detector itself gets right and wrong is in <a href="#accuracy">Accuracy</a>.</p>
+<h3>5. What the AI models add</h3>
+<p>A scout network searched the whole sky again, on pictures instead of catalogues, and marked 3,801 places; an ensemble estimated distance, temperature and kind for the movers that have a SPHEREx spectrum; Meta's V-JEPA 2, fine-tuned on MIRA's movers, gives a second opinion on each mark. Each is described, with its checks, in <a href="#ai">AI in MIRA</a>.</p>
+<h3>6. At each data release</h3>
+<p><code>deploy/update_spherex.sh</code> rebuilds the exposure index and the dates of SPHEREx's visits. Pixels are never copied, so nothing else has to move: the Lab reads the new exposures from NASA's archive the same day (<a href="#update">New data releases</a>).</p>
+<h3>Reproduce it</h3>
+<pre>census/verify_select.py      # which claims to test, and why
+census/verify_lists.py       # the lists, one per cluster node
+web/scripts/verify_census.mts   # the Lab's detector on raw exposures, without a screen
+census/verify_merge.py       # the rule for "moved", and the catalogue
+web/scripts/validate_detector.mts   # the blind test on 459 control fields
+census/ai_join.py            # the AI estimates joined to the catalogue, and their check</pre>
+</section>
+<section class="pg" id="accuracy">
+<h2>Accuracy</h2>
 <p>Every figure below comes from a test in the repository that anyone can run again.</p>
 <table><tr><th>What</th><th>Checked against</th><th>Result</th></tr>
 <tr><td><b>Sun, Moon and planets on the maps</b></td><td>NASA JPL Horizons, on four dates between 1999 and 2027 (<code>web/scripts/test_ephem.mts</code>)</td><td class="n">planets within 8′<br>Moon within 7′<br>brightness within 0.2 mag</td></tr>
 <tr><td><b>Where a moving star is</b></td><td>Position measured on SPHEREx against the position its catalogued motion predicts, 14,323 known movers</td><td class="n">median 0.25″<br>90% within 0.5″</td></tr>
-<tr><td><b>How fast it moves</b></td><td>Blind test: 216 known Gaia movers with the star removed from the Gaia list first, and 5,951 stars that do not move</td><td class="n">92% found<br>error 0.011″/yr (median)<br>0 false alarms</td></tr>
+<tr><td><b>How fast it moves</b></td><td>Blind test on 459 control fields: 216 known Gaia movers, each removed from the Gaia list first, and 5,757 stars that Gaia says do not move</td><td class="n">92% found<br>error 0.011″/yr (median)<br>0 false alarms</td></tr>
 <tr><td><b>All-sky pictures against coordinates</b></td><td>Where 29 bright stars appear in each panorama against their catalogue positions (<code>web/scripts/test_registration.py</code>)</td><td class="n">within one picture pixel<br>(5′, median)</td></tr>
 <tr><td><b>Zoomed-in pictures</b></td><td>Survey tiles are placed by their own sky coordinates on the HEALPix grid; checked by eye on stars with known motion (Epsilon Indi B in 2010)</td><td class="n">marker on the star<br>to a few arcseconds</td></tr>
 <tr><td><b>“My sky”: what is up</b></td><td>Precession, refraction at the horizon and the Moon's parallax are included</td><td class="n">altitude to about 0.2°<br>rise times to a few minutes</td></tr>
 <tr><td><b>3D positions</b></td><td>ESA Gaia DR3 parallaxes; the distance error is the parallax error (typically under 1% within 100 light-years)</td><td class="n">as good as Gaia</td></tr>
 <tr><td><b>Time running in 3D</b></td><td>Planets: JPL's approximate orbital elements. Stars: straight-line motion from proper motion and, where measured, radial velocity</td><td class="n">planets: arcminutes<br>stars: see limits</td></tr></table>
-
-<h2 id="limits">Known limits</h2>
+</section>
+<section class="pg" id="limits">
+<h2>Known limits</h2>
 <ul><li><b>The pictures on the Sky map are not live.</b> The date and the planets are. SPHEREx's picture stops at NASA's newest public release.</li>
 <li><b>SPHEREx pixels are 6.15″.</b> Motions below about 0.06″ per year over 27 years are not detected; close pairs blend.</li>
 <li><b>Stars without a radial velocity</b> are moved across the sky only, not toward or away from us, when time runs in 3D.</li>
 <li><b>Constellation names</b> on the Sky map are approximate near borders.</li>
 <li><b>Composition pictures</b> come from 8-bit previews: good for where things are, not for amounts.</li>
 <li><b>The assistant</b> takes 15 to 45 seconds for a long explanation.</li></ul>
-
-<h2 id="worldmodel">World models <span class="tag">research preview</span></h2>
+</section>
+<section class="pg" id="ai">
+<h2>AI in MIRA</h2>
+<p class="lead">Five models, each with a job that a measurement cannot do alone, and each checked against something it had not seen.</p>
+<table>
+<tr><th>Model</th><th>What it does</th><th>Where you meet it</th><th>How it was checked</th></tr>
+<tr><td><b>Estimates</b><br>a neural ensemble</td><td>For a source with a SPHEREx spectrum: what kind of object it is, its temperature and its distance, each with an uncertainty. It reads the spectrum, the WISE colour and the motion.</td><td>The fifth reading in the Lab; every star's card on the Sky map; <code>ai_estimate</code> in the API</td><td>Against Gaia's parallaxes, on 1,348 movers from sky it never trained on: the distances scatter by 15%. All 164 known L and T dwarfs in the catalogue are called brown dwarfs.</td></tr>
+<tr><td><b>The scout</b><br>six networks, 66 million weights</td><td>Looks at two pictures of the same place, years apart, and marks where something moved. It has searched the whole sky.</td><td>"Marked by the sky model" on the Sky map; <code>/api/v1/scout</code></td><td>On a fifth of the sky kept aside: 31% of real movers found (71% of those above 1″ a year), with 0.04 false marks per square degree. Of its 400 strongest marks where the catalogue had nothing, 393 are fast-moving stars that Gaia or SIMBAD already list, 7 are not confirmed, and none is a new object.</td></tr>
+<tr><td><b>V-JEPA 2</b><br>Meta's video model, fine-tuned</td><td>A second opinion on one star at a time: does this little film show motion?</td><td>The score on each scout mark; the <a href="#atlas">atlas</a></td><td>0.92 on test stars, where 0.5 is chance and 1 is perfect; as published, before fine-tuning, 0.58. It agrees with the scout even where the scout is wrong, so it is not used as proof.</td></tr>
+<tr><td><b>The pocket model</b><br>runs in your browser</td><td>The scout's small sibling, on the field you have open.</td><td>Sky world model, among the Lab's researcher tools</td><td>Its figures are read live from the model file: see <a href="#worldmodel">World models</a>.</td></tr>
+<tr><td><b>The assistant</b></td><td>Explains what is on screen, and operates the instruments when asked.</td><td>Ask, in the header</td><td>It answers from the page's own readings, the same ones the Lab shows.</td></tr>
+</table>
+<h3>An estimate is not a measurement</h3>
+<p>The Lab keeps the two apart. On Epsilon Indi B it <b>measures</b> a motion of 4.70″ a year (Gaia: 4.68) and methane in the spectrum. The ensemble <b>estimates</b> a brown dwarf of about 1,080 K at 11.1 light-years (9.5 to 12.7); Gaia's parallax puts it at 12.0. The estimate's card has its own colour and says what it is.</p>
+<h3>What the estimates are for</h3>
+<p>387 confirmed movers have a SPHEREx spectrum and no Gaia source, so no measured distance. For those the estimate is the only distance there is: a place to start, not a result. <code>census/ai_join.py</code> joins the estimates to the catalogue and writes the check beside them (<code>/data/verified/ai.json</code>).</p>
+<h3>Limits</h3>
+<ul><li>The ensemble learned from sources that Gaia measured. For the objects Gaia cannot see, which are the interesting ones, it is working further from what it knows.</li><li>It knows four kinds: dwarf star, giant or evolved star, brown dwarf, galaxy or quasar.</li><li>The scout misses most slow movers (below 0.4″ a year) and crowded fields. A mark is a place to look at.</li><li>A whole-catalogue V-JEPA 2 embedding was computed and not used: its neighbours share a kind no more often than chance.</li></ul>
+</section>
+<section class="pg" id="worldmodel">
+<h2>World models <span class="tag">research preview</span></h2>
+<figure><img src="/docimg/scout.jpg" alt="The sky model's marks" loading="lazy" /><figcaption><b>The scout's marks on the Sky map.</b> Filled marks are fast-moving stars that Gaia or SIMBAD list; open rings are not confirmed.</figcaption></figure>
 <p>A world model is a network that, shown what happened, predicts what happens next. MIRA uses three, each where it fits, and says how well each does on real stars it never saw. Two are ours and small; the third is a published one, Meta's V-JEPA 2, which we fine-tuned.</p>
 <table><tr><th>Model</th><th>What it does in MIRA</th><th>Where it runs</th></tr>
 <tr><td><b>Pocket model</b><br>ours, 0.7 million weights</td><td>In the Lab: reads a field's 1999 and 2010 pictures, forecasts today and any later year, and shows what it did not expect.</td><td>your browser</td></tr>
@@ -218,8 +354,10 @@ media/                     the film as files, and the submission pack</pre>
 <li><b>A model points; the Lab measures.</b> A mark is a place to look at, not a discovery. Marks where the catalogue has nothing are labelled unverified: some will be stars Gaia lists that MIRA's catalogue does not hold, some artefacts.</li>
 <li><b>Marked as what it is.</b> Every picture a network draws carries the label “AI-generated · prediction”.</li></ul>
 <p>Where this goes: the same recipe, on each new SPHEREx release, predicts every visit from the earlier ones and passes on only what it did not expect. That is the search a ninth planet needs: a faint source that is in no catalogue and is not where anything was before.</p>
-
-<h2 id="api">API</h2>
+</section>
+<section class="pg" id="api">
+<h2>API</h2>
+<figure><img src="/docimg/api.jpg" alt="The API console" loading="lazy" /><figcaption><b>The console on this page.</b> Choose an endpoint, run it, read the answer.</figcaption></figure>
 <p>Everything MIRA measured and indexed can be asked for by a program. The API is served by the same host under <code>/api/v1</code>; it answers in JSON, and the list endpoints also in CSV (<code>format=csv</code>). Positions are ICRS degrees, motions arcseconds a year. No key on this site; 300 calls per ten minutes per address.</p>
 <table><tr><th>Endpoint</th><th>What it returns</th><th>Parameters</th></tr>
 <tr><td><code>GET /status</code></td><td>What data the server carries: exposures indexed, dates, movers, marks</td><td>–</td></tr>
@@ -267,15 +405,17 @@ with fits.open(exp["url"], use_fsspec=True) as hdul:          # reads only the p
     wcs = WCS(hdul["IMAGE"].header)
     cut = Cutout2D(hdul["IMAGE"].section, SkyCoord(331.0966, -56.8007, unit="deg"), 3 * u.arcmin, wcs=wcs)</pre>
 <p><b>Errors</b> are JSON too, <code>{ "error": "…" }</code>, with status 400 (a parameter), 401 (a key is asked for), 404, 429 (too many calls) or 503 (the server does not carry that file). <b>Private deployments</b> can ask for a key: set <code>MIRA_API_KEYS</code> and callers send <code>X-API-Key</code>. <b>A purely static copy</b> of the site has no API: the same answers are in the <a href="#data">data files</a>. <b>Planned</b> for the Mission plan: <code>POST /measure</code>, the Lab's whole chain on a position, run on the server (the engine already runs without a browser in our verification pipeline), and a call-back at each data release.</p>
-
-<h2 id="link">Link and embed</h2>
+</section>
+<section class="pg" id="link">
+<h2>Link and embed</h2>
 <pre>/explore/#sky=Barnard's Star              the Sky map, flown to a name, catalogue number or "RA Dec"
 /explore/?ra=269.452&amp;dec=4.693&amp;fov=6.6    the Lab on a position (degrees); add pmra, pmdec, epoch, name
 /explore/?target=wise-0855&amp;tool=spectrum  one of NASA's five test targets, with a tool open
 /explore/?embed=1#sky                     any of them without the header, for an iframe</pre>
 <p><b>More → Copy link</b> and <b>Copy embed code</b> give the address of what is on screen.</p>
-
-<h2 id="data">Data files</h2>
+</section>
+<section class="pg" id="data">
+<h2>Data files</h2>
 <p>MIRA is a static site: everything it knows is in files anyone can fetch.</p>
 <table><tr><th>File</th><th>Content</th></tr>
 <tr><td><code>/data/verified/objects.json</code></td><td>The 17,604 confirmed movers, column-wise: id, ra, dec (deg, at <code>yr</code>), pm, pmra, pmdec, epm (″/yr), kind, gaia, plx (mas), simbad, known, dp (″, measured minus predicted position)…</td></tr>
@@ -286,11 +426,13 @@ with fits.open(exp["url"], use_fsspec=True) as hdul:          # reads only the p
 <tr><td><code>/space/sx/layer_*.jpg</code>, <code>frames/&lt;k&gt;.jpg</code></td><td>The composition pictures and one panorama per wavelength (Galactic, longitude 0 at the left edge).</td></tr>
 <tr><td><code>/data/wm/model.json</code>, <code>model.bin</code></td><td>The world model: layer table, test results, float32 weights.</td></tr>
 <tr><td><code>/data/lab/index.json</code>, <code>f*.bin</code></td><td>Prepared copies of the test fields (gzip; format in <code>web/src/blink/fieldpack.ts</code>).</td></tr></table>
-
-<h2 id="update">New data releases</h2>
+</section>
+<section class="pg" id="update">
+<h2>New data releases</h2>
 <p>One script, <code>deploy/update_spherex.sh</code>, rebuilds the exposure index, the coverage dates and the composition pictures from NASA's archive. The site itself reads exposures live, so a new release shows in the Lab as soon as the index is rebuilt. <code>web/scripts/prebake_fields.mjs</code> then prepares the five test fields again.</p>
-
-<h2 id="config">Configuration</h2>
+</section>
+<section class="pg" id="config">
+<h2>Configuration</h2>
 <table><tr><th>Setting</th><th>Where</th><th>What it does</th></tr>
 <tr><td><code>MIRA_LLM_KEY</code></td><td>server environment, or <code>web/.env.local</code> in development</td><td>Key of the assistant's model service. Never in the repository or in the built site</td></tr>
 <tr><td><code>MIRA_LLM_URL</code> · <code>MIRA_LLM_MODEL</code></td><td>server</td><td>Any OpenAI-compatible endpoint and model (default: IFM K2 Horizon)</td></tr>
@@ -300,8 +442,9 @@ with fits.open(exp["url"], use_fsspec=True) as hdul:          # reads only the p
 <tr><td><code>MIRA_ANSWERS_FILE</code></td><td>server</td><td>Where visitors' answers on unstudied movers are appended</td></tr>
 <tr><td><code>MIRA_PROXY_PORT</code></td><td>server</td><td>Port of the server process (8787); the web server forwards <code>/api/</code> to it</td></tr>
 <tr><td><code>?embed=1</code> · <code>?deck=1</code></td><td>address</td><td>Without the header, for an iframe; without first-visit prompts, for a presentation</td></tr></table>
-
-<h2 id="deploy">Deploy</h2>
+</section>
+<section class="pg" id="deploy">
+<h2>Deploy</h2>
 <pre>cd web && npm ci && npm run build                       # -> web/dist
 rsync -az --delete web/dist/ user@host:/srv/mira/       # the site and its data
 rsync -az web/server deploy user@host:/opt/mira/        # the server process (assistant and API)
@@ -316,8 +459,9 @@ MIRA_DATA=/srv/mira/data MIRA_LLM_KEY=… node /opt/mira/deploy/assistant-proxy.
 <tr><td><b>System</b></td><td>Ubuntu 24.04 (arm64), Caddy, Node 20 or newer</td><td>No database</td></tr>
 <tr><td><b>Optional</b></td><td>CloudFront in front</td><td>A first visit to both maps downloads about 40 MB; a cache keeps that off the instance</td></tr></table>
 <p class="note"><b>Cost against the credits.</b> About US$18 a month at list prices (instance about 12, disk 2.4, the address 3.7; the first 100 GB a month sent out are free), so about US$110 over the plan's six months: inside the US$100 given at sign-up plus part of the US$100 earned by the first tasks. With a t4g.micro, about US$12 a month. Prices are the public us-east-1 list as we know them: check them in AWS's calculator before launching. Accounts opened after 15 July 2025 get the credits and a plan that ends after six months or when the credits run out; t4g.small, t3.small, t4g.micro and t3.micro are among the instance types that plan allows (<a href="https://aws.amazon.com/about-aws/whats-new/2025/07/aws-free-tier-credits-month-free-plan" target="_blank" rel="noopener">AWS announcement</a>, <a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-free-tier-usage.html" target="_blank" rel="noopener">EC2 documentation</a>).</p>
-
-<h2 id="plans">Plans</h2>
+</section>
+<section class="pg" id="plans">
+<h2>Plans</h2>
 <p class="note"><b>Prototype.</b> Everything is free today: the Researcher tools are behind one switch at the foot of the Lab's tool rail (PRO). Each plan contains the one before it. No price has been tested with a customer yet.</p>
 <div class="plans">
 <div class="plan"><div class="k">The public · classrooms</div><h4>Explorer</h4><div class="p">Free, no account</div><ul><li>The Sky map: tonight's planets, your own sky, 27 years on one time bar</li><li>Any place as a little film, 1999 to today</li><li>What moved, what its light says, did it change</li><li>Field of view, layers, 102 colours</li><li>Ask the assistant</li><li>Links and embeds</li></ul></div>
@@ -325,8 +469,9 @@ MIRA_DATA=/srv/mira/data MIRA_LLM_KEY=… node /opt/mira/deploy/assistant-proxy.
 <div class="plan"><div class="k">Agencies · missions · science centres</div><h4>Mission</h4><div class="p">Per project</div><ul><li>Everything in Researcher</li><li>The verification pipeline on your candidate lists at each data release</li><li>A scout trained on your survey; V-JEPA 2 fine-tuned on your objects</li><li>Instruments built for the project</li><li>Private deployment, single sign-on</li><li>Every number traced to its exposures; a data-quality report per release</li><li>Your own name on the public pages; training and support</li></ul></div>
 </div>
 <p>The full business plan is in the repository: <code>docs/13_business_plan.md</code>.</p>
-
-<h2 id="roadmap">Roadmap</h2>
+</section>
+<section class="pg" id="roadmap">
+<h2>Roadmap</h2>
 <table><tr><th>Next</th><th>What</th></tr>
 <tr><td><b>At each SPHEREx release</b></td><td>Rebuild the index and the prepared fields (one script), re-measure the catalogue, re-run the scout</td></tr>
 <tr><td><b>Measurement as a service</b></td><td><code>POST /api/v1/measure</code>: the Lab's chain on the server, for lists longer than a browser should run</td></tr>
@@ -334,15 +479,17 @@ MIRA_DATA=/srv/mira/data MIRA_LLM_KEY=… node /opt/mira/deploy/assistant-proxy.
 <tr><td><b>The models</b></td><td>Feed the false marks back as examples; point the scout at fainter and colder objects, where Gaia cannot see; predict each new visit from the earlier ones</td></tr>
 <tr><td><b>Classrooms</b></td><td>Exercises on real NASA data in Arabic, French and English</td></tr>
 <tr><td><b>Phones</b></td><td>The Lab's layout on small screens has been checked in emulation only</td></tr></table>
-
-<h2 id="contrib">Contributing</h2>
+</section>
+<section class="pg" id="contrib">
+<h2>Contributing</h2>
 <ul><li><b>Report</b> a wrong number or a broken view as an issue on GitHub, with the address of the page (it carries the position and the tool).</li>
 <li><b>Change</b> on a branch; <code>npm run build</code> must pass. Keep the words on screen plain, give every number its unit and its source, and add no dependency that a few lines can replace.</li>
 <li><b>Claims</b> need a check on real data that the claim did not come from: see how the detector was tested blind (<a href="#accuracy">Accuracy</a>).</li>
 <li><b>AI tools</b> are welcome and logged: add a row to <code>docs/07_si_usage_log.md</code> saying what was made and how it was checked.</li>
 <li><b>Licence.</b> The team has not chosen one yet; until it does, ask before reusing the code. NASA's and ESA's data keep their own terms (<a href="#credits">Credits</a>).</li></ul>
-
-<h2 id="faq">FAQ</h2>
+</section>
+<section class="pg" id="faq">
+<h2>FAQ</h2>
 <table><tr><th>Question</th><th>Answer</th></tr>
 <tr><td>Is MIRA part of NASA?</td><td>No. It is a NASA Space Apps Challenge 2026 project that reads NASA's public data. It is not affiliated with or endorsed by NASA.</td></tr>
 <tr><td>Do I need an account?</td><td>No. Nothing about you is stored on a server; your cases and settings stay in your browser.</td></tr>
@@ -351,21 +498,30 @@ MIRA_DATA=/srv/mira/data MIRA_LLM_KEY=… node /opt/mira/deploy/assistant-proxy.
 <tr><td>Why are some tools behind PRO?</td><td>They are the tools a researcher needs and a visitor rarely does. The switch is free while MIRA is a prototype.</td></tr>
 <tr><td>Which browsers?</td><td>Current Chrome, Edge, Safari and Firefox. The Universe needs WebGL; everything else works without it.</td></tr>
 <tr><td>Can it find Planet Nine?</td><td>Not by itself. The Detection limits tool shows that Planet Nine as proposed is far too faint for one SPHEREx field; MIRA makes the search for nearer, warmer bodies something anyone can follow.</td></tr></table>
-
-<h2 id="credits">Credits</h2>
+</section>
+<section class="pg" id="credits">
+<h2>Credits</h2>
 <ul><li><b>Data.</b> NASA SPHEREx (Level-2 exposures and the DR1 all-sky cube) from NASA/IPAC IRSA; 2MASS and WISE/AllWISE (NASA/IPAC, UMass, UCLA, JPL); ESA Gaia DR3; SIMBAD, VizieR and Aladin (CDS, Strasbourg); NASA Exoplanet Archive; NASA JPL Horizons (for checks) and JPL's approximate planetary elements.</li>
 <li><b>Software.</b> Astropy, astropy-healpix, NumPy, SciPy, PyTorch (pipeline and training); three.js, Aladin Lite, Vite, React (site).</li>
 <li><b>Type.</b> Barlow and JetBrains Mono (SIL Open Font License).</li>
 <li><b>Demo film</b> (<a href="/film/">/film/</a>, press Space). Music: “Impact Prelude” by Kevin MacLeod (incompetech.com), Creative Commons BY 4.0. Spacecraft animation: NASA/JPL-Caltech. Everything else is recorded from this site. Full list: <code>docs/17_credits.md</code>.</li>
 <li><b>AI tools.</b> Code and text were written with AI assistance; every use is logged in <code>docs/07_si_usage_log.md</code>. No picture on the site is AI-generated except the world model's forecasts, which are labelled.</li>
 <li><b>Team Mohsinin Wlad Dario</b> · NASA Space Apps Challenge 2026, Ben Guerir · Mohammed Ouabdrrahmane, Hamza Ba-mohammed, Hiba Nemry, Aya Driouche, Abdelmonaim Bounite.</li></ul>
+</section>
 </main>
 </div>
 <footer>MIRA · Team Mohsinin Wlad Dario · NASA Space Apps Challenge 2026 · This site is not affiliated with or endorsed by NASA.</footer>
 <script>
-const links = [...document.querySelectorAll('#toc a')], secs = links.map((a) => document.querySelector(a.getAttribute('href')));
-const spy = () => { let k = 0; secs.forEach((s, i) => { if (s && s.getBoundingClientRect().top < 120) k = i; }); links.forEach((a, i) => a.classList.toggle('on', i === k)); };
-addEventListener('scroll', spy, { passive: true }); spy();
+// one part at a time. The address carries the part (#api) or a place inside one (#atlas); every part ends with the way on
+const links = [...document.querySelectorAll('#toc a')], pages = [...document.querySelectorAll('section.pg')], order = links.map((a) => a.getAttribute('href').slice(1)).filter((id) => pages.some((p) => p.id === id));
+pages.forEach((p) => { const i = order.indexOf(p.id), name = (j) => links.find((a) => a.getAttribute('href') === '#' + order[j]).textContent, mk = (j, cls, word) => (i >= 0 && j >= 0 && j < order.length ? `<a class="${cls}" href="#${order[j]}"><small>${word}</small><b>${name(j)}</b></a>` : '<span></span>');
+  const nav = document.createElement('nav'); nav.className = 'pager'; nav.innerHTML = mk(i - 1, 'prev', '← Previous') + mk(i + 1, 'next', 'Next →'); p.appendChild(nav); });
+function showPage() { const id = decodeURIComponent(location.hash.slice(1)) || 'start', el = document.getElementById(id), cur = (el && el.closest('section.pg')) || pages[0];
+  pages.forEach((p) => p.classList.toggle('on', p === cur)); links.forEach((a) => a.classList.toggle('on', a.getAttribute('href') === '#' + cur.id)); document.body.classList.toggle('first', cur === pages[0]);
+  cur.querySelectorAll('video').forEach((v) => { v.play().catch(() => {}); });
+  document.title = (cur === pages[0] ? '' : (cur.querySelector('h2')?.childNodes[0]?.textContent ?? '').trim() + ' · ') + 'MIRA documentation';
+  if (el && el !== cur) el.scrollIntoView({ block: 'start' }); else scrollTo({ top: 0, behavior: 'instant' }); }
+addEventListener('hashchange', showPage); showPage();
 fetch('/data/wm/scout.json').then((r) => r.ok ? r.json() : null).then((sc) => { const el = document.getElementById('wm2-live'); if (!sc) { el.textContent = 'This server does not carry the scout\'s results yet.'; return; }
   const t = sc.test, fast = (t.by_pm || []).find((b) => b.lo === 1), w = sc.copies.reduce((q, c) => q + c.weights_millions, 0), ft = sc.vjepa_finetuned, cmp = sc.comparison && ((ft && sc.comparison.vjz) || sc.comparison.vjepa || sc.comparison.vjz);
   el.innerHTML = `<b>Scout, on the fifth of the sky kept for testing.</b> ${sc.copies.length} networks, ${w.toFixed(0)} million weights together. Of ${t.n.toLocaleString('en-US')} real movers faster than 0.4″ a year it found <b>${Math.round(100 * t.recall)}%</b>${fast ? ` (<b>${Math.round(100 * fast.recall)}%</b> of those above 1″)` : ''}, with ${t.false_per_sqdeg.toFixed(2)} marks per square degree on nothing the catalogue knows, and read their motion to ${t.pm_err_median.toFixed(2)}″ a year. Over the whole sky it marks ${sc.sky.marks.toLocaleString('en-US')} places, ${sc.sky.marks_on_catalogue_stars.toLocaleString('en-US')} of them catalogue stars.`
