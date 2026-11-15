@@ -45,8 +45,11 @@ export function mountPastView(host: HTMLElement, t: MoveTarget, o: { label?: str
     g.lineWidth = 1.5 * dpr; g.strokeStyle = "#ff9d4d"; g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke();
     g.setLineDash([4 * dpr, 4 * dpr]); g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke(); g.setLineDash([]);
     g.fillStyle = "#ff9d4d"; g.font = `${10 * dpr}px ui-monospace, Menlo, monospace`; g.textBaseline = "middle";
-    const side = Math.abs(x2 - x0) > Math.abs(y2 - y0) ? [0, -11 * dpr] : [9 * dpr, 0];      // labels beside the path, not on it
-    for (const [x, yy, lab] of [[x0, y0, "1999"], [x1, y1, "2010"], [x2, y2, String(Math.floor(yNow))]] as [number, number, string][]) { g.beginPath(); g.arc(x, yy, 2.4 * dpr, 0, 7); g.fill(); g.textAlign = side[0] ? "left" : "center"; g.fillText(lab, x + side[0], yy + side[1]); }
+    // year labels: the two ends beyond the path, along it; the middle one beside it, and only when there is room
+    const len = Math.hypot(x2 - x0, y2 - y0) || 1, ux = (x2 - x0) / len, uy = (y2 - y0) / len, off = 17 * dpr; g.textAlign = "center";
+    for (const [x, yy] of [[x0, y0], [x1, y1], [x2, y2]]) { g.beginPath(); g.arc(x, yy, 2.4 * dpr, 0, 7); g.fill(); }
+    g.fillText("1999", x0 - ux * off, y0 - uy * off); g.fillText(String(Math.floor(yNow)), x2 + ux * off, y2 + uy * off);
+    if (len > 70 * dpr) g.fillText("2010", x1 - uy * 13 * dpr, y1 + ux * 13 * dpr);
     const [mx, my] = P(y); g.strokeStyle = "#ffffff"; g.lineWidth = 1.6 * dpr; g.beginPath(); g.arc(mx, my, Math.max(7 * dpr, (4 / pix) * s), 0, 7); g.stroke();
     // scale bar and compass
     const bar = [5, 10, 30, 60, 120].find((b) => b / pix * s > 0.16 * w) ?? 120, bw = (bar / pix) * s; g.strokeStyle = g.fillStyle = "rgba(240,240,250,.85)"; g.lineWidth = 1 * dpr;

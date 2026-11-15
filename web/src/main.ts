@@ -881,7 +881,7 @@ async function boot() {
   document.querySelectorAll<HTMLButtonElement>("#unimode button").forEach((b) => b.onclick = () => showUniverse(b.dataset.m as UniMode));
   $("#aboutbtn").onclick = () => ($("#about").classList.contains("open") ? closeAbout() : renderAbout());
   $("#asstbtn").onclick = async () => { const m = await import("./assistant"); m.toggleAssistant($("#asst"), { view: () => view, lab: () => blink.context(), labAct: (a) => blink.act(a), catalogue: async () => (await ensureCatalogue()).context(), catalogueAct: async (a) => (await ensureCatalogue()).act(a),
-    observe: (q) => observe(q), go: (v) => (v === "universe" ? showUniverse("3d") : setView(v as View)), method: renderAbout }); $("#asstbtn").classList.toggle("on", !$("#asst").hidden); };
+    observe: (q) => observe(q), go: (v) => (v === "universe" ? showUniverse("3d") : setView(v as View)), method: renderAbout, map: () => space?.context() ?? null, mapAct: (a) => space?.act(a) }); $("#asstbtn").classList.toggle("on", !$("#asst").hidden); };
   $("#pclose").onclick = closePanel;
   wireSheet();
   $("#tourbtn").onclick = async () => { await showUniverse("map"); renderStep(0); };

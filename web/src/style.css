@@ -799,3 +799,16 @@ body.asst-on .blinkpage, body.asst-on .catpage, body.asst-on .logpage { right: m
 .sp-intro[hidden] { display: none; } .sp-intro > b { font-family: var(--display, inherit); font-size: 22px; text-transform: uppercase; letter-spacing: .02em; }
 .sp-intro p { margin: 6px 0 12px; font-size: 14px; line-height: 1.5; color: var(--dim); } .sp-intro > div { display: flex; gap: 8px; flex-wrap: wrap; } .sp-intro .icon-btn { position: absolute; top: 10px; right: 10px; width: 28px; height: 28px; }
 @media (max-width: 900px) { .sp-intro { top: 64px; left: 10px; right: 10px; transform: none; width: auto; min-width: 0; padding: 12px 40px 12px 14px; } .sp-intro p { font-size: 13px; } .sp-info.ver { width: auto; max-height: 70vh; } }
+/* ---- the map on a phone: the introduction first, then a compact panel; an object's card is a bottom sheet and
+        has the screen to itself */
+@media (max-width: 760px) {
+  .sp-ctl { top: 58px; bottom: auto; left: 8px; right: 8px; width: auto; max-height: none; padding: 10px; border-radius: var(--radius); border-width: .8px; overflow: visible; }
+  .sp-ctl > .eyebrow, .sp-ctl > .sp-dest, .sp-ctl > details, .sp-ctl > .sp-search { display: none; }
+  .sp-find { grid-template-columns: repeat(3, 1fr); margin: 0 0 8px; } .sp-find > .eyebrow { grid-column: 1 / -1; margin: 0; }
+  .sp-findbtn { flex-direction: column; align-items: flex-start; gap: 2px; padding: 6px 8px; } .sp-findbtn b { font-size: 17px; min-width: 0; } .sp-findbtn span { font-size: 10.5px; }
+  .sp-time { bottom: 8px; }
+  .sp-info, .sp-info.ver { left: 0; right: 0; top: auto; bottom: 0; width: auto; max-height: 76vh; border-radius: 0; border-width: .8px 0 0; padding: 14px 14px calc(14px + env(safe-area-inset-bottom)); }
+  .space:has(.sp-info.open) .sp-ctl, .space:has(.sp-info.open) .sp-time, .space:has(.sp-intro:not([hidden])) .sp-ctl { display: none; }
+  .sp-intro { top: 66px; }
+  .pv-cv { width: min(100%, 44vh); margin: 0 auto; }
+}

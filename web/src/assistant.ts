@@ -3,7 +3,7 @@
 // the model asks for (open a field, select a source, filter the catalogue, change panel) and feeds the results back.
 export type AsstCtx = {
   view: () => string; lab: () => any; labAct: (a: any) => void; catalogue: () => Promise<any>; catalogueAct: (a: any) => Promise<any>;
-  observe: (q: string) => void; go: (v: string) => void; method: () => void;
+  observe: (q: string) => void; go: (v: string) => void; method: () => void; map?: () => unknown; mapAct?: (a: any) => string | undefined;
 };
 type Msg = { role: "user" | "assistant" | "tool"; content: string; /** the model's own thinking: kept so that it can be sent back with the conversation, never shown */ reasoning_content?: string; tool_calls?: { id: string; type: "function"; function: { name: string; arguments: string } }[]; tool_call_id?: string };
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]!));
@@ -12,9 +12,10 @@ const fmt = (t: string) => esc(t).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace
 const SUGGEST: Record<string, string[]> = {
   blink: ["What moved in this field?", "Explain the selected source in plain words", "Is this object already known?", "Open Luhman 16 and tell me how fast it moves"],
   cat: ["Show confirmed movers with no Gaia motion", "Which objects have a methane dip?", "What does the diagram tell me?", "Open the fastest red object in the Lab"],
-  log: ["What can I do with my saved cases?", "Open Epsilon Indi B in the Lab"], universe: ["What am I looking at?", "Measure Barnard's Star in the Lab"],
+  log: ["What can I do with my saved cases?", "Open Epsilon Indi B in the Lab"],
+  universe: ["What am I looking at?", "Show me a cold world no optical telescope can see", "Help me look at one nobody has named", "Fly to Barnard's Star"],
 };
-const DOING: Record<string, string> = { open_field: "Pointing the Lab and reading NASA's exposures", lab_control: "Operating the Lab", catalogue_query: "Querying the catalogue", navigate: "Changing section", get_page: "Reading the page" };
+const DOING: Record<string, string> = { open_field: "Pointing the Lab and reading NASA's exposures", lab_control: "Operating the Lab", catalogue_query: "Querying the catalogue", map_control: "Flying the map", navigate: "Changing section", get_page: "Reading the page" };
 
 let state: { el: HTMLElement; ctx: AsstCtx; msgs: Msg[]; busy: boolean; ok: boolean | null; model: string } | null = null;
 
@@ -51,7 +52,7 @@ function draw(status = "") {
 }
 async function page() {
   const s = state!, v = s.ctx.view();
-  return { section: v === "blink" ? "lab" : v === "cat" ? "catalogue" : v === "log" ? "cases" : v, lab: s.ctx.lab(), ...(v === "cat" ? { catalogue: await s.ctx.catalogue() } : {}) };
+  return { section: v === "blink" ? "lab" : v === "cat" ? "catalogue" : v === "log" ? "cases" : v === "universe" ? "map" : v, lab: s.ctx.lab(), ...(v === "cat" ? { catalogue: await s.ctx.catalogue() } : {}), ...(v === "universe" ? { map: s.ctx.map?.() ?? null } : {}) };
 }
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 /** run one tool the model asked for; the returned text is what the model reads next */
@@ -69,6 +70,8 @@ async function runTool(name: string, a: any): Promise<string> {
     }
     if (name === "lab_control") { if (s.ctx.view() !== "blink") s.ctx.go("blink"); s.ctx.labAct(a ?? {}); await wait(700); return JSON.stringify(s.ctx.lab()); }
     if (name === "catalogue_query") { if (s.ctx.view() !== "cat") { s.ctx.go("cat"); await wait(400); } const r = await s.ctx.catalogueAct(a ?? {}); await wait(200); if (a?.open) { await wait(800); return JSON.stringify({ result: r, note: "The selected object is now loading in the Lab; call get_page in a few seconds or use open_field for its measurements." }); } return JSON.stringify({ result: r, catalogue: await s.ctx.catalogue() }); }
+    if (name === "map_control") { if (s.ctx.view() !== "universe") { s.ctx.go("universe"); await wait(2500); } const r = s.ctx.mapAct?.(a ?? {}) ?? "the map is not available on this device";
+      await wait(a?.fly_to || a?.take_part || a?.pick ? 5000 : 900); return JSON.stringify({ result: r, map: s.ctx.map?.() ?? null }); }
     if (name === "navigate") { const sec = String(a?.section ?? ""); if (sec === "method") s.ctx.method(); else s.ctx.go(sec === "lab" ? "blink" : sec === "catalogue" ? "cat" : sec === "cases" ? "log" : "universe"); await wait(500); return JSON.stringify(await page()); }
     if (name === "get_page") return JSON.stringify(await page());
     return `error: unknown tool ${name}`;

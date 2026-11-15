@@ -49,7 +49,8 @@ export type SpaceOpts = { lowPower: boolean; focus?: string; lab?: boolean; onLa
   /** "put it under the telescope": hand a selected object to the Observe section */
   onObserve?: (t: { ra: number; dec: number; name?: string; pmra?: number; pmdec?: number; epoch?: number }) => void };
 /** close(); pause(true/false) suspends rendering while another section of the observatory is in front */
-export type SpaceHandle = (() => void) & { pause: (on: boolean) => void; /** fly to an object by name or survey id; false if the map does not hold it */ focus: (nameOrId: string) => boolean };
+export type SpaceHandle = (() => void) & { pause: (on: boolean) => void; /** fly to an object by name or survey id; false if the map does not hold it */ focus: (nameOrId: string) => boolean;
+  /** what the map shows, for the assistant */ context: () => unknown; /** let the assistant operate the map */ act: (a: { fly_to?: string; show?: string; pick?: string; take_part?: boolean }) => string };
 
 function parse(buf: ArrayBuffer): Cat {
   const n = Math.floor(buf.byteLength / 32), dv = new DataView(buf);
@@ -329,7 +330,7 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<Spa
   }
 
   // ---- the verified catalogue, joined by object id: which points are confirmed movers, and what is known of them
-  let ver: Ver | null = null, vi = new Int32Array(0), todo: number[] = []; const verIdx = new Map<string, number>();
+  let ver: Ver | null = null, vi = new Int32Array(0), todo: number[] = []; const verIdx = new Map<string, number>(), tally = { movers: 0, noGaia: 0 };
   function applyVerified() {
     const c = cat!; vi = new Int32Array(c.n).fill(-1); todo = []; let nMov = 0, nNoG = 0;
     for (let i = 0; i < c.n; i++) {
@@ -339,6 +340,7 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<Spa
         if (ver.known[k] === 0 && !ver.simbad[k]) todo.push(i); }
       c.lens[i] = L;
     }
+    tally.movers = nMov; tally.noGaia = nNoG;
     const set = (id: string, v: string) => { const e = host.querySelector(id); if (e) e.textContent = v; };
     set("#spfn1", ver ? nMov.toLocaleString() : "…"); set("#spfn2", ver ? nNoG.toLocaleString() : "…"); set("#spfn3", ver ? todo.length.toLocaleString() : "…");
   }
@@ -596,6 +598,9 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<Spa
     $("#spiclose").onclick = () => { exo.show(-1); info(-1); };
     ($("#spplanets") as HTMLElement).onclick = () => flyTo(p, maxA(k) * 2.6, () => p.clone(), 3000);
   }
+  /** A confirmed mover's distance on the map is not believable when it would make the object cross the sky faster
+   *  than a star can travel in our Galaxy (550 km/s): the distance, estimated or from a weak parallax, is then too large. */
+  const farFetched = (i: number) => { const k = vi.length > i ? vi[i] : -1; if (k < 0 || !ver) return false; const c = cat!; return 4.74 * ver.pm[k] * Math.hypot(c.pos[i * 3], c.pos[i * 3 + 1], c.pos[i * 3 + 2]) > 550; };
   let pastView: { destroy: () => void } | null = null;
   function info(i: number) {
     const c = cat!, el = $("#spinfo");
@@ -605,18 +610,18 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<Spa
     const v = new THREE.Vector3(c.vel[i * 3], c.vel[i * 3 + 1], c.vel[i * 3 + 2]).divideScalar(PCYR), sp = v.length(), vr = d0 > 0 ? v.dot(p0) / d0 : 0;
     const lens = LENS.filter((l) => c.lens[i] & l.bit && l.bit !== 32).map((l) => `<span style="--c:${l.c}">${l.name}</span>`).join("");
     const isSun = c.obj[i] === 999999 && c.tile[i] === 65535, vk = vi.length > i ? vi[i] : -1, V = vk >= 0 ? ver : null;
-    const T = c.teff[i], vid = `${c.tile[i]}-${c.obj[i]}`, isTodo = !!V && V.known[vk] === 0 && !V.simbad[vk];
+    const T = c.teff[i], vid = `${c.tile[i]}-${c.obj[i]}`, badDist = farFetched(i), isTodo = !!V && V.known[vk] === 0 && !V.simbad[vk];
     if (V) el.classList.add("ver");
     intro.hidden = true;
     const lightLeft = EPOCH - d0 * LY;
     el.innerHTML = `<button class="icon-btn" id="spiclose">✕</button>
-      <div class="eyebrow">${V ? KIND_PLAIN[V.kind[vk]] ?? V.kind[vk] : isSun ? "Our star" : whiteDwarf.has(i) ? "White dwarf" : noPhot.has(i) ? "Nearby star" : CLASSES[c.cls[i]]}${c.src[i] === 3 ? " · AI classification" : ""}</div>
+      <div class="eyebrow">${V ? KIND_PLAIN[V.kind[vk]] ?? V.kind[vk] : isSun ? "Our star" : whiteDwarf.has(i) ? "White dwarf" : noPhot.has(i) ? "Nearby star" : CLASSES[c.cls[i]]}${c.src[i] === 3 && !V ? " · AI classification" : ""}</div>
       <h3 class="display">${labelText(i)}</h3>
-      ${V ? `<p class="sp-lead"><b>${fmtDist(d)}</b> from the Sun. It crosses the width of the full Moon in our sky every <b>${Math.round(1800 / Math.max(V.pm[vk], 1e-3)).toLocaleString()} years</b>${V.known[vk] === 0 ? ", and no optical catalogue lists it" : ""}.</p>` : ""}
+      ${V ? `<p class="sp-lead">${badDist ? "Its distance is not known yet: the value it is placed at on this map would make it faster than any star in our Galaxy, so it is surely closer" : `${c.src[i] === 3 ? "About " : ""}<b>${fmtDist(d)}</b> from the Sun${c.src[i] === 3 ? " (estimated from its colours, not yet measured)" : ""}`}. It crosses the width of the full Moon in our sky every <b>${Math.round(1800 / Math.max(V.pm[vk], 1e-3)).toLocaleString()} years</b>${V.known[vk] === 0 ? ", and no optical catalogue lists it" : ""}.</p>` : ""}
       <div class="facts">
-        <div class="fact"><b>${isSun ? "0" : fmtDist(d)}</b><span>${Math.abs(S.time) > 1 ? `distance in ${fmtYear(NOW_Y + S.time)}` : "distance now"}${c.sig[i] > 0.005 ? ` · ±${Math.round(c.sig[i] * 100)}%` : ""}</span></div>
-        <div class="fact"><b>${noPhot.has(i) || !T ? "–" : whiteDwarf.has(i) && T >= 12000 ? "> 12,000 K" : T.toLocaleString() + " K"}</b><span>${noPhot.has(i) ? "no colour measured by Gaia" : whiteDwarf.has(i) ? "temperature from its colour · about the size of Earth" : `temperature${c.src[i] === 3 ? " (AI)" : ""} · ≈${(() => { const R = isSun ? 1 : radiusRsun(T, c.M[i], c.cls[i]); return R < 0.2 ? (R * 9.73).toFixed(1) + " Jupiters" : R.toFixed(R < 3 ? 2 : 0) + " Suns"; })()} wide`}</span></div>
-        <div class="fact"><b>${sp.toFixed(1)} km/s</b><span>speed relative to the Sun${c.hasRV[i] ? "" : " (sky-plane only)"}</span></div>
+        <div class="fact"><b>${isSun ? "0" : badDist ? "?" : fmtDist(d)}</b><span>${badDist ? "provisional place on the map · " : ""}${Math.abs(S.time) > 1 ? `distance in ${fmtYear(NOW_Y + S.time)}` : "distance now"}${c.sig[i] > 0.005 ? ` · ±${Math.round(c.sig[i] * 100)}%` : ""}</span></div>
+        <div class="fact"><b>${badDist ? "–" : noPhot.has(i) || !T ? "–" : whiteDwarf.has(i) && T >= 12000 ? "> 12,000 K" : T.toLocaleString() + " K"}</b><span>${badDist ? "temperature and size need a reliable distance" : noPhot.has(i) ? "no colour measured by Gaia" : whiteDwarf.has(i) ? "temperature from its colour · about the size of Earth" : `temperature${c.src[i] === 3 ? " (AI)" : ""} · ≈${(() => { const R = isSun ? 1 : radiusRsun(T, c.M[i], c.cls[i]); return R < 0.2 ? (R * 9.73).toFixed(1) + " Jupiters" : R.toFixed(R < 3 ? 2 : 0) + " Suns"; })()} wide`}</span></div>
+        <div class="fact"><b>${badDist ? "–" : sp.toFixed(1) + " km/s"}</b><span>${badDist ? "needs a reliable distance · " : ""}speed relative to the Sun${c.hasRV[i] ? "" : " (sky-plane only)"}</span></div>
         <div class="fact"><b>${vr > 0.5 ? "receding" : vr < -0.5 ? "approaching" : "–"}</b><span>${c.hasRV[i] ? `${Math.abs(vr).toFixed(1)} km/s radial (Gaia)` : "no radial velocity"}</span></div>
       </div>
       ${lens ? `<div class="sp-lens">${lens}</div>` : ""}
@@ -897,6 +902,7 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<Spa
     const c = cat!; if (c.tile[i] === 65535) return nameOf(i);
     const k = vi.length > i ? vi[i] : -1, nm = k >= 0 && ver ? ver.simbad[k].replace(/^NAME /, "").replace(/ \(.*$/, "") : "";
     if (nm) return nm;
+    if (k >= 0 && ver) return ver.known[k] === 1 && ver.gaia[k] ? `Gaia DR3 ${ver.gaia[k]}` : `Unnamed mover ${c.tile[i]}-${c.obj[i]}`;       // a confirmed mover goes by its Gaia designation, or by none
     const L = c.lens[i], kind = L & 2 ? "Methane dwarf" : c.cls[i] === 2 ? "Brown dwarf" : L & 4 ? "Mover unknown to Gaia" : L & 1 ? "Confirmed mover" : c.cls[i] === 1 ? "Giant star" : "Star";
     return `${kind} ${c.tile[i]}-${c.obj[i]}`;
   }
@@ -1079,6 +1085,21 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<Spa
       const k = ver ? ver.simbad.findIndex((n) => n.toLowerCase().includes(q)) : -1; if (k >= 0) i = byId(ver!.id[k]); }
     if (i >= 0) { flyToStar(i, i > 0 && vi[i] >= 0 ? undefined : 0.03); return true; }
     const pk = PLANETS.findIndex((p2) => p2.name === f); if (pk >= 0) { flyToBody({ kind: "planet", k: pk }); return true; } if (f === "Sun") { flyToStar(0); return true; } return false; };
+  handle.context = () => { const i = S.sel, c = cat!, k = i >= 0 && vi.length > i ? vi[i] : -1, V = k >= 0 ? ver : null;
+    return { confirmed_movers_on_map: tally.movers, of_them_unknown_to_gaia: tally.noGaia, unnamed_ones_visitors_can_help_look_at: todo.length,
+      selected: i >= 0 ? { name: labelText(i), kind: V ? KIND_PLAIN[V.kind[k]] ?? V.kind[k] : CLASSES[c.cls[i]], distance_light_years: farFetched(i) ? null : +(cur(i).length() * LY).toFixed(1), distance_note: farFetched(i) ? "not known yet: its place on the map is provisional" : c.src[i] === 3 ? "an estimate from its colours, not measured" : "measured",
+        ...(V ? { confirmed_mover: true, motion_arcsec_per_year: V.pm[k], years_to_cross_a_full_moon_width: Math.round(1800 / Math.max(V.pm[k], 1e-3)), spherex_exposures_checked: V.n[k], arcsec_from_where_the_motion_predicts: V.dp[k],
+          arcsec_from_where_it_would_be_if_still: V.ds[k], gaia: V.known[k] === 1 ? "Gaia lists the same motion" : V.known[k] === 0 ? "no Gaia source: too cold or faint for visible light" : "Gaia does not list this motion", has_a_name: !!V.simbad[k],
+          pictures: "two real pictures on a slider: 2MASS about 1999 and WISE 2010, with its measured path" } : { confirmed_mover: false }) } : null };
+  };
+  handle.act = (a) => {
+    const click = (f: string) => (host.querySelector(`#spfind [data-f="${f}"]`) as HTMLElement | null)?.click();
+    if (a.show === "confirmed") click("all"); else if (a.show === "unknown_to_gaia") click("nogaia"); else if (a.show === "everything") showOnly(null);
+    if (a.take_part || a.pick === "unnamed") { click("help"); return "flying to a confirmed mover nobody has named"; }
+    if (a.pick === "cold_world") { ($("#spintro1") as HTMLElement).click(); return "flying to a cold brown dwarf that the Gaia optical catalogue does not list"; }
+    if (a.fly_to) return handle.focus(a.fly_to) ? `flying to ${a.fly_to}` : `"${a.fly_to}" is not on the map (no measured distance); it can still be opened in the Lab`;
+    return "done";
+  };
   handle.pause = (on: boolean) => { paused = on; cancelAnimationFrame(raf); keys.clear(); if (!on) { last = performance.now(); resize(); raf = requestAnimationFrame(loop); } };
   return handle;
 }
