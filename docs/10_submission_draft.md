@@ -53,8 +53,8 @@ what moved, how fast and what it is. No install, no account, no server.
    in place by place on the dates of its exposures (taken from the exposure index), each mover lighting up when
    SPHEREx reached it. The Sun, the Moon and the planets stand where they are on the date shown, live at "today"
    (JPL's orbital elements, within 8′ of JPL Horizons); "My sky now" shades what is below the visitor's horizon and
-   says which planets are up and when the others rise. A slider goes through SPHEREx's 102 wavelengths, read live
-   from NASA. Any place opens a card that plays it as a little film: 2MASS, WISE, then each SPHEREx visit.
+   says which planets are up and when the others rise. A slider goes through SPHEREx's 102 wavelengths, each read
+   from NASA's archive when asked for. Any place opens a card that plays it as a little film: 2MASS, WISE, then each SPHEREx visit.
    *Space* is the Sun's neighbourhood in 3D out to the oldest light, whose sky is NASA's own SPHEREx all-sky
    picture; among the planets time runs in days, among the stars in millennia. On both, a click on a confirmed mover
    opens a film-style card tied to it by a target ring: what it is in plain words, its distance, how long it takes
@@ -138,11 +138,11 @@ data and checked against independent references; the assistant is told to use on
    classroom can do it; the pilot will tell us whether they do.
 4b. **27 years on one time bar.** The Sky map playing: 2MASS 1999 fading into WISE 2010, then SPHEREx's picture
    filling in strip by strip on the dates it was taken, the movers lighting up as it reaches them; then the slider
-   through SPHEREx's 102 wavelengths (3.3 µm lights up the Milky Way's dust), live from NASA. And the Solar System
+   through SPHEREx's 102 wavelengths (3.3 µm lights up the Milky Way's dust), each read from NASA's archive when asked for. And the Solar System
    in Space, planets going round at ten days a second.
 5. **One click deeper: the Lab.** ε Indi B: press play, three NASA pictures of the field follow one another and the
    brown dwarf walks along its dated track; "12 sources measured, 1 moved"; Astrometer (+3.99, −2.49″/yr against
-   Gaia's +3.98, −2.47), Spectrograph with the methane band. "Read live from NASA's archives. No server."
+   Gaia's +3.98, −2.47), Spectrograph with the methane band. "Read from NASA's archives as you ask. No server."
 6. **Verified, not just claimed.** The funnel: 39.9 billion → 1.56 million → 202,528 → 17,604. Blind control run:
    92% of known movers found without Gaia, no false alarm among 5,757 still stars. What failed the test is gone.
 7. **Built to last, for everyone.** Static, free, embeddable, phone-ready; one script per data release; an

@@ -1,5 +1,6 @@
 // WATCH A PLACE THROUGH TIME — any spot of the sky as a little film, right on the map: 2MASS around 1999, WISE in
-// 2010, then one picture per SPHEREx visit (all the exposures of that visit combined), read from NASA's archives
+// 2010, then one picture per SPHEREx visit (that visit's exposures at 3.8–5 µm combined, WISE's own colour, so
+// that a cold object is in every one of them), read from NASA's archives
 // when asked for. It plays once, slowly, and can then be scrubbed. The Lab does the same with instruments around it.
 import { SURVEYS, pastCutout } from "./blink/hips";
 import { build, mjdToYear, PIX_ARCSEC, type Frame } from "./blink/engine";
@@ -21,7 +22,7 @@ export function mountPlaceView(host: HTMLElement, p: { ra: number; dec: number }
     <div class="pv-ctl"><button class="icon-btn pv-play" aria-label="Play from 1999 to today" title="Play from 1999 to today">▶</button>
       <input class="pv-range" type="range" min="0" max="1000" value="0" aria-label="Date, from 1999 to SPHEREx's latest visit"><b class="pv-yr mono">1999</b></div>
     <div class="pv-stops"></div>
-    <p class="pv-note">The same ${(field / 60).toFixed(0)}′ of sky at each date, north up, east left. Each survey sees a different colour of light, so compare places, not brightness: whatever changes place from one picture to the next is moving.</p></div>`;
+    <p class="pv-note">The same ${(field / 60).toFixed(0)}′ of sky at each date, north up, east left. 2MASS saw it at 2.2 µm; WISE at 4.6 µm and SPHEREx here at 3.8–5 µm, the colour in which cold objects show. Compare places rather than brightness: whatever changes place from one picture to the next is moving.</p></div>`;
   const cv = host.querySelector(".pv-cv") as HTMLCanvasElement, cap = host.querySelector(".pv-cap") as HTMLElement, range = host.querySelector(".pv-range") as HTMLInputElement,
     yrEl = host.querySelector(".pv-yr") as HTMLElement, playBtn = host.querySelector(".pv-play") as HTMLButtonElement, stops = host.querySelector(".pv-stops") as HTMLElement;
   let pics: Pic[] = [
@@ -52,13 +53,13 @@ export function mountPlaceView(host: HTMLElement, p: { ra: number; dec: number }
     try {
       const Ns = 2 * Math.ceil((field / PIX_ARCSEC + 4) / 2);
       const tick = (done: number, total: number) => { sxProg = ` ${done} of ${total}`; draw(); };
-      const b = await build({ ra: p.ra, dec: p.dec }, { size: Ns, maxFrames: 12, concurrency: 6, signal: ac.signal, onFrame: (_f, done, total) => tick(done, total), onSkip: tick });
+      const b = await build({ ra: p.ra, dec: p.dec }, { size: Ns, maxFrames: 12, dets: new Set([5, 6]), concurrency: 6, signal: ac.signal, onFrame: (_f, done, total) => tick(done, total), onSkip: tick });
       if (dead) return;
       const by = new Map<number, Frame[]>(); b.frames.forEach((f) => (by.get(f.visit) ?? by.set(f.visit, []).get(f.visit)!).push(f));
       const all = [...by.entries()].sort((a, q) => a[0] - q[0]).map(([, L]) => L), good = all.filter((L) => L.length >= 2), visits = good.length ? good : all;      // single exposures only when no visit has two
       if (!visits.length) return fail(b.listed ? "SPHEREx's exposures of this place could not be read just now." : "No SPHEREx exposure of this place is listed yet.");
       const made: Pic[] = visits.map((L, i) => { const yr = mjdToYear(L.reduce((s, f) => s + f.mjd, 0) / L.length);
-        return { yr, stop: `${monthOf(yr)} · SPHEREx`, cap: `${monthOf(yr)} · NASA's SPHEREx, visit ${i + 1} of ${visits.length}: ${L.length > 1 ? L.length + " exposures combined" : "one exposure"} (0.75–5 µm, 6″ pixels)`, img: disp(toGrid(robustStack(L.map((f) => f.img), Ns * Ns), Ns)), kind: "sx" as const, state: "ok" as const }; });
+        return { yr, stop: `${monthOf(yr)} · SPHEREx`, cap: `${monthOf(yr)} · NASA's SPHEREx, visit ${i + 1} of ${visits.length}: ${L.length > 1 ? L.length + " exposures combined" : "one exposure"} (3.8–5 µm, 6″ pixels)`, img: disp(toGrid(robustStack(L.map((f) => f.img), Ns * Ns), Ns)), kind: "sx" as const, state: "ok" as const }; });
       const at = v; pics = [...pics.filter((q) => q.kind !== "sx"), ...made]; sx = "done"; renderStops(); v = Math.min(at, pics.length - 1); draw();
     } catch (e) { if ((e as Error).name !== "AbortError") fail("SPHEREx's exposures of this place could not be read just now."); }
   }
@@ -92,6 +93,7 @@ export function mountPlaceView(host: HTMLElement, p: { ra: number; dec: number }
   function step(now: number) {
     if (dead || !playing) return;
     const dt = Math.min(0.1, (now - last) / 1000), end = pics.length - 1; last = now;
+    if (v >= 1 - 1e-6 && sx === "idle") loadSpherex();        // however 2010 was reached, SPHEREx's pictures are asked for
     if (hold > 0) hold -= dt;
     else if (v >= 1 - 1e-6 && sx !== "done" && Math.abs(v - Math.round(v)) < 1e-6) { /* rest on the 2010 picture until SPHEREx's have arrived */ }
     else { const v1 = v + dt / 1.5, k = Math.floor(v) + 1;                       // a second and a half from one picture to the next, resting on each

@@ -163,7 +163,7 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<Spa
       <button class="mx-fold" id="spfold" title="Hide or show the highlights" aria-expanded="true">Highlights</button>
       <div class="mx-body">
         <div class="mx-list" id="spfind">
-          <button class="mx-hl" id="spplanets" title="Fly home: the planets on their real orbits for today's date, moving"><i style="--c:#ffd27a"></i><span><b>Planets, live</b><small>The Solar System today, moving on its real orbits</small></span></button>
+          <button class="mx-hl" id="spsolar" title="Fly home: the planets on their real orbits for today's date, moving"><i style="--c:#ffd27a"></i><span><b>Planets, live</b><small>The Solar System today, moving on its real orbits</small></span></button>
           <button class="mx-hl" data-f="all" title="Show only the objects whose motion was confirmed, coloured by what they are"><i style="--c:#ff9d4d"></i><span><b>Stars caught moving</b><small><b id="spfn1">…</b> confirmed on SPHEREx images</small></span></button>
           <button class="mx-hl" data-f="nogaia" title="Confirmed movers that Gaia, Europe's optical star catalogue, does not list with this motion. Missing from Gaia can mean very cold, very faint, or simply missed"><i style="--c:#ff5d6c"></i><span><b>Not in Gaia</b><small><b id="spfn2">…</b> missing from Europe's star catalogue</small></span></button>
           <button class="mx-hl" data-f="help" title="Confirmed movers that are in the WISE catalogues but have no entry in SIMBAD (the database of objects in the astronomical literature) and no Gaia source. Fly to one, compare its pictures and say what you see"><i style="--c:#7df0a6"></i><span><b>Help look at one</b><small><b id="spfn3">…</b> are in no reference database</small></span></button>
@@ -469,7 +469,7 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<Spa
     if (ver) for (let i = 0; i < c.n; i++) { const k = vi[i]; if (k >= 0 && ver.known[k] === 0 && ver.pm[k] > 1 && ver.simbad[k]) pool.push(i); }
     const i = pool.length ? pool[Math.floor(Math.random() * pool.length)] : byId("6275-47643"); if (i >= 0) flyToStar(i); };
   $("#spintro2").onclick = () => { hideIntro(); $("#sptour").click(); };
-  $("#spintro4").onclick = () => { hideIntro(); $("#spplanets").click(); };
+  $("#spintro4").onclick = () => { hideIntro(); $("#spsolar").click(); };
   { const rail = $("#spctl"), fold = $("#spfold"); if (innerWidth < 760) rail.classList.add("shut"); fold.onclick = () => { rail.classList.toggle("shut"); fold.setAttribute("aria-expanded", String(!rail.classList.contains("shut"))); }; }
   $("#spintro3").onclick = () => { hideIntro(); (host.querySelector('#spfind [data-f="help"]') as HTMLElement).click(); };
   host.querySelectorAll<HTMLButtonElement>("#spfind [data-f]").forEach((b) => (b.onclick = () => {
@@ -506,16 +506,17 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<Spa
   const slider = $("#spslider") as HTMLInputElement, speedSel = $("#spspeed") as HTMLSelectElement;
   const REGIME = { solar: { range: 5, step: 0.002, def: 10 / 365.25, speeds: [[1 / 31557600, "real time"], [1 / 365.25, "1 day/s"], [10 / 365.25, "10 days/s"], [1 / 12, "1 month/s"], [1, "1 yr/s"]] as [number, string][], ticks: ["−5 yr", "today", "+5 yr"] },
     stars: { range: T_RANGE, step: 1, def: 1000, speeds: [[1, "1 yr/s"], [100, "100 yr/s"], [1000, "1,000 yr/s"], [5000, "5,000 yr/s"], [20000, "20,000 yr/s"]] as [number, string][], ticks: ["−250 kyr", "now", "+250 kyr"] } };
-  let regime: keyof typeof REGIME = "stars", tweenId = 0;
+  let regime: keyof typeof REGIME = "stars", tweenId = 0, liveUntil = 0;
   const tRange = () => REGIME[regime].range, MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   function setRegime(r: keyof typeof REGIME, force = false) {
-    if (r === regime && !force) return; regime = r; tweenId++; const R = REGIME[r];
+    if (r === regime && !force) return; regime = r; tweenId++; const R = REGIME[r], keep = r === "stars" && S.playing && S.speed >= 1;      // a tour step already running at a stellar speed is left alone
     slider.min = String(-R.range); slider.max = String(R.range); slider.step = String(R.step);
-    speedSel.innerHTML = R.speeds.map(([v, t]) => `<option value="${v}"${v === R.def ? " selected" : ""}>${t}</option>`).join(""); S.speed = R.def;
+    speedSel.innerHTML = R.speeds.map(([v, t]) => `<option value="${v}"${v === R.def ? " selected" : ""}>${t}</option>`).join(""); if (!keep) S.speed = R.def;
     host.querySelectorAll("#spticks span").forEach((e, k) => (e.textContent = R.ticks[k]));
-    $("#spplanets").classList.toggle("on", r === "solar");
-    if (r === "stars") play(false);                          // millennia per second must not start by surprise
+    $("#spsolar").classList.toggle("on", r === "solar");
+    if (r === "stars" && !keep) play(false);                 // millennia per second must not start by surprise
     setTime(Math.abs(S.time) > R.range ? 0 : S.time);
+    if (r === "solar" && performance.now() < liveUntil) { liveUntil = 0; play(true); }      // "Planets, live": time starts when the flight has arrived among the planets
   }
   function setTime(t: number, fromSlider = false) {
     S.time = Math.max(-tRange(), Math.min(tRange(), t)); mat.uniforms.uTime.value = S.time + DT0; uncMat.uniforms.uTime.value = S.time + DT0; figMat.uniforms.uTime.value = S.time + DT0;
@@ -800,9 +801,11 @@ export async function openSpace(host: HTMLElement, opts: SpaceOpts): Promise<Spa
   function planetsLive() {
     const my = ++capTok; stopTour(); hideIntro(); S.sel = -1; S.body = null; info(-1); play(false); tweenId++; setTime(0); flyTo(new THREE.Vector3(0, 0, 0), 14 * AU, -1, 3200, ECL_VIEW);
     cap("<b>The Solar System, live.</b> Every planet is where JPL's ephemeris puts it today. Time now runs at ten days a second: watch them go round, then press Live to come back to today.");
-    setTimeout(() => { if (my !== capTok) return; setRegime("solar"); play(true); }, 3400); setTimeout(() => { if (my === capTok) cap(""); }, 15000);
+    liveUntil = performance.now() + 9000;
+    if (regime === "solar") setTimeout(() => { if (my === capTok && liveUntil) { liveUntil = 0; play(true); } }, 3300);      // already among the planets: after the turn of the view
+    setTimeout(() => { if (my === capTok) cap(""); }, 15000);
   }
-  $("#spplanets").onclick = planetsLive;
+  $("#spsolar").onclick = planetsLive;
   const RUNGS = ["Earth", "Solar System", "Nearest stars", "Milky Way", "Galaxies", "Cosmic web", "Edge of sight"];
   $("#spdest").innerHTML = dests.map(([n], k) => `<button class="rungx" data-k="${k}" title="${n}"><i></i>${RUNGS[k] ?? n}</button>`).join("");
   host.querySelectorAll<HTMLButtonElement>("#spdest button").forEach((b) => b.onclick = () => { const k = +b.dataset.k!, my = ++capTok; stopTour(); dests[k][1](); cap(RUNG_CAPS[k]); setTimeout(() => { if (my === capTok) cap(""); }, 14000); });

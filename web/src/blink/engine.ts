@@ -334,6 +334,7 @@ export async function readFrame(exp: Exposure, t: Target, o: ReadOpts): Promise<
     flagsAt = { start: flagsStart + lay.hdrLen, heap: flagsStart + lay.hdrLen + lay.theap, ver, n1: w.n1, n2: w.n2 };
     return readFlagDesc(exp.url, flagsAt, w.n1, y0, y1, o.signal);
   })().catch((e) => { if ((e as Error).name === "AbortError") throw e; return null; });
+  descP?.catch(() => {});       // when the read is abandoned, the rows fail first and nobody waits for this one: its failure is expected, not an error
 
   const raw = await rowsP, dv = new DataView(raw.buffer, raw.byteOffset, raw.byteLength);
   const sub = new Float32Array(nx * ny);
